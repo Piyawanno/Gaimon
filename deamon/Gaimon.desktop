@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=Gaimon
+Comment=Gaimon
+Exec=/bin/bash /home/supawat/Project/Gaimon/daemon/daemon.sh
+Path=/home/supawat/Project/Gaimon/daemon/
+Icon=/home/supawat/Project/Gaimon/daemon/eagle-eyes-square.jpg
+Terminal=false
+Type=Application
+Categories=Application
+SingleMainWindow=false

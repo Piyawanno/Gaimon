@@ -1,0 +1,270 @@
+.layouCreatorContainer {
+    display: flex;
+    width: 100%;
+    min-height: 650px;
+    height: calc(100vh - 230px);
+    justify-content: space-between;
+    border: 1px solid #CFD8DC;
+}
+
+.layoutCreatorInputContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 20%;
+    height: 100%;
+    background-color: #ECEFF1;
+    border-right: 1px solid #CFD8DC;
+    overflow-y: auto;
+}
+
+.layoutCreatorInputHeaderArrow {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.layoutCreatorInputContainer::-webkit-scrollbar {
+    width: 0px;
+}
+
+.layoutCreatorInputSection {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    background-color: #ECEFF1;
+    padding: 8px 0;
+}
+
+.layoutCreatorCanvas {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-content: flex-start;
+}
+
+.layoutCreatorPreferenceContainer {
+    width: 20%;
+    height: 100%;
+    border-left: 1px solid #CFD8DC;
+    background-color: #ECEFF1;
+    -webkit-user-select: none;
+    user-select: none;
+    overflow-y: auto;
+}
+
+.layoutCreatorPreferenceContainer::-webkit-scrollbar {
+    width: 0px;
+}
+
+
+.layoutCreatorInputHeader {
+    min-height: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    background-color: #b3c5c8;
+    color: #202020;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: pointer;
+    border-top: 1px solid #CFD8DC;
+    border-bottom: 1px solid #CFD8DC;
+}
+
+.layoutCreatorInputBox {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    gap: 5px;
+    height: 90px;
+    width: calc(50% - 5px);
+    border: 1px solid #CFD8DC;
+    background-color: #fff;
+    cursor: pointer;
+    transition: .2s;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.layoutCreatorInputRow {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    background-color: #ECEFF1;
+    border-right: 1px solid #CFD8DC;
+    padding: 0 10px;
+}
+.layoutCreatorInputBox:hover {
+    background-color: #f1f5f7;
+}
+
+.layoutCreatorInputIcon {
+    height: 32px;
+}
+
+.layoutCreatorInputText {
+    height: 18px;
+}
+
+.layoutCreatorCanvasInput {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #edeff1;
+    padding-left: 5px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    height: 48px;
+    box-shadow: 2px 2px 2px 0 rgb(0 0 0 / 20%);
+    /* transition: 0.3s; */
+    transition: box-shadow 0.3s;
+}
+
+.layoutCreatorCanvasInput:hover {
+    box-shadow: 2px 2px 2px 0 rgb(0 0 0 / 40%)
+}
+
+.layoutCreatorCanvasInput.selected {
+    background-color: #BDBDBD;
+    box-shadow: 2px 2px 2px 0 rgb(0 0 0 / 60%);
+}
+
+.layoutCreatorCanvasInputIcon {
+    width: 32px;
+}
+
+.layoutCreatorCanvasInputLabel {
+    width: 100%;
+    padding: 0 10px;
+}
+
+.layoutCreatorCanvasInputDeleteIcon {
+    width: 42px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #E57373;
+    height: 100%;
+    color: #edeff1;
+    transition: .1s;
+}
+
+.layoutCreatorCanvasInputDeleteIcon:hover {
+    background: #EF5350;
+}
+
+.layoutCreatorPreferenceForm {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.layoutCreatorCanvasGroup {
+	display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 100px;
+    border-bottom: 1px solid #afc6c9;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.layoutCreatorCanvasGroupLabel {
+	width: 20%;
+    font-weight: bolder;
+    font-size: 1.1em;
+    padding: 20px 0;
+}
+
+.layoutCreatorCanvasGroupInputBox {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-content: flex-start;
+    padding: 20px 0;
+}
+
+.layoutCreatorCanvasInput.input_per_line_1 {
+	flex-basis: 100%;
+}
+
+.layoutCreatorCanvasInput.input_per_line_2 {
+	flex-basis: calc(50% - 10px / 2);
+}
+
+.layoutCreatorCanvasInput.input_per_line_3 {
+	flex-basis: calc(33.33% - 20px / 3);
+}
+
+.layoutCreatorCanvasInput.input_per_line_4 {
+	flex-basis: calc(25% - 30px / 4);
+}
+
+.layoutCreaterPreferenceInputHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 18px;
+}
+
+.layoutCreaterPreferenceInputHeaderButton {
+    cursor: pointer;
+    color: #078c52;
+}
+
+.layoutCreaterPreferenceOptionBox {
+    display: flex;
+    align-items: center;
+}
+
+.layoutCreaterPreferenceOptionDelete {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #E57373;
+    height: 32px;
+    width: 32px;
+    color: #edeff1;
+    transition: .1s;
+}
+
+.layoutCreaterPreferenceOptionDelete:hover {
+    background: #EF5350;
+}
+
+.layoutCreaterPreferenceOptionContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 5px;
+}
+
+.drag_over {
+    border-top: 2px dashed #757575;
+}
+
+@media only screen and (max-width: 600px) {
+
+    .layoutCreatorCanvasInput.input_per_line_1, .layoutCreatorCanvasInput.input_per_line_2, .layoutCreatorCanvasInput.input_per_line_3, .layoutCreatorCanvasInput.input_per_line_4 {
+		flex-basis: fit-content;
+	}
+
+}

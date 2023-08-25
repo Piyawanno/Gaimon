@@ -1,0 +1,19 @@
+#!/usr/bin/python3
+
+from gaimon.util.backup.BackupCron import BackupCron
+from gaimon.util.backup.BackupStorage import BackupStorage
+from gaimon.util.ProcessUtil import readConfig
+
+import asyncio, logging
+
+__config__ = readConfig(
+	['Gaimon.json', 'BackupCron.json'],
+	{
+		'DB' : 'Database.json'
+	}
+)
+
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(message)s")
+__storage__ = BackupStorage(__config__['resourcePath'])
+__cron__ = BackupCron(__config__, __storage__)
+asyncio.run(__cron__.start(['']))

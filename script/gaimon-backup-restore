@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+
+from gaimon.util.backup.BackupRestore import BackupRestore
+from gaimon.util.backup.BackupStorage import BackupStorage
+from gaimon.util.ProcessUtil import readConfig
+from datetime import datetime
+
+import sys, argparse, logging, asyncio
+
+__config__ = readConfig(
+	['Gaimon.json', 'BackupCron.json'],
+	{
+		'DB' : 'Database.json'
+	}
+)
+
+__parser__ = argparse.ArgumentParser(description="Gaimon DB restoration tool.")
+__parser__.add_argument("-t", "--entity", help="Entity (Schema) of DB, empty for main.")
+__parser__.add_argument("-s", "--start", help="Start date of restoration (YYYY-mm-dd), empty for restore from first date of DB.")
+__parser__.add_argument("-e", "--end", help="End date of restoration (YYYY-mm-dd).", required=True)
+__option__ = __parser__.parse_args(sys.argv[1:])
+__entity__ = '' if __option__.namespace is None else __option__.namespace
+__end__ = datetime.strptime(__option__.end, '%Y-%m-%d')
+
+
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(message)s")
+
+__storage__ = BackupStorage(__config__['resourcePath'])
+__restore__ = BackupRestore(__config__, __storage__)
+asyncio.run(__restore__.restore(__entity__, __option__.start, __end__))

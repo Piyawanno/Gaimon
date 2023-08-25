@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+
+from gaimon.util.GaimonInitializer import GaimonInitializer
+import argparse, sys, os
+
+__description__ = """Gaimon Initialization : Create base configuration and resource for Gaimon.
+
+For creation of DB configuration in ENV mode, the followed :
+- GAIMON_DB_HOST
+- GAIMON_DB_PORT
+- GAIMON_DB_NAME
+- GAIMON_DB_USER
+- GAIMON_DB_PASSWORD
+- GAIMON_DB_VENDOR
+"""
+
+__parser__ = argparse.ArgumentParser(description=__description__, formatter_class=argparse.RawTextHelpFormatter)
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimon application.")
+__parser__.add_argument("-w", "--wheelpath", help="Path of wheel files.", required=True)
+__parser__.add_argument("-s", "--skip-config", help="Skip setting up configuration.", action='store_true')
+__parser__.add_argument("-i", "--interactive", help="Interactive setting up configuration, if not set DB config will used ENV variable.", action='store_true')
+__option__ = __parser__.parse_args(sys.argv[1:])
+
+initializer = GaimonInitializer(
+	__option__.namespace,
+	__option__.wheelpath,
+	not __option__.skip_config,
+	__option__.interactive
+)
+initializer.init()

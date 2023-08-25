@@ -1,0 +1,34 @@
+.pagination{
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.pagination .number{
+    border: 1px solid #ddd;
+    padding: 5px 10px;
+    border-radius: 0;
+    font-family: 'Kanit-Regular';
+    width: 100%;
+    text-align: center;
+    user-select: none;
+    border-right: none;
+    border-left: none;
+}
+
+.pagination .number:focus{
+
+}
+
+.page-button{
+    background: #f33;
+    padding: 3px 10px;
+    border: 1px solid #ddd;
+    color: #fff;
+}
+
+.page-button:hover{
+    opacity: .9;
+    cursor: pointer;
+}

@@ -1,0 +1,66 @@
+.backend-dashboard .backend-summary-content{
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.backend-dashboard .backend-summary-chart-container{
+    display: flex;
+    gap: 15px;
+    width: 100%;
+}
+
+.backend-dashboard .backend-summary-chart{
+    background: #fff;
+    box-shadow: 0 0 10px grey;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.backend-dashboard .backend-summary-chart .chart{
+    max-height: 500px;
+    min-width: 100%;
+}
+
+.backend-dashboard .input-date{
+    border: none;
+    text-align: center;
+    background: none;
+    padding: 5px;
+}
+
+/* .backend-dashboard .input-date::-webkit-inner-spin-button,
+.backend-dashboard .input-date::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+} */
+
+.backend-dashboard .backend-summary-count-text{
+    font-weight: bold;
+    font-size: 30px;
+}
+
+.backend-dashboard .backend-summary-count-container{
+    color: #fff;
+    font-size: 20px;
+    padding: 20px;
+    min-height: 168px;
+    max-height: 168px;
+}
+
+.backend-dashboard .shipping-cost{
+    background: linear-gradient(90deg, rgba(244,85,95,1) 0%, rgba(226,142,79,1) 100%);
+}
+
+.backend-dashboard .ear-number{
+    background: linear-gradient(90deg, rgba(98,165,242,1) 0%, rgba(111,130,248,1) 100%);
+}
+
+.backend-dashboard .domestic{
+    background: linear-gradient(90deg, rgba(130,127,243,1) 0%, rgba(172,127,248,1) 100%);
+}
+
+.backend-dashboard .international{
+    background: linear-gradient(90deg, rgba(243,127,225,1) 0%, rgba(248,127,142,1) 100%);
+}

@@ -1,0 +1,10 @@
+[
+	{
+		"name" : "Gaimon",
+		"command" : "gaimon -d"
+	},
+	{
+		"name" : "GaimonNotification",
+		"command" : "gaimon-notification -d"
+	}
+]

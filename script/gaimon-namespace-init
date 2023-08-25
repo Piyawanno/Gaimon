@@ -1,0 +1,18 @@
+#!/usr/bin/python3
+
+__help__ = """Gaimon namespace initializer :
+install : Install Gaimon into machine.
+link : Link package and script into machine, suitable for setting up developing environment.
+"""
+
+
+from argparse import RawTextHelpFormatter
+from gaimon.util.NameSpaceInitializer import NameSpaceInitializer
+import argparse, sys
+
+parser = argparse.ArgumentParser(description=__help__, formatter_class=RawTextHelpFormatter)
+parser.add_argument("-n", "--namespace", help="Namespace to initialize.")
+parser.add_argument("operation", help="Operation of setup", choices=['install', 'link'])
+option = parser.parse_args(sys.argv[1:])
+setup = NameSpaceInitializer(option.namespace)
+setup.operate(option.operation)

@@ -1,0 +1,19 @@
+alter table StockShelf add shelfType int default -1;
+-------------- 5/7/65 -------------------------
+ALTER TABLE Unit ADD parentID INTEGER default -1;
+ALTER TABLE Unit ADD precision INTEGER default -1;
+ALTER TABLE Unit ADD unitCategory INTEGER default -1;
+ALTER TABLE Unit ADD value INTEGER default 0;
+-------------- 6/7/65 -------------------------
+ALTER TABLE StockItemCategory ADD isDrop INTEGER default 0;
+ALTER TABLE gaimonuser ADD isDrop INTEGER default 0;
+ALTER TABLE usergroup ADD isDrop INTEGER default 0; 
+
+ALTER TABLE StockItemType  ADD isdrop INTEGER DEFAULT 0;
+create index StockItemType_isdrop on StockItemType (isdrop);
+
+ALTER TABLE StockItemType  ADD pairedItemType INTEGER DEFAULT -1;
+ALTER TABLE supplier ADD isdrop INTEGER DEFAULT 0;
+create index supplier_isdrop on supplier (isdrop);
+-------------- 24/7/65 -------------------------
+alter table stockitemtype add qrcode varchar(255);

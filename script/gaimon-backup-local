@@ -1,0 +1,18 @@
+#!/usr/bin/python3
+
+# NOTE
+# This script should have the least dependencies, 
+# because it will be used in local machine without
+# Gaimon and its dependencies.
+
+
+from gaimon.util.backup.BackupLocalStorage import BackupLocalStorage
+
+import json, logging
+
+with open('/etc/gaimon/BackupLocal.json') as fd :
+	__config__ = json.load(fd)
+
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(message)s")
+__storage__ = BackupLocalStorage(__config__)
+__storage__.start()

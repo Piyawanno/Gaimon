@@ -1,0 +1,26 @@
+#!/usr/bin/python3
+
+from gaimon.util.ProcessUtil import setSystemPath
+import sys, argparse
+
+__parser__ = argparse.ArgumentParser(description="Gaimon service starter.")
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimon service.")
+__parser__.add_argument("-o", "--operation", help="Operation mode.", required=True, choices=['start', 'stop', 'restart', 'kill'],)
+
+__option__ = __parser__.parse_args(sys.argv[1:])
+
+__namespace__ = '' if __option__.namespace is None else __option__.namespace
+
+from gaimon.util.ProcessUtil import readConfig
+from gaimon.util.ServiceStarter import ServiceStarter
+if len(__namespace__) : setSystemPath(__namespace__)
+
+__config__ = readConfig(
+	[],
+	{"service" : "ServiceStarter.json"},
+	namespace=__namespace__
+)
+
+print(__config__)
+starter = ServiceStarter(__config__)
+starter.operate(__option__.operation)

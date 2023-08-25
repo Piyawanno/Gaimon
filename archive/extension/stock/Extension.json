@@ -1,0 +1,17 @@
+{
+	"ID" : "stock",
+	"name" : "Stock",
+	"require" : [],
+	"role" : ["Stock"],
+	"backend" : {
+		"script" : [
+			"Stock.js", "StockMainItemPage.js", "StockItemTypeUnitMapperPage.js", "protocol/StockProtocol.js",
+			"SuppliedStockItemPage.js", "WithdrawnStockItemPage.js"
+		],
+		"css" : [
+		],
+		"menu" : [
+			{"ID": "Stock", "child": ["StockMainItemPage", "StockItemTypeUnitMapperPage", "SuppliedStockItemPage", "WithdrawnStockItemPage"]}
+		]
+	}
+}

@@ -1,0 +1,304 @@
+@font-face {
+    font-family: 'Kanit';
+    src: URL('../font/Kanit-Regular.ttf');
+	font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Kanit';
+    src: URL('../font/Kanit-Light.ttf');
+	font-weight: 200;
+}
+
+@font-face {
+    font-family: 'Kanit';
+    src: URL('../font/Kanit-LightItalic.ttf');
+	font-weight: 200;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Kanit';
+    src: URL('../font/Kanit-Bold.ttf');
+	font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Kanit';
+    src: URL('../font/Kanit-Italic.ttf');
+	font-weight: normal;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Kanit';
+    src: URL('../font/Kanit-BoldItalic.ttf');
+	font-weight: bold;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Sarabun';
+    src: URL('../font/THSarabun.ttf');
+	font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Sarabun';
+    src: URL('../font/THSarabun-Bold.ttf');
+	font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Sarabun';
+    src: URL('../font/THSarabun-Italic.ttf');
+	font-weight: normal;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Sarabun';
+    src: URL('../font/THSarabun-BoldItalic.ttf');
+	font-weight: bold;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'SarabunNew';
+    src: URL('../font/THSarabunNew.ttf');
+	font-weight: normal;
+}
+
+@font-face {
+    font-family: 'SarabunNew';
+    src: URL('../font/THSarabunNew-Bold.ttf');
+	font-weight: bold;
+}
+
+@font-face {
+    font-family: 'SarabunNew';
+    src: URL('../font/THSarabunNew-Italic.ttf');
+	font-weight: normal;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'SarabunNew';
+    src: URL('../font/THSarabunNew-BoldItalic.ttf');
+	font-weight: bold;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Prompt';
+    src: URL('../font/Prompt-Regular.ttf');
+	font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Prompt';
+    src: URL('../font/Prompt-Light.ttf');
+	font-weight: 200;
+}
+
+@font-face {
+    font-family: 'Prompt';
+    src: URL('../font/Prompt-LightItalic.ttf');
+	font-weight: 200;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Prompt';
+    src: URL('../font/Prompt-Bold.ttf');
+	font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Prompt';
+    src: URL('../font/Prompt-Italic.ttf');
+	font-weight: normal;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Prompt';
+    src: URL('../font/Prompt-BoldItalic.ttf');
+	font-weight: bold;
+	font-style: italic;
+}
+
+@font-face {
+	font-family: 'Avenir';
+	src: url('../font/Avenir-Medium.ttf');
+	font-weight: 500;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Avenir';
+	src: url('../font/Avenir-Light.ttf');
+	font-weight: 300;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Avenir Next';
+	src: url('../font/Avenir-Next-Bold.ttf');
+	font-weight: bold;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Avenir Next';
+	src: url('../font/Avenir-Next-Regular.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Avenir Next';
+	src: url('../font/Avenir-Next-Italic.ttf');
+	font-weight: normal;
+	font-style: italic;
+}
+
+@font-face {
+	font-family: 'Avenir Next';
+	src: url('../font/Avenir-Next-DemiBold.ttf');
+	font-weight: 600;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Avenir Next Condensed';
+	src: url('../font/Avenir-Next-Condensed-DemiBold.ttf');
+	font-weight: 600;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Sukhumvit Set';
+	src: url('../font/SukhumvitSet-Light.ttf');
+	font-weight: 300;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Sukhumvit Set';
+	src: url('../font/SukhumvitSet-Medium.ttf');
+	font-weight: 500;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Sukhumvit Set';
+	src: url('../font/SukhumvitSet-Bold.ttf');
+	font-weight: bold;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Sukhumvit Set';
+	src: url('../font/SukhumvitSet-SemiBold.ttf');
+	font-weight: 600;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Sukhumvit Set';
+	src: url('../font/SukhumvitSet-Text.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Open Sans';
+	src: url('../font/OpenSans-VariableFont_wdth,wght.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Noto Thai';
+	src: url('../font/NotoSerifThai-VariableFont_wdth,wght.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Monaco';
+	src: url('../font/Monaco.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Montserrat';
+	src: url('../font/Montserrat-Regular.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Montserrat';
+	src: url('../font/Montserrat-LightItalic.ttf');
+	font-weight: lighter;
+	font-style: italic;
+}
+
+@font-face {
+	font-family: 'Montserrat';
+	src: url('../font/Montserrat-Bold.ttf');
+	font-weight: bold;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Montserrat';
+	src: url('../font/Montserrat-SemiBold.ttf');
+	font-weight: 600;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Montserrat';
+	src: url('../font/Montserrat-ExtraBold.ttf');
+	font-weight: 800;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Montserrat';
+	src: url('../font/Montserrat-Black.ttf');
+	font-weight: 900;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Mulish';
+	src: url('../font/Mulish-Bold.ttf');
+	font-weight: bold;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Mulish';
+	src: url('../font/Mulish-ExtraBold.ttf');
+	font-weight: 800;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Telegraf';
+	src: url('../font/Telegraf-Regular.otf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Telegraf';
+	src: url('../font/Telegraf-Ultrabold.otf');
+	font-weight: 800;
+	font-style: normal;
+}

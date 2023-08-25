@@ -1,0 +1,103 @@
+@media (prefers-color-scheme: dark){
+    body{
+        background: #333;
+    }
+}
+
+@media (prefers-color-scheme: light){
+	body{
+        background: #e6e6e6;
+	}
+}
+
+div{
+	box-sizing: border-box;
+}
+
+.document{
+	font-family: 'Sarabun';
+	margin: auto;
+	background: #fff;
+	padding: 1.5cm 2.5cm;
+	display: flex;
+	flex-direction: column;
+	gap: .5cm;
+	line-height: 1.2;
+}
+
+.document.a4{
+	max-width: 21cm;
+	min-width: 21cm;
+	font-size: 23px;
+}
+
+.document .fieldUnderline{
+	border-bottom: 1px dotted #000;
+    margin-bottom: 8px;
+}
+
+.document .krut{
+	max-width: 60px;
+}
+
+.document .garuda{
+	max-width: 60px;
+}
+
+.document .header{
+	text-align: center;
+}
+
+.document .header .title{
+	font-size: 35px;
+	font-weight: bold;
+}
+
+.document .header .subTitle{
+	line-height: .75;
+}
+
+.document .indent{
+	padding-left: 1.5cm
+}
+
+.document img{
+	max-width: 100%;
+}
+
+.document p{
+	margin: 0;
+}
+
+table, td, th{
+	border: 1px solid;
+	font-size: 23px;
+	padding: 0 15px;
+	font-family: 'Sarabun';
+}
+  
+table{
+	width: 100%;
+	border-collapse: collapse;
+}
+
+@media print{
+	@page {
+		margin: 2.5cm;
+		/* size: A4; */
+	}
+
+	body{
+		margin: 0;
+	}
+	
+	.document{
+		padding: 0;
+		margin: 0;		
+	}
+
+	.document.a4{
+		min-width: unset;
+		max-width: unset;
+	}
+}

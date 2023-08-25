@@ -1,0 +1,8 @@
+{
+	"host" : "localhost",
+	"port" : 1157,
+	"sleepTime" : 10,
+	"expireTime" : 604800,
+	"timeOut" : 60,
+	"DBConnectionNumber" : 2
+}

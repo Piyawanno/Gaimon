@@ -1,0 +1,2 @@
+#!/bin/bash
+runuser -l postgres -c 'pg_basebackup -h 172.21.0.200 -p 5432 -U reprep -D /var/lib/postgresql/data/ -Fp -Xs -R'

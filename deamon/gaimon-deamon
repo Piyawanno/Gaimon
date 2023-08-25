@@ -1,0 +1,98 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:		gaimon-deamon
+# Required-Start:	$syslog $remote_fs
+# Required-Stop:	$syslog $remote_fs
+# Should-Start:		$local_fs
+# Should-Stop:		$local_fs
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+### END INIT INFO
+
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/gaimon
+DAEMON_ARGS=start
+NAME=gaimon-deamon
+DESC=gaimon-deamon
+
+
+if [ "$(id -u)" != "0" ]
+then
+	log_failure_msg "Must be run as root."
+	exit 1
+fi
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+	
+	if tmux new-session -d -s Gaimon
+	then
+		echo "gaimon start"
+		tmux send-keys -t Gaimon "export PATH='$PATH'" C-m
+		tmux send-keys -t Gaimon "sudo gaimon -d restart" C-m
+	else
+		echo "failed"
+		tmux send-keys -t Gaimon "sudo gaimon -d restart" C-m
+	fi
+	
+	if tmux new-session -d -s Stock
+	then
+		echo "stock count start"
+		tmux send-keys -t Stock "export PATH='$PATH'" C-m
+		tmux send-keys -t Stock "gaimon-stockcount -d restart" C-m
+	fi
+		echo "failed"
+		tmux send-keys -t Stock "gaimon-stockcount -d restart" C-m
+
+	if tmux new-session -d -s Notification
+	then
+		echo "notification count start"
+		tmux send-keys -t Notification "export PATH='$PATH'" C-m
+		tmux send-keys -t Notification "gaimon-notification -d restart" C-m
+	fi
+		echo "failed"
+		tmux send-keys -t Notification "gaimon-notification -d restart" C-m
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+
+	if tmux send-keys -t Gaimon "sudo gaimon -d stop" C-m
+	then
+		echo "gaimon"
+	else
+		echo "failed"
+	fi
+	if tmux send-keys -t Stock "gaimon-stockcount -d stop" C-m
+	then
+		echo "notification count"
+	else
+		echo "failed"
+	fi
+	if tmux send-keys -t Notification "gaimon-notification -d stop" C-m
+	then
+		echo "notification"
+	else
+		echo "failed"
+	fi
+	sleep 1
+	;;
+
+  restart|force-reload)
+	tmux send-keys -t Gaimon "sudo gaimon -d restart" C-m
+	tmux send-keys -t Stock "gaimon-stockcount -d restart" C-m
+	tmux send-keys -t Notification "gaimon-notification -d restart" C-m
+	;;
+
+  status)
+	echo -n "${NAME} status is not implement"
+	;;
+
+  *)
+	echo "Usage: /etc/init.d/$NAME {start|stop|restart|force-reload|status}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

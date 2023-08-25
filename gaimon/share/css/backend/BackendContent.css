@@ -1,0 +1,74 @@
+@keyframes animated-popup {
+	0% { 
+		top: 20vh;
+		opacity: 0.0;
+	}
+	100% {
+		top: 15vh;
+		opacity: 1.0;
+	}
+}
+
+.backend_container {
+	position: absolute;
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.backend_bar {
+	width: 100%;
+	background-color: white;
+	height: 48px;
+	display: flex;
+	justify-content: space-between;
+	box-shadow: 0 0 10px gray;
+}
+
+.backend_burger {
+	margin: 10px;
+	width: 28px;
+	height: 28px;
+	background-image: url('/share/icon/burger.png');
+	background-position: center;
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+.backend_info {
+	text-align: center;
+	margin-top: 5px;
+	line-height: 20px;
+}
+
+.backend_account {
+	margin: 5px;
+	width: 38px;
+	height: 38px;
+	background-position: center;
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+.backend_content {
+	width: 100%;
+	overflow-y: auto;
+}
+
+.backend_ems_bar {
+	display: flex;
+	justify-content: flex-end;
+}
+
+@media screen and (min-width: 992px) {
+	.backend_burger {
+		background-image: none;
+	}
+
+	.backend_container {
+		width: calc(100vw - 300px);
+		right: 0;
+	}
+}

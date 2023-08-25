@@ -1,0 +1,26 @@
+#!/usr/bin/python3
+
+from gaimon.util.ProcessUtil import readConfig, daemonize, setSystemPath
+
+import sys, argparse
+
+__parser__ = argparse.ArgumentParser(description="Gaimon BusinessLog server.")
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimoncloud application.")
+__parser__.add_argument("-d", "--daemon", help="Run in daemon mode.", choices=['start', 'stop', 'restart', 'kill'],)
+__option__ = __parser__.parse_args(sys.argv[1:])
+__namespace__ = '' if __option__.namespace is None else __option__.namespace
+__config__ = readConfig(
+	['Gaimon.json', 'BusinessLog.json'],
+	{},
+	__namespace__
+)
+from gaimon.service.businesslog.BusinessLogService import BusinessLogService
+if len(__namespace__) : setSystemPath(__namespace__)
+
+__log__ = BusinessLogService(__config__, __namespace__)
+
+if __name__ == '__main__' :
+	if  __option__.daemon :
+		daemonize('gaimon-notification', __option__.daemon, __log__.run, '')
+	else :
+		__log__.run()

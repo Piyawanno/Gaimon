@@ -1,0 +1,460 @@
+:root {
+    --week-time-width: 70px;
+    --weekly-cell-width: calc((100% / 7) - (var(--week-time-width) / 7));
+    --daily-cell-width: calc(100% - var(--week-time-width));
+}
+
+.calendarContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    user-select: none;
+}
+
+.calendarHeaderBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    align-content: center;
+}
+
+.calendarHeaderBox {
+    display: flex;
+    justify-content: space-evenly;
+    gap: 20px;
+    align-content: center;
+    align-items: center;
+}
+
+.calendarPagination {
+    display: flex;
+    justify-content: space-evenly;
+    gap: 5px;
+    align-content: center;
+    align-items: center;
+    color: #5f6368;
+    padding: 5px 0px;
+}
+
+.todayButton {
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: center;
+    border: 1px solid #afc6c9;
+    padding: 5px 10px;
+    color: #3c4043;
+    height: 32px;
+    transition: .1s;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+}
+
+.todayButton:hover {
+    background-color: #ECEFF1;
+}
+
+.calendarTypeSelect {
+    padding: 5px 10px;
+    border: 1px solid #afc6c9;
+    border-radius: 3px;
+    color: #3c4043;
+    cursor: pointer;
+    outline: none;
+    height: 32px;
+    transition: .1s;
+    border-radius: 10px;
+}
+
+.calendarTypeSelect:hover {
+    background-color: #ECEFF1;
+}
+
+.calendarTypeSelect option {
+    padding: 5px 10px;
+}
+
+.calendarCurrentText {
+    font-size: 2em;
+    padding: 5px 10px;
+}
+
+.calendarPaginationButton {
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    transition: .1s;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.calendarPaginationButton:hover {
+    background-color: #ECEFF1;
+}
+
+.monthlyCalendarTable {
+    width: 100%;
+    table-layout: fixed;
+    /* border: 1px solid #afc6c9; */
+    border-collapse: collapse;
+}
+
+.monthlyCalendarTable tr th {
+    border-top: 1px solid #afc6c9;
+    color: #70757a;
+    padding: 10px 0;
+    font-weight: 600;
+    border-left: 1px solid #afc6c9;
+    border-right: 1px solid #afc6c9;
+}
+
+.monthlyCalendarTable > tbody > tr:first-child > td {
+    border-top: none;
+}
+
+.monthlyCell {
+    height: 108px;
+    border: 1px solid #afc6c9;
+}
+
+.monthlyCellDIV {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 100%;
+    padding: 5px;
+    max-height: 108px;
+}
+
+.monthlyCellDate {
+    width: 100%;
+    height: 24px;
+    text-align: center;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.monthlyCellDateText {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transition: .1s;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.monthlyCellDateText.today {
+    color: #fff;
+    background-color: #202020;
+}
+
+.monthlyCellDateText.today:hover {
+    color: #fff;
+    background-color: #525252;
+}
+
+.monthlyCellDateText:hover {
+    background-color: #ECEFF1;
+}
+
+.monthlyCellContent {
+    height: calc(100% - 18px);
+    max-height: calc(100% - 18px);
+    width: 100%;
+    padding-top: 10px;
+    overflow-y: auto;
+}
+
+.monthlyCellContent::-webkit-scrollbar {
+    width: 0px;
+}
+
+
+.monthlyEvent {
+    display: flex;
+    gap: 5px;
+    width: 100%;
+    cursor: pointer;
+    transition: .1s;
+    padding: 2px 5px;
+    border-radius: 5px;
+}
+
+.monthlyEvent:hover {
+    background-color: #ECEFF1;
+}
+
+.monthlyEventTime {
+    color: black;
+}
+
+.monthlyEventTitle {
+    font-weight: bolder;
+}
+
+.weeklyHeader {
+    display: flex;
+    justify-content: space-around;
+    border-right: 1px solid #afc6c9;
+}
+
+.weeklyTimeHeader {
+    width: var(--week-time-width);
+    height: 42px;
+}
+
+.weeklyDay {
+    display: flex;
+    width: var(--weekly-cell-width);
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 5px;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #70757a;
+    border-left: 1px solid #afc6c9;
+    height: 42px;
+}
+
+.weeklyDateHeader {
+    display: flex;
+    justify-content: space-around;
+    border-right: 1px solid #afc6c9;
+    font-weight: 600;
+    color: #70757a;
+}
+
+.weeklyDate {
+    display: flex;
+    width: var(--weekly-cell-width);
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 5px;
+    font-size: 1.2em;
+    border-left: 1px solid #afc6c9;
+    border-bottom: 1px solid #afc6c9;
+    font-weight: 600;
+    color: #70757a;
+    min-width: 32px;
+}
+
+.weeklyEventCell {
+    display: flex;
+    width: var(--weekly-cell-width);
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 5px;
+    border-left: 1px solid #afc6c9;
+    border-bottom: 1px solid #afc6c9;
+    height: 48px;
+    position: relative;
+}
+
+.weeklyTimeSubHeader {
+    width: var(--week-time-width);
+}
+
+.weeklyTime {
+    width: var(--week-time-width);
+    height: 48px;
+    padding-right: 10px;
+    line-height: calc(48px + 48px);
+    text-align: right;
+    box-sizing: border-box;
+    font-weight: normal;
+}
+
+.weeklyCellDateText {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: .1s;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.weeklyCellDateText.today {
+    color: #fff;
+    background-color: #202020;
+}
+
+.weeklyCellDateText.today:hover {
+    color: #fff;
+    background-color: #525252;
+}
+
+.weeklyCellDateText:hover {
+    background-color: #ECEFF1;
+}
+
+.weeklyContent {
+    width: 100%;
+    max-height: 500px;
+    overflow-y: overlay;
+}
+
+.weeklyContent::-webkit-scrollbar {
+    width: 0px;
+}
+
+.weeklyEvent {
+    position: absolute;
+    background: #0066cc;
+    width: calc(100% - 6px);
+    color: white;
+    border-radius: 5px;
+    padding: 5px;
+    box-sizing: border-box;
+    z-index: 5;
+    transition: .1s;
+    cursor: pointer;
+}
+
+.weeklyEvent:hover {
+    background: #0080ff;
+}
+
+.dailyDay {
+    display: flex;
+    width: var(--daily-cell-width);
+    align-content: center;
+    justify-content: flex-start;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 5px;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #70757a;
+    border-left: 1px solid #afc6c9;
+    height: 42px;
+}
+
+.dailyDate {
+    display: flex;
+    width: var(--daily-cell-width);
+    align-content: center;
+    justify-content: flex-start;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 5px;
+    font-size: 1.2em;
+    border-left: 1px solid #afc6c9;
+    border-bottom: 1px solid #afc6c9;
+    font-weight: 600;
+    color: #70757a;
+    min-width: 32px;
+}
+
+.dailyEventCell {
+    display: flex;
+    width: var(--daily-cell-width);
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 5px;
+    border-left: 1px solid #afc6c9;
+    border-bottom: 1px solid #afc6c9;
+    height: 48px;
+    position: relative;
+}
+
+.scheduleContainer {
+    width: 100%;
+}
+
+.scheduleRow {
+    display: flex;
+    width: 100%;
+    padding: 10px 0;
+    border-bottom: 1px solid #afc6c9;
+    gap: 10px;
+}
+
+.scheduleHeader {
+    display: flex;
+    width: 100px;
+    justify-content: flex-start;
+    gap: 5px;
+}
+
+.scheduleDate {
+    display: flex;
+    height: 32px;
+    width: 32px;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: .1s;
+}
+
+.scheduleDate.today {
+    color: #fff;
+    background-color: #202020;
+}
+
+.scheduleDate:hover {
+    background-color: #ECEFF1;
+}
+
+.scheduleDate.today:hover {
+    color: #fff;
+    background-color: #525252;
+}
+
+.scheduleDateText {
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    height: 32px;
+}
+
+.scheduleContent {
+    display: flex;
+    width: calc(100% - 100px);
+    padding-top: 2px;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.scheduleEvent {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    width: 100%;
+    align-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: .1s;
+}
+
+.scheduleEvent:hover {
+    background-color: #ECEFF1;
+}
+
+.scheduleTime {
+    width: 180px;
+}

@@ -1,0 +1,1 @@
+<div class="abstract_menu abstract_tab_menu" rel="{{{value}}}" localize>{{{label}}}</div>

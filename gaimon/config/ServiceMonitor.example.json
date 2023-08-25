@@ -1,0 +1,6 @@
+{
+	"host" : "localhost",
+	"port" : 1158,
+	"timeOut" : 60,
+	"updateRate" : 10
+}

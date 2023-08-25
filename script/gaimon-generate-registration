@@ -1,0 +1,22 @@
+#!/usr/bin/python3
+
+__HELP__ = "Generate PDF document, which contains QR code for registration."
+
+from gaimon.util.QRRegistrationGenerator import QRRegistrationGenerator
+
+import json, sys, os, asyncio, argparse
+
+__parser__ = argparse.ArgumentParser(description=__HELP__)
+__parser__.add_argument("-c", "--config", required=True, help="Path of configuration file")
+__option__ = __parser__.parse_args(sys.argv[1:])
+
+path = __option__.config
+if os.path.isfile(path) :
+	with open(path, 'rt') as fd :
+		config = json.load(fd)
+	with open('/etc/gaimon/Database.json') as fd :
+		config['DB'] = json.load(fd)
+	generator = QRRegistrationGenerator(config)
+	asyncio.run(generator.generate())
+else :
+	print(f"Config file {path} cannot be found.")

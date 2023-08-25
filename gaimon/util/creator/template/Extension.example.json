@@ -1,0 +1,24 @@
+{{
+	"ID" : "{ID}",
+	"name" : "{name}",
+	"version" : "1.0",
+	"require" : [],
+	"role" : [],
+	"backend" : {{
+		"script" : [
+			"{name}.js"
+		],
+		"css" : [
+		],
+		"menu" : [
+			{{
+				"group": {{
+					"label": "{name}",
+					"icon": "{ID}.Default",
+					"order": "1.0"
+				}},
+				"child": []
+			}}
+		]
+	}}
+}}

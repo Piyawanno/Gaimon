@@ -1,0 +1,43 @@
+#!/usr/bin/python3
+
+from gaimon.GaimonApplication import readConfig
+from gaimon.util.ProcessUtil import setSystemPath
+
+import argparse, sys, getpass, asyncio
+
+__parser__ = argparse.ArgumentParser(description="Gaimon Extension Initialization Tool")
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimon application")
+__parser__.add_argument("-x", "--extension", help="Extension to initialize [default=defined in /etc/gaimon/Gaimon.json]")
+__parser__.add_argument("-d", "--data", help="Data path [default=__PATH__/file/initialize/]")
+__parser__.add_argument("-u", "--user", help="Gaimon Application user")
+__parser__.add_argument("-p", "--password", help="Gaimon Application password")
+__parser__.add_argument("-o", "--operation", help="Operation of initialization", choices=["createRole", "insert", "update", "get", "drop", "reset", "upgrade"])
+
+__option__ = __parser__.parse_args(sys.argv[1:])
+__namespace__ = '' if __option__.namespace is None else __option__.namespace
+__config__ = readConfig(
+	['Gaimon.json'],
+	{
+		'DB' : 'Database.json',
+	},
+	__namespace__
+)
+from gaimon.core.ExtensionInitializer import ExtensionInitializer
+#if len(__namespace__) : setSystemPath(__namespace__)
+
+if __name__ == '__main__' :
+	if __option__.extension is not None :
+		__config__['extension'] = [__option__.extension]
+	if __option__.user is None :
+		user = input("Gaimon user name : ")
+	else :
+		user = __option__.user
+	if __option__.password is None :
+		password = getpass.getpass("Gaimon password : ")
+	else :
+		password = __option__.password
+	initializer = ExtensionInitializer(__config__, __option__.data)
+	if initializer.createHandler(user, password) :
+		asyncio.run(initializer.start(__option__.operation))
+	else :
+		print("*** Error : Wrong user name or password.")

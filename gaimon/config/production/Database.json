@@ -1,0 +1,17 @@
+{
+	"host": "172.20.0.200",
+	"port": 5432,
+	"user": "admin",
+	"password": "DB_PASSWORD",
+	"database": "Gaimon",
+	"connectionNumber.COMMENT": "DB connection Number for each process",
+	"connectionNumber": 2,
+	"vendor.option" : {
+		"POSTGRESQL": 1,
+		"MARIADB": 2,
+		"MYSQL": 3,
+		"ORACLE": 4
+	},
+	"prefix" : "",
+	"vendor" : 1
+}

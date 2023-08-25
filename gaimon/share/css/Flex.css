@@ -1,0 +1,291 @@
+@media screen and (max-width: 768px) {
+    [class^="flex-container-"] {
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-content: center;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    [class^="flex-container-"] [class^="card-"], [class^="flex-container-"] .button-check {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+
+    [class^="flex-container-"] [class^="card-"].hidden {
+        display: none;
+        padding: 0;
+        margin: 0;
+        width: 0;
+        height: 0;
+    }
+
+    [class^="flex-grid-container-"] {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    [class^="flex-grid-container-"] [class^="card-"], [class^="flex-grid-container-"] .button-check {
+        margin: 5px;
+    }
+
+    [class^="flex-grid-container-1-"] [class^="card-"], [class^="flex-grid-container-1-"] .button-check { width: calc(100% - 10px); }
+    [class^="flex-grid-container-2-"] [class^="card-"], [class^="flex-grid-container-2-"] .button-check { width: calc(50% - 10px); }
+    [class^="flex-grid-container-3-"] [class^="card-"], [class^="flex-grid-container-3-"] .button-check { width: calc(33% - 10px); }
+    [class^="flex-grid-container-4-"] [class^="card-"], [class^="flex-grid-container-4-"] .button-check { width: calc(25% - 10px); }
+}
+
+@media only screen and (orientation: landscape) {
+    [class^="flex-container-"] {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    [class^="flex-container-"] [class^="card-"], [class^="flex-container-"] .button-check {
+        margin: 5px;
+        /* height: fit-content; */
+    }
+
+    [class^="flex-container-"] [class^="card-"].hidden {
+        display: none;
+        padding: 0;
+        margin: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .flex-container-1 [class^="card-"], .flex-container-1 .button-check { width: calc(100% - 10px); }
+    .flex-container-2 [class^="card-"], .flex-container-2 .button-check { width: calc(50% - 10px); }
+    .flex-container-3 [class^="card-"], .flex-container-3 .button-check { width: calc(33% - 10px); }
+    .flex-container-4 [class^="card-"], .flex-container-4 .button-check { width: calc(25% - 10px); }
+
+    [class^="flex-grid-container-"] {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    [class^="flex-grid-container-"] [class^="card-"], [class^="flex-grid-container-"] .button-check {
+        margin: 5px;
+    }
+
+    .flex-grid-container-1-1 [class^="card-"], .flex-grid-container-1-1 .button-check { width: calc(100% - 10px); }
+    .flex-grid-container-1-2 [class^="card-"], .flex-grid-container-1-2 .button-check { width: calc(50% - 10px); }
+    .flex-grid-container-1-3 [class^="card-"], .flex-grid-container-1-3 .button-check { width: calc(33% - 10px); }
+    .flex-grid-container-1-4 [class^="card-"], .flex-grid-container-1-4 .button-check { width: calc(25% - 10px); }
+    .flex-grid-container-2-1 [class^="card-"], .flex-grid-container-2-1 .button-check { width: calc(100% - 10px); }
+    .flex-grid-container-2-2 [class^="card-"], .flex-grid-container-2-2 .button-check { width: calc(50% - 10px); }
+    .flex-grid-container-2-3 [class^="card-"], .flex-grid-container-2-3 .button-check { width: calc(33% - 10px); }
+    .flex-grid-container-2-4 [class^="card-"], .flex-grid-container-2-4 .button-check { width: calc(25% - 10px); }
+    .flex-grid-container-3-1 [class^="card-"], .flex-grid-container-3-1 .button-check { width: calc(100% - 10px); }
+    .flex-grid-container-3-2 [class^="card-"], .flex-grid-container-3-2 .button-check { width: calc(50% - 10px); }
+    .flex-grid-container-3-3 [class^="card-"], .flex-grid-container-3-3 .button-check { width: calc(33% - 10px); }
+    .flex-grid-container-3-4 [class^="card-"], .flex-grid-container-3-4 .button-check { width: calc(25% - 10px); }
+    .flex-grid-container-4-1 [class^="card-"], .flex-grid-container-4-1 .button-check { width: calc(100% - 10px); }
+    .flex-grid-container-4-2 [class^="card-"], .flex-grid-container-4-2 .button-check { width: calc(50% - 10px); }
+    .flex-grid-container-4-3 [class^="card-"], .flex-grid-container-4-3 .button-check { width: calc(33% - 10px); }
+    .flex-grid-container-4-4 [class^="card-"], .flex-grid-container-4-4 .button-check { width: calc(25% - 10px); }
+}
+
+@media screen and (min-width: 768px) {
+    [class^="flex-container-"] {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    [class^="flex-container-"] [class^="card-"], [class^="flex-container-"] .button-check {
+        margin: 5px;
+        /* height: fit-content; */
+    }
+
+    [class^="flex-container-"] [class^="card-"].hidden {
+        padding: 0;
+        margin: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .flex-container-1 [class^="card-"], .flex-container-1 .button-check { width: calc(100% - 10px); }
+    .flex-container-2 [class^="card-"], .flex-container-2 .button-check { width: calc(50% - 10px); }
+    .flex-container-3 [class^="card-"], .flex-container-3 .button-check { width: calc(33% - 10px); }
+    .flex-container-4 [class^="card-"], .flex-container-4 .button-check { width: calc(25% - 10px); }
+
+    [class^="flex-grid-container-"] {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    [class^="flex-grid-container-"] [class^="card-"], [class^="flex-grid-container-"] .button-check {
+        margin: 5px;
+    }
+
+    .flex-grid-container-1-1 [class^="card-"], .flex-container-1 .button-check { width: calc(100% - 10px); }
+    .flex-grid-container-1-2 [class^="card-"], .flex-container-2 .button-check { width: calc(50% - 10px); }
+    .flex-grid-container-1-3 [class^="card-"], .flex-container-3 .button-check { width: calc(33% - 10px); }
+    .flex-grid-container-1-4 [class^="card-"], .flex-container-4 .button-check { width: calc(25% - 10px); }
+    .flex-grid-container-2-1 [class^="card-"], .flex-container-1 .button-check { width: calc(100% - 10px); }
+    .flex-grid-container-2-2 [class^="card-"], .flex-container-2 .button-check { width: calc(50% - 10px); }
+    .flex-grid-container-2-3 [class^="card-"], .flex-container-3 .button-check { width: calc(33% - 10px); }
+    .flex-grid-container-2-4 [class^="card-"], .flex-container-4 .button-check { width: calc(25% - 10px); }
+    .flex-grid-container-3-1 [class^="card-"], .flex-container-1 .button-check { width: calc(100% - 10px); }
+    .flex-grid-container-3-2 [class^="card-"], .flex-container-2 .button-check { width: calc(50% - 10px); }
+    .flex-grid-container-3-3 [class^="card-"], .flex-container-3 .button-check { width: calc(33% - 10px); }
+    .flex-grid-container-3-4 [class^="card-"], .flex-container-4 .button-check { width: calc(25% - 10px); }
+    .flex-grid-container-4-1 [class^="card-"], .flex-container-1 .button-check { width: calc(100% - 10px); }
+    .flex-grid-container-4-2 [class^="card-"], .flex-container-2 .button-check { width: calc(50% - 10px); }
+    .flex-grid-container-4-3 [class^="card-"], .flex-container-3 .button-check { width: calc(33% - 10px); }
+    .flex-grid-container-4-4 [class^="card-"], .flex-container-4 .button-check { width: calc(25% - 10px); }
+}
+
+[class^="flex-container-"] {
+    padding: 10px;
+}
+
+.flex { display: flex; }
+.flex-start {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.flex-end {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.flex-center{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-right{
+	display: flex;
+	justify-content: right;
+	align-items: center;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-column-center{
+	display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.flex-column-end{
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+}
+
+.space-around {
+    justify-content: space-around;
+}
+
+.space-between {
+    justify-content: space-between;
+}
+
+.space-evenly {
+    justify-content: space-evenly;
+}
+
+.center {
+    text-align: center;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.span-1 { width: 10%; }
+.span-2 { width: 20%; }
+.span-3 { width: 30%; }
+.span-4 { width: 40%; }
+.span-5 { width: 50%; }
+.span-6 { width: 60%; }
+.span-7 { width: 70%; }
+.span-9 { width: 80%; }
+.span-9 { width: 90%; }
+.span-10 { width: 100%; }
+
+.flex-wrap {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.flex-direction-row{
+	display: flex;
+	flex-direction: row;
+}
+
+.gap-5px{
+	gap: 5px !important;
+}
+
+.gap-10px{
+	gap: 10px !important;
+}
+
+.gap-15px{
+	gap: 15px !important;
+}
+
+.gap-20px {
+    gap: 20px !important;
+}
+
+.gap-30px {
+	gap: 30px !important;
+}
+
+.gap-40px{
+	gap: 40px !important;
+}
+
+.gap-50px{
+	gap: 50px !important;
+}
+
+.pointer{
+	cursor: pointer;
+}
+
+@media only screen and (max-width: 600px) {
+	/* .flex{
+		flex-wrap: wrap;
+   		gap: 10px;
+	} */
+
+	.flex-input{
+		display: flex;
+		flex-direction: column;
+		width: 100% !important;
+	}
+
+	.flex-column-responsive{
+		display: flex;
+		flex-direction: column;
+		width: 100% !important;
+	}
+}

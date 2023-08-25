@@ -1,0 +1,259 @@
+.gap-0px{
+	gap: 0px !important;
+}
+
+.gap-5px{
+    gap: 5px;
+}
+
+.gap-10px{
+    gap: 10px;
+}
+
+.gap-20px{
+    gap: 20px;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.baseline {
+    align-items: baseline;
+}
+
+.margin-auto{
+    margin: auto;
+}
+
+.margin-top-10px {
+    margin-top: 10px;
+}
+
+.margin-0{
+	margin: 0 !important;
+}
+
+.width-140px{
+    width: 140px;
+}
+
+.width-30-percent{
+    width: 30%;
+}
+
+.width-40-percent{
+    width: 40%;
+}
+
+.width-45-percent{
+	width: 45%;
+}
+
+.width-50-percent{
+    width: 50%;
+}
+
+.width-60-percent{
+    width: 60%;
+}
+
+.width-70-percent{
+	width: 70%;
+}
+
+.width-75-percent{
+	width: 75%;
+}
+
+.width-100-percent{
+    width: 100% !important;
+}
+
+.height-100-percent{
+	height: 100%;
+}
+
+.height-unset{
+    height: unset;
+}
+
+.height-48px{
+    height: 48px;
+}
+
+.max-width-400px{
+    max-width: 400px;
+}
+
+.height-35-px{
+    height: 35px;
+}
+
+input.error {
+    border: 2px solid red !important;
+}
+
+textarea.error {
+    border: 2px solid red !important;
+}
+
+select.error {
+    border: 2px solid red !important;
+}
+
+input.error::placeholder {
+    color: red !important;
+}
+
+textarea.error::placeholder {
+    color: red !important;
+}
+
+div.error {
+    border: 2px solid red !important;
+}
+
+.error {
+    color: red !important;
+}
+
+.required {
+    color: red !important;
+}
+
+.link {
+    color: red !important;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.autocomplete {
+	position: relative;
+	display: inline-block;
+	width: 100%;
+}
+
+.autocomplete-items {
+	position: fixed;
+	border: 1px solid #d4d4d4;
+	border-bottom: none;
+	border-top: none;
+	z-index: 99;
+	top: 100%;
+	left: 0;
+	right: 0;
+    overflow-y: auto;
+    max-height: 225px;
+}
+
+/* .autocomplete-items div {
+	padding: 10px;
+	cursor: pointer;
+	background-color: #fff;
+	border-bottom: 1px solid #d4d4d4;
+}
+
+.autocomplete-items div:hover {
+	background-color: #e9e9e9;
+} */
+
+.autocomplete-active {
+	background-color: DodgerBlue !important;
+	color: #ffffff;
+}
+
+.text-align-center{
+	text-align: center !important;
+}
+
+.text-align-center th{
+	text-align: center !important;
+}
+
+.text-align-right{
+	text-align: right !important;
+}
+
+.text-align-left{
+	text-align: left !important;
+}
+
+.user-select-none{
+	user-select: none;
+}
+
+.overflow-x-scroll{
+	overflow-x: scroll;
+}
+
+.overflow-x-auto{
+	overflow-x: auto;
+}
+
+.bold{
+	font-weight: bold;
+}
+
+.italic{
+	font-style: italic;
+}
+
+.relative{
+	position: relative;
+}
+
+.absolute{
+	position: absolute;
+}
+
+.width-70px{
+	width: 70px;
+}
+
+.width-90px{
+	width: 90px;
+}
+
+.border-none{
+	border: none !important;
+}
+
+.width-auto{
+	width: auto !important;
+}
+
+.width-100px{
+	width: 100px !important;
+}
+
+.margin-top-20px{
+	margin-top: 20px;
+}
+
+.padding-left-15px{
+	padding-left: 15px;
+}
+
+.text-nowrap{
+	text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.hidden {
+    content-visibility: hidden !important;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    visibility: hidden !important;
+}

@@ -1,0 +1,49 @@
+{
+	"host": "DB_HOST",
+	"port": 5432,
+	"user": "DB_USER",
+	"password": "DB_PASSWORD",
+	"database": "DB_NAME",
+	"domain": "ORACLE_DOMAIN",
+	"owner": ["SHIPPINGTOOL_DEV", "XIMPLESOFT"],
+	"prefix" : "",
+	"connectionNumber.COMMENT": "DB connection Number for each process",
+	"connectionNumber": 8,
+	"vendor.option" : {
+		"POSTGRESQL": 1,
+		"MARIADB": 2,
+		"MYSQL": 3,
+		"ORACLE": 4
+	},
+	"vendor" : 1,
+	"isRoundRobin" : false,
+	"connectionList.COMMENT" : "Use Connection List in case of RoundRobin.",
+	"connectionList" : [
+		{
+			"host": "DB_HOST",
+			"port": 3306,
+			"user": "DB_USER",
+			"password": "DB_PASSWORD",
+			"database": "DB_NAME",
+			"domain": "ORACLE_DOMAIN",
+			"owner": ["SHIPPINGTOOL_DEV", "XIMPLESOFT"]
+		}
+	],
+
+	"generator": {
+		"outputLanguage.supported": ["Python", "JavaScript"],
+		"outputLanguage": "Python",
+		"outputPath": "/your/path/to/store/generated/Model",
+		"isIncrement": false
+	},
+
+	"dump": {
+		"outputPath": "/your/path/to/store/generated/Data",
+		"module": "module.name"
+	},
+
+	"load": {
+		"inputPath": "/your/path/to/store/generated/Data",
+		"module": "module.name"
+	}
+}

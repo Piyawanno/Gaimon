@@ -1,0 +1,18 @@
+include gaimon/config/*.json
+include gaimon/view/*.tpl
+include gaimon/util/Extension.extension.json
+include gaimon/util/Extension.tpl
+include gaimon/util/ExtensionREADME.md
+recursive-include gaimon/data *
+recursive-include gaimon/share/css *
+recursive-include gaimon/share/js *
+
+include gaimon/extension/stock/Extension.json
+recursive-include gaimon/extension/stock/view *
+recursive-include gaimon/extension/stock/share/css *
+recursive-include gaimon/extension/stock/share/js *
+
+include gaimon/extension/supplier/Extension.json
+recursive-include gaimon/extension/supplier/view *
+recursive-include gaimon/extension/supplier/share/css *
+recursive-include gaimon/extension/supplier/share/js *

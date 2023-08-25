@@ -1,0 +1,6 @@
+{
+	"rootURL" : "http://localhost:8080/",
+	"user" : "USER_NAME@Gaimon",
+	"password" : "PASSWORD@Gaimon",
+	"storePath" : "/local/store/path"
+}

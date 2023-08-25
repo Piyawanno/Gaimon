@@ -1,0 +1,28 @@
+#!/usr/bin/python3
+
+from gaimon.util.ProcessUtil import readConfig, daemonize, setSystemPath
+
+import sys, argparse
+
+__parser__ = argparse.ArgumentParser(description="Gaimon Export server.")
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimoncloud application.")
+__parser__.add_argument("-d", "--daemon", help="Run in daemon mode.", choices=['start', 'stop', 'restart', 'kill'],)
+__option__ = __parser__.parse_args(sys.argv[1:])
+__namespace__ = '' if __option__.namespace is None else __option__.namespace
+__config__ = readConfig(
+	['Gaimon.json', 'Export.json'],
+	{
+		'DB' : 'Database.json',
+		'notification' : 'Notification.json',
+	},
+	__namespace__
+)
+from gaimon.service.export.ExportService import ExportService
+if len(__namespace__) : setSystemPath(__namespace__)
+
+__service__ = ExportService(__config__, __namespace__)
+if __name__ == '__main__' :
+	if __option__.daemon :
+		daemonize('gaimon-export', __option__.daemon, __service__.run, __namespace__)
+	else :
+		__service__.run()

@@ -1,0 +1,29 @@
+#!/usr/bin/python3
+
+from gaimon.util.ProcessUtil import readConfig, daemonize, setSystemPath
+
+import sys, argparse
+
+__parser__ = argparse.ArgumentParser(description="Gaimon Notification server.")
+__parser__.add_argument("-n", "--namespace", help="Namespace of notification.")
+__parser__.add_argument("-d", "--daemon", help="Run in daemon mode.", choices=['start', 'stop', 'restart', 'kill'],)
+__option__ = __parser__.parse_args(sys.argv[1:])
+__namespace__ = '' if __option__.namespace is None else __option__.namespace
+__config__ = readConfig(
+	['Gaimon.json', 'Notification.json'],
+	{
+		'DB' : 'Database.json'
+	},
+	__namespace__
+)
+from gaimon.service.notification.NotificationService import NotificationService
+# if len(__namespace__) : setSystemPath(__namespace__)
+
+__config__['processNumber'] = 1
+__notification__ = NotificationService(__config__, __namespace__)
+
+if __name__ == '__main__' :
+	if  __option__.daemon :
+		daemonize('gaimon-notification', __option__.daemon, __notification__.run, '')
+	else :
+		__notification__.run()

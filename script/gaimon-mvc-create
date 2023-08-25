@@ -1,0 +1,6 @@
+#!/usr/bin/python3
+
+from gaimon.util.creator.MVCCreator import MVCCreator
+
+creator = MVCCreator()
+creator.start()

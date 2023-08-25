@@ -1,0 +1,128 @@
+.alertDialog .dialog{
+	position: absolute;
+    z-index: 10;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    backdrop-filter: blur(8px) brightness(100%) saturate(50%);
+    left: 0;
+    top: 0;
+}
+
+.alertDialog .dialog .container{
+	position: absolute;
+	top: 10vh;
+	text-align: left;
+	border-radius: 4px;
+	min-width: 20vw;
+    max-width: 30vw;
+	max-height: 80vh;
+	height: auto;
+	overflow-y: auto;
+	display: flex;
+	flex-wrap: wrap;
+	padding: 0 !important;
+	box-shadow: var(--box-shadow);
+	right: unset;
+	background: unset;
+    color: unset;
+}
+
+.alertDialog .dialog .container .title{
+	width: 100%;
+    background: #17a2b8 linear-gradient(180deg,#3ab0c3,#17a2b8) repeat-x!important;
+    color: #fff;
+	padding: 10px 15px;
+    font-size: 1.2em;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.alertDialog .dialog .container .form{
+	height: unset !important;
+	background: unset;
+    position: unset;
+    border: unset;
+    border-radius: unset;
+}
+
+.alertDialog .dialog .container .body{
+	width: 100%;
+	background: #fff;
+	min-height: 10px;
+	min-height: 1px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+	font-size: 1.2em;
+	height: unset !important;
+}
+
+.alertDialog .dialog .container .operation{
+	width: 100%;
+    background: #fff;
+    padding: 10px 15px;
+    border-top: 1px solid #e9ecef;
+    border-bottom-right-radius: calc(0.3rem - 1px);
+    border-bottom-left-radius: calc(.3rem - 1px);
+}
+
+.alertDialog .dialog .container .operation .cancel{
+	color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+	padding: 5px 25px;
+    font-size: 1em;
+    line-height: 1.5;
+    border-radius: 4px;
+	font-weight: 400;
+	cursor: pointer;
+}
+
+.alertDialog .dialog .container .operation .submit{
+	color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+	padding: 5px 25px;
+    font-size: 1em;
+    line-height: 1.5;
+    border-radius: 4px;
+	font-weight: 400;
+	cursor: pointer;
+}
+
+.alertDialog .dialog .container .operation .alert{
+	color: #fff;
+    background-color: red;
+    border-color: red;
+	padding: 5px 25px;
+    font-size: 1em;
+    line-height: 1.5;
+    border-radius: 4px;
+	font-weight: 400;
+	cursor: pointer;
+}
+
+.alertDialog .dialog .container .operation .warning{
+	color: #fff;
+    background-color: orange;
+    border-color: orange;
+	padding: 5px 25px;
+    font-size: 1em;
+    line-height: 1.5;
+    border-radius: 4px;
+	font-weight: 400;
+	cursor: pointer;
+}
+
+@media only screen and (max-width: 600px) {
+	.alertDialog .dialog .container{
+		min-width: 20rem;
+		max-width: 20rem;
+		top: 5rem;
+    	max-height: calc(100vh - 10rem);
+		right: unset;
+	}
+}

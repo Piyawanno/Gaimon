@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+from gaimon.GaimonApplication import readGaimonConfig
+from gaimon.util.ProcessUtil import setSystemPath, daemonize
+
+import sys, argparse
+
+__parser__ = argparse.ArgumentParser(description="Gaimon web application server.")
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimon application.")
+__parser__.add_argument("-d", "--daemon", help="Run in daemon mode.", choices=['start', 'stop', 'restart', 'kill'],)
+__option__ = __parser__.parse_args(sys.argv[1:])
+__namespace__ = '' if __option__.namespace is None else __option__.namespace
+
+__config__ = readGaimonConfig(__namespace__)
+
+from gaimon.GaimonApplication import GaimonApplication
+# if len(__namespace__) : setSystemPath(__namespace__)
+
+__gaimon__ = GaimonApplication(__config__, __namespace__)
+application = __gaimon__.application
+
+if __name__ == '__main__' :
+	if __option__.daemon :
+		__config__['isDevelop'] = 0
+		daemonize('gaimon', __option__.daemon, __gaimon__.run, __namespace__)
+	else :
+		if sys.platform == 'win32':
+			from multiprocessing import cpu_count, Pool, Process
+			isDevelop = __config__.get("isDevelop", True)
+			processNumber = 1
+			if isDevelop : processNumber = 1
+			else : processNumber = __config__.get("processNumber", cpu_count())
+			__port__ = __config__['port']
+			for i in range(processNumber):
+				config = __config__.copy()
+				config['port'] = __port__
+				config['sanicName'] = f"{GaimonApplication.__name__}{__port__}"
+				gaimon = GaimonApplication(config, __namespace__)
+				Process(target=gaimon.run).start()
+				__port__ += 1
+		else:
+			__gaimon__.run()

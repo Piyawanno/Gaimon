@@ -1,0 +1,109 @@
+version : "2.1"
+services:
+  pgprimary:
+    image: postgres
+    container_name: pgprimary
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: {POSTGRES_PASSWORD}
+      POSTGRES_DB: Gaimon
+    ports:
+      - 5442:5432
+    volumes:
+      - ./data/primary:/var/lib/postgresql/data
+      - ./cluster-postgres.conf:/etc/postgresql/postgresql.conf
+      - ./cluster-pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./createuser.sql:/var/createuser.sql
+      - ./create-replica:/usr/bin/create-replica
+    networks:
+      static-network:
+        ipv4_address: 172.21.0.200
+  
+  pgbouncerprimary :
+    image: bitnami/pgbouncer
+    container_name: pgbouncerprimary
+    restart: always
+    environment:
+      POSTGRESQL_USERNAME: postgres
+      POSTGRESQL_PASSWORD: {POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: Gaimon
+      POSTGRESQL_HOST: 172.21.0.200
+      POSTGRESQL_PORT: 5432
+      PGBOUNCER_MAX_CLIENT_CONN: 1024
+    ports:
+      - 6432:6432 
+    networks:
+      static-network:
+        ipv4_address: 172.21.0.201
+
+  pgsecondary1:
+    image: postgres
+    container_name: pgsecondary1
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: {POSTGRES_PASSWORD}
+    ports:
+      - 5443:5432
+    volumes:
+      - ./data/secondary1:/var/lib/postgresql/data
+      - ./clear-data:/usr/bin/clear-data
+      - ./prepare-replica:/usr/bin/prepare-replica
+    networks:
+      static-network:
+        ipv4_address: 172.21.0.202
+  
+  pgbouncersecondary1 :
+    image: bitnami/pgbouncer
+    container_name: pgbouncersecondary1
+    restart: always
+    environment:
+      POSTGRESQL_USERNAME: postgres
+      POSTGRESQL_PASSWORD: {POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: Gaimon
+      POSTGRESQL_HOST: 172.21.0.202
+      POSTGRESQL_PORT: 5432
+      PGBOUNCER_MAX_CLIENT_CONN: 1024
+    ports:
+      - 6433:6432
+    networks:
+      static-network:
+        ipv4_address: 172.21.0.203
+  
+  pgsecondary2:
+    image: postgres
+    container_name: pgsecondary2
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: {POSTGRES_PASSWORD}
+    ports:
+      - 5444:5432
+    volumes:
+      - ./data/secondary2:/var/lib/postgresql/data
+      - ./clear-data:/usr/bin/clear-data
+      - ./prepare-replica:/usr/bin/prepare-replica
+    networks:
+      static-network:
+        ipv4_address: 172.21.0.204
+  
+  pgbouncersecondary2 :
+    image: bitnami/pgbouncer
+    container_name: pgbouncersecondary2
+    restart: always
+    environment:
+      POSTGRESQL_USERNAME: postgres
+      POSTGRESQL_PASSWORD: {POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: Gaimon
+      POSTGRESQL_HOST: 172.21.0.204
+      POSTGRESQL_PORT: 5432
+      PGBOUNCER_MAX_CLIENT_CONN: 1024
+    ports:
+      - 6434:6432
+    networks:
+      static-network:
+        ipv4_address: 172.21.0.205
+
+networks:
+  static-network:
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

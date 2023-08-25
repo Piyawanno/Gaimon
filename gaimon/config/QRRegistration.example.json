@@ -1,0 +1,6 @@
+{
+	"rootURL" : "http://www.example.com/",
+	"expireDay" : 15,
+	"storePath" : "QRRegistration.pdf",
+	"userIDList" : [1]
+}

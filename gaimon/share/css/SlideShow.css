@@ -1,0 +1,58 @@
+.slide{
+	display: flex;
+	justify-content: center;
+    gap: 20px;
+    position: relative;
+	padding: 0 20px;
+	padding-bottom: 30px;
+    max-width: 100%;
+	width: 100%;
+}
+
+.slide .arrowContainer{
+	position: absolute;
+	display: flex;
+    justify-content: space-between;
+    width: 100%;
+	height: 100%;
+	left: 0;
+}
+
+.slide .arrowContainer .arrow{
+	color: #fff;
+	display: flex;
+    justify-content: center;
+    flex-direction: column;
+	background: rgb(0 0 0 / 60%);
+    padding: 10px;
+    border-radius: 50%;
+	cursor: pointer;
+	z-index: 5;
+}
+
+.slide .pagination{
+	position: absolute;
+    bottom: 0;
+    width: calc(100% - 40px);
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    padding-top: 15px;
+}
+
+.slide .pagination .pageNumber{
+	width: 15px;
+	background: #eee;
+    border-radius: 50%;
+	cursor: pointer;
+	transition: all .3s;
+}
+
+.slide .pagination .pageNumber.current{
+	background: #000;
+}
+
+.slide .pagination .pageNumber:hover{
+	background: #000;
+}

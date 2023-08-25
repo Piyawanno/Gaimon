@@ -1,0 +1,39 @@
+#!/usr/bin/python3
+
+from gaimon.GaimonApplication import readGaimonConfig
+from gaimon.util.LogAnalyzer import LogAnalyzer
+
+from datetime import datetime
+
+import sys, argparse
+
+__parser__ = argparse.ArgumentParser(description="Gaimon Log Analyzer.")
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimon application.")
+__parser__.add_argument("-m", "--mode", help="Analysis Mode.", choices=['visit', 'top'],)
+__parser__.add_argument("-s", "--start", help="Date of start e.g. 2023-03-18")
+__parser__.add_argument("-e", "--end", help="Date of end e.g. 2023-03-18")
+__parser__.add_argument("-g", "--graphic", help="Enable graphic plot", action="store_true")
+__parser__.add_argument("-b", "--number", help="Number")
+__parser__.add_argument("-r", "--route", help="Route")
+__option__ = __parser__.parse_args(sys.argv[1:])
+
+__namespace__ = '' if __option__.namespace is None else __option__.namespace
+
+__config__ = readGaimonConfig(__namespace__)
+__analyzer__ = LogAnalyzer(__config__)
+__start__ = datetime.strptime(__option__.start, '%Y-%m-%d')
+__end__ = datetime.strptime(__option__.end, '%Y-%m-%d')
+
+if __option__.mode == 'visit' :
+	__analyzer__.showVisit(
+		__start__,
+		__end__,
+		__option__.graphic is not None
+	)
+elif __option__.mode == 'top' :
+	__analyzer__.getTopVisit(
+		__start__,
+		__end__,
+		int(__option__.number),
+		__option__.route,
+	)

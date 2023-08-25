@@ -1,0 +1,1 @@
+<canvas rel="visualblock_canvas" class="visualblock_canvas"></canvas>

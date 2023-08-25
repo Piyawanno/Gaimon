@@ -1,0 +1,123 @@
+.README{
+	font-family: 'CordiaUPC';
+	font-size: 28px;
+	display: block;
+}
+
+.README h1{
+	margin: 10px 0;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #e1e1e1;
+	width: 100%;
+}
+
+.README h2{
+	margin: 10px 0;
+	width: 100%;
+}
+
+.README ol{
+	margin: 0;
+}
+
+.README p{
+	margin: 5px 0;
+}
+
+.README .addButton{
+	background: #078C52;
+	color: #fff;
+	padding: 0px 10px;
+	border-radius: 5px;
+}
+
+.README .submitButton{
+	background-color: #004C99;
+	color: #fff;
+	padding: 0px 10px;
+	border-radius: 10px;
+}
+
+.README .clearButton{
+	background-color: #808080;
+	color: #fff;
+	padding: 0px 10px;
+	border-radius: 10px;
+}
+
+.README .svgFilter{
+	background: #004C99;
+	padding: 5px;
+	margin-bottom: -5px;
+	border-radius: 5px;
+}
+
+.README .svgWording{
+	margin-bottom: -5px;
+}
+
+.README .textMark{
+	text-align: right;
+	margin-top: -20px;
+	color: #f75252;
+}
+
+.README .suggestButton{
+	background: #008b99;
+	color: #fff;
+	padding: 0px 10px;
+	border-radius: 5px;
+}
+
+.README .warningType{
+	color: #f92e2e;
+    background: none;
+}
+.README .boxRemark{
+	color: #0c5460; 
+	background-color: #d1ecf1; 
+	border-color: #bee5eb;
+}
+.README .svgRemark{
+	margin-bottom: -5px;
+	margin-left: 10px;
+}
+.README .boxWarning{
+	color: #60100c;
+    background-color: #f1d5d1;
+    border-color: #ebbebe;
+}
+.README .textHeader{
+	color: #ef4a4a;
+}
+
+.README img{
+	width: 100%;
+}
+
+@media only screen and (max-width: 600px){
+	.README{
+		font-family: 'CordiaUPC';
+		font-size: 18px;
+		display: block;
+	}
+
+	.README h1{
+		margin: 5px 0;
+		padding-bottom: 5px;
+		font-size: 25px;
+	}
+
+	.README h2{
+		margin: 5px 0;
+		font-size: 23px;
+	}
+
+	.README ol{
+		padding-left: 20px;
+	}
+
+	.README ul{
+		padding-left: 25px;
+	}
+}

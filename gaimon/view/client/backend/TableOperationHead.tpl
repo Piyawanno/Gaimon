@@ -1,0 +1,1 @@
+<th class="text-align-center {{{cssClass}}}" style="{{{cssStyle}}}width:0;" colspan="{{{colspan}}}" localize>{{{label}}}</th>

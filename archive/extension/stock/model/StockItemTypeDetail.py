@@ -1,0 +1,3 @@
+
+class StockItemTypeDetail :
+	typeID:int

@@ -1,0 +1,17 @@
+{
+	"host" : "0.0.0.0",
+	"port" : 80,
+	"rootURL" : "http://172.20.0.100/",
+	"resourcePath" : "/var/gaimon/",
+	"extension" : [
+	],
+	"logLevel.option" : {
+		"DEBUG" : 10,
+		"INFO" : 20,
+		"WARNING" : 30,
+		"ERROR" : 40
+	},
+	"logLevel" : 20,
+	"sleepTime" : 30,
+	"isDevelop" : 0
+}

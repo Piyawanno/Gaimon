@@ -1,0 +1,38 @@
+version : "2.1"
+services:
+  postgresql:
+    image: postgres
+    container_name: postgres-gaimon
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: {DB_PASSWORD}
+      POSTGRES_DB: Gaimon
+    volumes:
+      - /var/gaimon-docker-volume:/var/lib/postgresql/data
+    networks:
+      static-network:
+        ipv4_address: 172.20.0.200
+  
+  redis:
+    image: redis
+    container_name: redis-gaimon
+    restart: always
+    networks:
+      static-network:
+        ipv4_address: 172.20.0.201
+
+  gaimon:
+    image: gaimon
+    container_name: gaimon-main
+    networks:
+      static-network:
+        ipv4_address: 172.20.0.100
+    ports:
+      - 8080:80
+
+networks:
+  static-network:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

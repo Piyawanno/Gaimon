@@ -1,0 +1,44 @@
+#!/usr/bin/python3
+
+from yapf.yapflib.yapf_api import FormatFile
+
+import gaimon, sys, os, argparse
+
+__parser__ = argparse.ArgumentParser(description="Gaimon Code Formatter.")
+__parser__.add_argument("-r", "--recursive", help="Enable recursive", action='store_true')
+__parser__.add_argument("-p", "--path", help="Path", required=True)
+
+__option__ = __parser__.parse_args(sys.argv[1:])
+__config__ = None
+
+for i in gaimon.__path__ :
+	if os.path.isdir(i) :
+		path = f'{i}/config/style.yapf'
+		if os.path.isfile(path) :
+			__config__ = path
+
+if __config__ is None :
+	print("*** Error : Style file cannot be found.")
+elif os.path.isfile(__option__.path) :
+	reformatted_code, encoding, changed = FormatFile(__option__.path, style_config=__config__)
+	print(">>>", __option__.path)
+	with open(__option__.path, 'wt') as fd :
+		fd.write(reformatted_code)
+elif os.path.isdir(__option__.path) :
+	if __option__.recursive :
+		for root, dirs, files in os.walk(__option__.path) :
+			for i in files :
+				if i[-3:] == '.py' :
+					path = f'{root}/{i}'
+					reformatted_code, encoding, changed = FormatFile(path, style_config=__config__)
+					print(">>>", path)
+					with open(path, 'wt') as fd :
+						fd.write(reformatted_code)
+	else :
+		for i in os.listdir(__option__.path) :
+			if i[-3:] == '.py' :
+				path = f'{__option__.path}/{i}'
+				reformatted_code, encoding, changed = FormatFile(path, style_config=__config__)
+				print(">>>", path)
+				with open(path, 'wt') as fd :
+					fd.write(reformatted_code)
