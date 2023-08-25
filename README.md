@@ -1,6 +1,6 @@
 # Gaimon
 
-Gaimon is an open-source ERP application.
+Gaimon is an open-source MVC Web Framework.
 
 ## Installation
 
