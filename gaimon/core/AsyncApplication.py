@@ -249,16 +249,7 @@ class AsyncApplication(Application):
 
 	async def checkModelModification(self):
 		path = f'{self.resourcePath}/ModelVersion.json'
-		modelVersion = self.modelVersion
-
-		for name, model in self.model.items():
-			current = modelVersion.get(name, '1.0')
-			last = await self.session.checkModification(model, current)
-			modelVersion[name] = str(last)
-
-		async with aiofiles.open(path, 'wt') as fd:
-			raw = json.dumps(modelVersion, indent=4)
-			await fd.write(raw)
+		await self.session.checkModification(path)
 
 	def createPage(self) -> HTMLPage:
 		return HTMLPage(

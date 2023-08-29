@@ -2,7 +2,7 @@
     <div class="flex flex-column-responsive space-between gap-10px">
         <div class="flex gap-10px">
             <div class="flex gap-20px">
-                <div class="data_header" rel="title" localize="">{{{title}}}</div>
+                <div class="data_header" rel="title" localize>{{{title}}}</div>
             </div>
         </div>
         <div>

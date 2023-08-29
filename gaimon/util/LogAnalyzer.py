@@ -29,18 +29,21 @@ class LogAnalyzer:
 			logList = logMap.get(dateID, None)
 			for log in logList:
 				if route is not None and log['route'] != route: continue
-				if log['extension'] == 'gaimon': continue
-				if log['extension'] == 'gaimon.controller': continue
-				if log['route'] == '/share/<path:path>': continue
-				url = log['url']
+				if 'requestData' not in log : continue
+				if 'page' not in log['requestData'] : continue
+				url = log['requestData']['page']['url']
+				title = log['requestData']['page']['title']
 				if url not in visitMap:
-					visitMap[url] = 1
+					visitMap[url] = {
+						'count' : 1,
+						'title' : title,
+					}
 				else:
-					visitMap[url] += 1
+					visitMap[url]['count'] += 1
 
-		mostVisit = sorted([(k,v) for k, v in visitMap.items()], key=lambda x: x[1], reverse=True)
-		for url, n in mostVisit[:n]:
-			print(f"{url} : {n}")
+		mostVisit = sorted([(k,v) for k, v in visitMap.items()], key=lambda x: x[1]['count'], reverse=True)
+		for url, data in mostVisit[:n]:
+			print(f"{data['title']} : {data['count']}")
 
 	def showVisit(self, startDate: datetime, endDate: datetime, isGraphic: bool = False):
 		logMap = self.readLog(startDate, endDate)

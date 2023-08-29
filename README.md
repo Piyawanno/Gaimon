@@ -7,14 +7,14 @@ Gaimon is an open-source MVC Web Framework.
 For production :
 
 ```bash
-sudo ./setup.py setup
+sudo ./setup.py setup -p ubuntu20.04
 sudo ./setup.py install
 ```
 
 For development :
 
 ```bash
-sudo ./setup.py setup
+sudo ./setup.py setup -p ubuntu20.04
 sudo ./setup.py link
 ```
 

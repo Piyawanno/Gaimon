@@ -87,7 +87,7 @@ const BackendMain = function() {
 	}
 
 	this.render = async function() {
-		object.home = new DOMObject(TEMPLATE.Main, {});
+		object.home = new DOMObject(TEMPLATE.Main, {rootURL});
 		object.body = document.querySelector('body');
 		object.body.innerHTML = '';
 		object.body.classList.add('abstract');

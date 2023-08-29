@@ -50,7 +50,7 @@
 		<div class="abstract_dialog hidden" rel="loading">
 			<div class="abstract_dialog_container abstract_loading">
 				<div class="flex-column gap-20px">
-					<div><img src="share/icon/loading.gif"></div>
+					<div><img src="{{{rootURL}}}share/icon/loading.gif"></div>
 					<div localize>Loading</div>
 				</div>
 			</div>
