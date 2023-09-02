@@ -4,6 +4,7 @@ from gaimon.core.PermissionChecker import PermissionChecker
 from gaimon.model.User import User
 from gaimon.model.UserGroup import UserGroup
 from gaimon.model.PermissionType import PermissionType
+from gaimonerp.erpbase.model.DocumentStatus import DocumentStatus
 from xerial.ColumnType import ColumnType
 from xerial.input.InputType import InputType
 
@@ -422,3 +423,17 @@ class BackendController:
 			user.salt = salt.hex()
 			user.isRoot = 1
 			await self.session.insert(user)
+
+	@GET("/backend/enum/get", role=['guest'])
+	async def getBackendENUM(self, request) :
+		return response.json({'isSuccess': True, 'result': self.getENUM()})
+
+	def getENUM(self, page=None):
+		result = {
+			'DOCUMENT_STATUS': {i:DocumentStatus.__members__[i].value for i in DocumentStatus.__members__},
+			'DOCUMENT_STATUS_LABEL': DocumentStatus.label,
+			'DOCUMENT_STATUS_COLOR': DocumentStatus.color,
+			'DOCUMENT_STATUS_ABBREVIATE': DocumentStatus.abbreviate
+		}
+		if not page is None: page.jsVar.update(result)
+		return result

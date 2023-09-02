@@ -49,7 +49,7 @@ class PermissionChecker:
 			self.permissions = role
 		else:
 			label = PermissionType.label
-			self.permissions = [f"{i}.{label[j]}" for i, j in product(role, permission)]
+			self.permissions = set([f"{i}.{label[j]}" for i, j in product(role, permission)])
 		self.controllerName = callee.__self__.__class__.__name__
 		self.isSessionEachConnect = False
 		self.additionPermission:List[PermissionRule] = []
@@ -95,6 +95,7 @@ class PermissionChecker:
 		permissions = set(permissions)
 		if state.uid != -1: permissions.add('user')
 		state.permissions = list(permissions)
+		print(permissions.intersection(self.permissions), self.permissions, state.callable.__name__)
 		if self.role.intersection(role): return True
 		if len(permissions.intersection(self.permissions)):
 			return True

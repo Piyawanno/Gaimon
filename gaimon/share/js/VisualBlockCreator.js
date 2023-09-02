@@ -71,6 +71,9 @@ const VisualBlockCreator = function() {
 				item.nextStep = `${record.step[item.nextStep].detailTable}_${item.nextStep}`;
 			}
 			await object.handleClearOperation();
+			console.log(item);
+			console.log(object.toolDict);
+			console.log(tool);
 			await object.createInput(id, tool, item);
 			await object.createTool(event, id, tool, item);
 		}

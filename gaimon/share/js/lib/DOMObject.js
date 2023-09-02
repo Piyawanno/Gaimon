@@ -732,7 +732,6 @@ let DOMObject = function(template, data, isHTML) {
 				}
 			} else {
 				
-				console.log(i);
 				data[i] = object.getValueFromTag(input[i]);
 			}
 		}
@@ -1006,7 +1005,6 @@ let DOMObject = function(template, data, isHTML) {
 					return;
 				}
 				if (typeof(html) == 'string') {
-					console.log(html);
 					try {
 						html = new DOMObject(html);
 					} catch (error) {

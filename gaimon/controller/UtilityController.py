@@ -77,7 +77,7 @@ class UtilityController:
 			'inputGroup': getattr(modelClass, 'inputGroup', None),
 			'inputPerLine': getattr(modelClass, 'inputPerLine', None),
 			'input': input,
-			'avatar': getattr(modelClass, '__avatar__', '/share/icon/ximple_default_avatar.png'),
+			'avatar': getattr(modelClass, '__avatar__', 'share/icon/logo_padding.png'),
 			'mergedInput': mergedInput
 		}
 		if len(formList) == 0: return RESTResponse(result)

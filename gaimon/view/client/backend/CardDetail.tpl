@@ -1,7 +1,7 @@
 <div class="abstract_card">
 	<div>
 		<div class="abstract_card_avatar">
-			<img src="{{{rootURL}}}{{{avatar}}}{{#hasAvatarURL}}{{{id}}}{{/hasAvatarURL}}">
+			<img src="{{{rootURL}}}{{{avatar}}}{{#hasAvatarURL}}{{{id}}}?{{{timestamp}}}{{/hasAvatarURL}}">
 		</div>
 		<div class="abstract_card_detail_content">
 		{{#tbody}}

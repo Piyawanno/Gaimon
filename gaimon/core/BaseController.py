@@ -28,7 +28,7 @@ def BASE(modelClass, baseRoute, role):
 
 		if not hasattr(callable.getAll, '__ROUTE__'):
 			route = f"{baseRoute}/get/all"
-			decorator = POST(route, permission=[PT.READ])
+			decorator = POST(route, role=role, permission=[PT.READ])
 			decorator(callable.getAll)
 
 		if not hasattr(callable, 'getOption'):

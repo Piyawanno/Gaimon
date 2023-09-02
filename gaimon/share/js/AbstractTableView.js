@@ -123,9 +123,10 @@ const AbstractTableView = function(page) {
 			}
 			list.push(option);
 		}
+		let now = new Date();
 		let options = {
 			'id': data != undefined ? data.id : -1,
-			// 'rootURL': rootURL,
+			'rootURL': rootURL,
 			'tbody': list, 
 			'index': config.index,
 			'hasView': config.hasView,
@@ -139,6 +140,7 @@ const AbstractTableView = function(page) {
 			'hasAvatarURL': config.hasAvatarURL,
 			'avatarColumn': config.avatarColumn,
 			'avatarID': data[config.avatarColumn],
+			'timestamp': now.getTime()
 		};
 		let record = new DOMObject(recordTemplate, options);
 		record.id = data.id;
@@ -166,7 +168,7 @@ const AbstractTableView = function(page) {
 		}
 		if(config.hasDelete){
 			record.dom.delete.onclick = async function(){
-				SHOW_CONFIRM_DIALOG('Do you want to delete this data?', async function(){
+				SHOW_CONFIRM_DELETE_DIALOG('Do you want to delete this data?', async function(){
 					let index = table.records.indexOf(record);
 					if (index > -1) table.records.splice(index, 1);
 					record.html.remove();

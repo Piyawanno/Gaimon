@@ -234,10 +234,10 @@ class GaimonSetup :
 				print(command)
 				os.system(command)
 
-		if os.path.isfile(self.gaimonConfigPath) : 
-			return
 		if not os.path.isdir(path) :
 			os.makedirs(path)
+		if os.path.isfile(f'{path}/Database.json') : 
+			return
 		parameter = self.getParameter()
 		configPath = __conform__(f"{self.rootPath}/gaimon/config/Database.example.json")
 		with open(configPath, "rt", encoding="utf-8") as source :
@@ -312,5 +312,6 @@ if __name__ == '__main__' :
 	parser.add_argument("operation", help="Operation of setup", choices=['setup', 'install', 'link', 'bdist_wheel'])
 	parser.add_argument("-p", "--platform", help="Platform for installation of base environment.", choices=['oracle', 'centos', 'debian10', 'ubuntu20.04'])
 	option = parser.parse_args(sys.argv[1:])
+	if option.platform is None : option.platform = 'ubuntu20.04'
 	setup = GaimonSetup()
 	setup.operate(option.operation, option.platform)

@@ -168,7 +168,9 @@ fieldset {
 
 .subMenuItem{
 	display: flex;
-	padding: 0 15px;
+	padding: 0 10px;
+	/* padding: 0 15px; */
+	padding-right: 5px;
 	cursor: pointer;
 	transition: .1s;
 	gap: 10px;
@@ -220,6 +222,7 @@ fieldset {
 
 .subMenuContainer .subMenuItem .menuLabel{
 	width: 180px;
+	max-width: 150px;
 }
 
 .large_menu{
@@ -345,10 +348,31 @@ fieldset {
 	background: #fff;
 }
 
+.abstract .view .item.highlight{
+	color: #fff;
+    background-color: var(--main-sidebar-background-color);
+}
+
 .main_icon {
 	height: 100%;
 	/* width: 100%; */
 	width: max-content;
+}
+
+.abstract .subMenuButton{
+	padding: 8px;
+    cursor: pointer;
+    user-select: none;
+    /* display: flex;
+    gap: 10px;
+    align-items: center;
+    box-shadow: var(--box-shadow); */
+	margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.abstract .subMenuButton.add_button{
+	color: #fff;
 }
 
 @font-face {

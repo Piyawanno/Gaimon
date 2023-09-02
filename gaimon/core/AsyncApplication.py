@@ -324,9 +324,17 @@ class AsyncApplication(Application):
 			route.method = [route.method]
 		if route.method == 'REST':
 			if 'POST' not in route.method: route.method.append('POST')
+		role = route.role
 		if hasattr(controller, 'role'):
-			if route.role != {'guest'} and route.role != {'user'} and controller.role != {'guest'}:
-				route.role = controller.role
+			if controller.role != {'guest'}:
+				role = controller.role
+		if route.role != {'root'} and route.role != {'guest'} and route.role != {'user'}:
+			role = route.role
+		if route.role == {'guest'}:
+			role = {'guest'}
+		if route.role == {'user'}:
+			role = {'user'}
+		route.role = role
 		permissionChecker = PermissionChecker(
 			self,
 			attribute,

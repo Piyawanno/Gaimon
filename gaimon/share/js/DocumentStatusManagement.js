@@ -69,53 +69,10 @@ const DocumentStatusManagement = function(main){
 	this.setStatus = async function(record){
 		let data = record.record;
 		if(data.documentStatus == undefined) return;
-		if(data.documentStatus == DocumentStatus.DRAFT){
-			record.dom.documentStatus.html('DRAFT');
-			record.dom.documentStatus.style.color = 'BLACK';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.INTERNAL_IN_CONSIDERATION){
-			record.dom.documentStatus.html('INTERNAL IN CONSIDERATION');
-			record.dom.documentStatus.style.color = 'ORANGE';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.INTERNAL_APPROVED){
-			// record.dom.documentStatus.html('INTERNAL APPROVED');
-			record.dom.documentStatus.html('IA');
-			record.dom.documentStatus.style.color = 'GREEN';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.INTERNAL_REJECTED){
-			record.dom.documentStatus.html('INTERNAL REJECTED');
-			record.dom.documentStatus.style.color = 'RED';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.CUSTOMER_IN_CONSIDERATION){
-			record.dom.documentStatus.html('CUSTOMER IN CONSIDERATION');
-			record.dom.documentStatus.style.color = 'ORANGE';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.CUSTOMER_APPROVED){
-			// record.dom.documentStatus.html('CUSTOMER APPROVED');
-			record.dom.documentStatus.html('CA');
-			record.dom.documentStatus.style.color = 'GREEN';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.CUSTOMER_NOT_APPROVED){
-			record.dom.documentStatus.html('CUSTOMER NOT APPROVED');
-			record.dom.documentStatus.style.color = 'RED';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.CUSTOMER_PARTIALLY_APPROVED){
-			record.dom.documentStatus.html('CUSTOMER PARTIALLY APPROVED');
-			record.dom.documentStatus.style.color = 'RED';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.CLOSE){
-			record.dom.documentStatus.html('CLOSE');
-			record.dom.documentStatus.style.color = 'GRAY';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.HOLD){
-			record.dom.documentStatus.html('HOLD');
-			record.dom.documentStatus.style.color = 'ORANGE';
-			record.dom.documentStatus.style.cursor = 'default';
-		}else if(data.documentStatus == DocumentStatus.CANCEL){
-			record.dom.documentStatus.html('CANCEL');
-			record.dom.documentStatus.style.color = 'RED';
-			record.dom.documentStatus.style.cursor = 'default';
-		}
+		record.dom.documentStatus.html(DOCUMENT_STATUS_ABBREVIATE[data.documentStatus]);
+		record.dom.documentStatus.style.color = DOCUMENT_STATUS_COLOR[data.documentStatus];
+		record.dom.documentStatus.style.textAlign = 'center';
+		record.dom.documentStatus.style.cursor = 'default';
 	}
 
 	this.appendDecisionButton = async function(form, page, isForm = true){

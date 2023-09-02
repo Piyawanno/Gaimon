@@ -52,6 +52,7 @@ const BackendMain = function() {
 	object.tableViewType = 'Table';
 
 	this.init = async function() {
+		await object.getENUM();
 		for(let process of BACKEND_PREPROCESS){
 			process(object);
 		}
@@ -219,8 +220,6 @@ const BackendMain = function() {
 		for (let item of EXTENSION_MENU_CONFIG) {
 			config[item.ID] = item;
 		}
-		console.log(window.DISABLE_MENU);
-		console.log(EXTENSION_MENU);
 		for (let group in EXTENSION_MENU) {
 			let menuConfig = config[group];
 			if (window.DISABLE_MENU[group] != undefined) continue;
@@ -268,7 +267,7 @@ const BackendMain = function() {
 					await page.register();
 					if (object.extension[extension] == undefined) object.extension[extension] = {};
 					object.extension[extension][page.pageID] = page;
-					let subMenu = await page.getMenu(true, item.label, item.icon);
+					let subMenu = await page.getMenu(true, item.label, item.icon, item.hasAdd);
 					if (page.isHidden) subMenu.html.classList.add('hidden');
 					if(object.subMenu[page.parentPageID] == undefined) object.subMenu[page.parentPageID] = [];
 					object.subMenu[page.parentPageID].push(subMenu);
@@ -425,4 +424,12 @@ const BackendMain = function() {
 		GLOBAL.NOTIFICATION_EVENT_TYPE[eventType] = callback;
 	}
 	
+	this.getENUM = async function() {
+		let result = await GET(`backend/enum/get`, undefined, undefined, undefined, true);
+		if (result.isSuccess) {
+			for (let key in result.result) {
+				window[key] = result.result[key];
+			}
+		}
+	}
 }

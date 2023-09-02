@@ -91,9 +91,9 @@ const AbstractPage = function(main, parent) {
 	this.prepare = async function() {
 	}
 
-	this.getMenu = async function(isSubMenu, label, icon) {
+	this.getMenu = async function(isSubMenu, label, icon, hasAdd = false) {
 		let object = this;
-		object.menu = await CREATE_MENU(object.pageID, label, icon, isSubMenu);
+		object.menu = await CREATE_MENU(object.pageID, label, icon, isSubMenu, false, hasAdd);
 		return object.menu;
 	}
 
@@ -298,6 +298,54 @@ const AbstractPage = function(main, parent) {
 
 	this.setPageNumber = async function(pageNumber) {
 		object.pageNumber = pageNumber;
+	}
+
+	this.createDateFilter = async function(){
+		if(object.home == undefined) return;
+		let template = '<div class="flex gap-5px" rel="filter">';
+		template += '<div><input class="abstract_input" type="date" rel="startDate"></div>';
+		template += '<div class="flex-column-center">-</div>';
+		template += '<div><input class="abstract_input" type="date" rel="endDate"></div>';
+		template += '</div>';
+		let filterDate = new DOMObject(template);
+		if (object.dateFilter == undefined) object.dateFilter = {}
+		filterDate.dom.startDate.onchange = async function(){
+			let limit = parseInt(object.home.dom.limit.value);
+			
+			SHOW_LOADING_DIALOG(async function(){
+				object.dateFilter.start = filterDate.dom.startDate.value;
+				object.dateFilter.end = filterDate.dom.endDate.value;
+				await object.getData(limit);
+			});
+		}
+		filterDate.dom.endDate.onchange = async function(){
+			let limit = parseInt(object.home.dom.limit.value);
+			SHOW_LOADING_DIALOG(async function(){
+				object.dateFilter.start = filterDate.dom.startDate.value;
+				object.dateFilter.end = filterDate.dom.endDate.value;
+				await object.getData(limit);
+			});
+		}
+		// filterDate.dom.startDate.value = object.dateFilter.start;
+		let now = new Date()
+		if (object.dateFilter.end == undefined) {
+			let date = now.getDate() < 10 ? '0'+now.getDate() : now.getDate();
+			let month = (now.getMonth()+1) < 10 ? '0'+(now.getMonth()+1) : now.getMonth()+1;
+			let year = now.getFullYear();
+			let endDate = `${year}-${month}-${date}`;
+			filterDate.dom.endDate.value = endDate;
+			object.dateFilter.end = endDate;
+		} else {
+			filterDate.dom.endDate.value = object.dateFilter.end;
+		}
+		if (object.dateFilter.start == undefined) {
+			let startDate = `1970-01-01`;
+			filterDate.dom.startDate.value = startDate;
+			object.dateFilter.start = startDate;
+		} else {
+			filterDate.dom.startDate.start = object.dateFilter.start;
+		}
+		object.home.dom.button.prepend(filterDate);
 	}
 
 	this.getFilter = function(limit = 10) {

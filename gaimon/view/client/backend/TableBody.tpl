@@ -6,7 +6,7 @@
     <td style="text-align:center;">{{{index}}}</td>
 	{{/hasIndex}}
     {{#hasAvatar}}
-    <td class="avatar"><img src="{{{rootURL}}}{{{avatar}}}{{#hasAvatarURL}}{{{avatarID}}}{{/hasAvatarURL}}"></td>
+    <td class="avatar"><img src="{{{rootURL}}}{{{avatar}}}{{#hasAvatarURL}}{{{avatarID}}}?{{{timestamp}}}{{/hasAvatarURL}}"></td>
     {{/hasAvatar}}
     {{#tbody}}
     <td class="{{#isHidden}}hidden{{/isHidden}}" align="{{{align}}}" rel="{{{key}}}" localize>{{{value}}}</td>

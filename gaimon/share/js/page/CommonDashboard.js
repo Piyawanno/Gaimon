@@ -300,6 +300,11 @@ const CommonDashboard = function(main, parent) {
             let filter = await object.getCommonFilterData();
             filter.id = ID;
 			let statistic = await fetchProtocol(filter);
+			console.log(statistic);
+			statistic.datasets[0].data[1] = 110;
+			statistic.datasets[0].data[1] = 20;
+			statistic.datasets[0].data[2] = 60;
+			statistic.datasets[0].data[3] = 10;
 			let chartConfig = config.chart;
 			chartConfig.data = {};
 			chartConfig.data.labels = statistic.labels;
@@ -331,8 +336,46 @@ const CommonDashboard = function(main, parent) {
 				Object.keys(config.additional).map(x => { innerFilter[x] =  config.additional[x] });
 			}
 			let data = await object.loadDataByDate(innerFilter, fetchProtocol);
+			// data = setDemoData(data);
 			config.chart.data = data;
 			await object.setChart(config.chartID, view.dom.chart, config.chart);
+		}
+
+		function setDemoData(data){
+			console.log(data);
+			data.datasets[0].data = [];
+			data.datasets[1].data = [];
+			data.datasets[2].data = [];
+			data.datasets[3].data = [];
+			data.datasets[2].backgroundColor = '#f9d15b';
+			data.datasets[2].borderColor = '#f9d15b';
+			data.datasets[3].backgroundColor = 'orange';
+			data.datasets[3].borderColor = 'orange';
+			let math1 = Math.random()*100000;
+			let math2 = Math.random()*100000;
+			let math3 = Math.random()*100000;
+			let math4 = Math.random()*100000;
+			let max = -1;
+			for(let i=0;i<8;i++){
+				let ran1 = Math.random()*100000+math1;
+				let ran2 = Math.random()*100000+math2;
+				let ran3 = Math.random()*100000+math3;
+				let ran4 = Math.random()*100000+math4;
+				math1 = ran1;
+				math2 = ran2;
+				math3 = ran3;
+				math4 = ran4;
+				data.datasets[0].data.push(ran1);
+				data.datasets[1].data.push(ran2);
+				data.datasets[2].data.push(ran3);
+				data.datasets[3].data.push(ran4);
+				if(max <= ran1) max = ran1;
+				if(max <= ran2) max = ran2;
+				if(max <= ran3) max = ran3;
+				if(max <= ran4) max = ran4;
+			}
+			data.maxValue = max;
+			return data;
 		}
 
 		await render();
@@ -373,9 +416,11 @@ const CommonDashboard = function(main, parent) {
 		} else {
 			data.labels = statistic.labels;
 		}
-
 		data.datasets = statistic.datasets;
 		data.maxValue = statistic.maxValue;
+		for (let item of data.datasets) {
+			if (LOCALE[item.label] != undefined) item.label = LOCALE[item.label];
+		}
 		return data;
 	}
 

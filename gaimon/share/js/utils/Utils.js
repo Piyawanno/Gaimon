@@ -274,16 +274,15 @@ async function PUSH_STATE(page, data, url) {
 	data.PAGE = page.pageID;
 	data.PAGE_NAME = page.title;
 	let pathName = window.location.pathname + '?page='+url;
-	console.log(data, pathName);
 	history.pushState(data, '', pathName);
 }
 
-async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage) {
+async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = false) {
 	if (isImage == undefined) isImage = false;
 	let iconDict = {}
 	if (!isImage) iconDict = await CREATE_SVG_ICON(icon)
 	else iconDict = await CREATE_IMAGE_ICON(icon)
-	let menu = {'name': name, 'isSVG': iconDict.isSVG, 'icon': iconDict.icon};
+	let menu = {'name': name, 'isSVG': iconDict.isSVG, 'icon': iconDict.icon, 'hasAdd': hasAdd};
 	let tag;
 	if (isSubMenu == undefined) isSubMenu = false;
 	if (isSubMenu) {
@@ -321,7 +320,7 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage) {
 			// await RENDER_NAVIGATOR();
 		});
 	} else {
-		tag.dom.menu.addEventListener('click', async function() {
+		tag.dom.menuButton.addEventListener('click', async function(e) {
 			if (isMobile()) main.home.dom.menuContainer.classList.add('hidden');
 			await page.highlightMenu(tag.dom.menu, isSubMenu, false);
 			main.selectedSubMenu.push(tag.dom.menu);
@@ -335,6 +334,22 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage) {
 			await setMostUsed(page);
 			// await RENDER_MOST_USED(page);
 		});
+		if(tag.dom.add){
+			if(!CHECK_PERMISSION_USER(page.extension, page.role, ['WRITE'])) tag.dom.add.remove();
+			else{
+				tag.dom.add.addEventListener('click', async function(e) {
+					if (isMobile()) main.home.dom.menuContainer.classList.add('hidden');
+					await page.highlightMenu(tag.dom.menu, isSubMenu, false);
+					main.selectedSubMenu.push(tag.dom.menu);
+					SHOW_LOADING_DIALOG(async function(){
+						await page.prepare();
+						await page.renderForm(page.model);
+					});
+					main.home.dom.subMenuContainer.hide();
+					await setMostUsed(page);
+				});
+			}						
+		}
 	}
 
 	async function setMostUsed(page){
@@ -556,6 +571,24 @@ async function SHOW_FINISHED_DIALOG(text, callback){
 	}
 }
 
+async function SHOW_CONFIRM_DELETE_DIALOG(text, confirmCallback, cancelCallback){
+	let dialog = new DOMObject(TEMPLATE.ConfirmDeleteDialog, {text: text});
+	main.home.dom.alertDialog.html(dialog);
+
+	let body = document.getElementsByTagName('body')[0];
+	body.style.overflow = 'hidden';
+	dialog.html.style.top = `${window.pageYOffset}px`;
+
+	dialog.dom.confirm.onclick = async function(){
+		await CLOSE_ALERT_DIALOG();
+		if(confirmCallback != undefined) confirmCallback();
+	}
+	dialog.dom.cancel.onclick = async function(){
+		await CLOSE_ALERT_DIALOG();
+		if(cancelCallback != undefined) cancelCallback();
+	}
+}
+
 async function CLOSE_ALERT_DIALOG(){
 	main.home.dom.alertDialog.html('');
 	let body = document.getElementsByTagName('body')[0];
@@ -751,4 +784,22 @@ const isInStandaloneMode = () => (window.matchMedia('(display-mode: standalone)'
 
 FormData.prototype.isEmpty = function() {
 	return this.entries().next().done;
+}
+
+function CHECK_ROOT_USER(){
+	IS_ROOT = false;
+	if(GLOBAL.USER.permissions.indexOf('root') != -1) IS_ROOT = true;
+	return IS_ROOT;
+}
+
+function CHECK_PERMISSION_USER(extension, roles, permissions){
+	if(CHECK_ROOT_USER()) return true;
+	for(let i in roles){
+		let role = roles[i];
+		for(let j in permissions){
+			let permission = permissions[j];
+			if(GLOBAL.USER.permissions.indexOf(`${extension}.${role}.${permission}`) != -1) return true;
+		}		
+	}
+	return false;
 }

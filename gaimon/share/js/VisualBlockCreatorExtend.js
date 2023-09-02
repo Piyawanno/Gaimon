@@ -23,6 +23,11 @@ const VisualBlockCreatorExtend = function() {
 		this.isInit = true;
 	}
 
+	this.reRender = async function() {
+		if (object['stepForm']) object.stepForm.dom.form.html(object.form);
+	}
+
+
 	this.createInput = async function(id, tool, data) {
 		const option = {
 			id,
@@ -59,14 +64,13 @@ const VisualBlockCreatorExtend = function() {
 				}
 			} else {
 				let inputList = ''
-				if(data != undefined) {
+
+				if(data !== undefined) {
 					inputList = await object.sanitizeInput(item.input, item.modelName, data[item.id]);
 					group.setData(data[item.id]);
 				}else{
 					inputList = await object.sanitizeInput(item.input, item.modelName, {});
 				}
-				tempBody = group.dom[body];
-				tempInput = inputList;
 				group.dom[body].set(inputList, item.id);
 				// group.dom[body].append(inputList);
 				form.dom.visualblock_form_container.append(group);
@@ -76,7 +80,7 @@ const VisualBlockCreatorExtend = function() {
 			} else{
 				object.inputDOM[id] = {};
 			}
-			object.inputDOM[id][item.id] = group;
+			object.inputDOM[id][item.id] = group.dom[body];
 		}
 		form.dom.visualblock_form_container.tool = tool;
 		object.form.dom.visualblock_operation.append(form);
@@ -155,9 +159,10 @@ const VisualBlockCreatorExtend = function() {
 		return result;
 	}
 
-	this.getTableData = async function(form) {
+	this.getTableData = async function(form, groupName) {
 		const result = [];
-		for(const tr of form.tbody.children) {
+		formTemp = form;
+		for(const tr of form[groupName].tbody.children) {
 			result.push(await object.getAllInputData(tr));
 		}
 		return result;

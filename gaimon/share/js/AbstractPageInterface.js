@@ -78,6 +78,8 @@ AbstractPage.prototype.render = async function(config) {
 	if(object.config.hasFilter == undefined) object.config.hasFilter = true;
 	if(object.config.hasLimit == undefined) object.config.hasLimit = true;
 	if(object.config.hasTableView == undefined) object.config.hasTableView = true;
+	if(object.config.hasDateFilter == undefined) object.config.hasDateFilter = false;
+	if(!CHECK_PERMISSION_USER(object.extension, object.role, ['WRITE'])) object.config.hasAdd = false;
 	object.home = new DOMObject(TEMPLATE.AbstractPage, {
 		name: object.title,
 		hasAdd: object.config.hasAdd,
@@ -100,11 +102,27 @@ AbstractPage.prototype.render = async function(config) {
 		let classList = object.home.dom.menuList.getElementsByClassName('abstract_tab_menu');
 		await object.setHighlightTab(classList, object.home.dom.menuList[object.pageID]);
 	}
+
+	if (object.config.hasDateFilter) {
+		await object.createDateFilter();
+	}
+
 	object.main.home.dom.container.html('');
 	object.main.home.dom.container.appendChild(object.home.html);
+
+	if(object.config.hasTableView){
+		if(main.tableViewType == 'Card'){
+			object.home.dom.cardView.classList.add('highlight');
+			object.home.dom.tableView.classList.remove('highlight');
+		}else if(main.tableViewType == 'Table'){
+			object.home.dom.cardView.classList.remove('highlight');
+			object.home.dom.tableView.classList.add('highlight');
+		}
+	}
+
 	if(object.config.hasTableView){
 		if (object.home.dom.cardView) {
-			object.home.dom.cardView.onclick = async function(){
+			object.home.dom.cardView.onclick = async function(){				
 				main.tableViewType = 'Card';
 				RENDER_STATE();
 			}
@@ -136,7 +154,6 @@ AbstractPage.prototype.getData = async function(limit=10){
 		result.hasEdit = object.config.hasEdit;
 		result.hasDelete = object.config.hasDelete;
 		result.hasSelect = object.config.hasSelect;
-
 	}
 	object.defaultTable = await object.renderTableView(object.model, result, main.tableViewType);
 }
@@ -235,6 +252,8 @@ AbstractPage.prototype.getTableView = async function(modelName, config, viewType
 
 AbstractPage.prototype.renderTableView = async function(modelName, config, viewType) {
 	let object = this;
+	if(!CHECK_PERMISSION_USER(object.extension, object.role, ['UPDATE'])) config.hasEdit = false;
+	if(!CHECK_PERMISSION_USER(object.extension, object.role, ['DROP'])) config.hasDelete = false;
 	let table = await this.tableView.renderView(modelName, config, viewType);
 	if (this.restProtocol != undefined) {
 		table.onDeleteRecord = async function(record) {
