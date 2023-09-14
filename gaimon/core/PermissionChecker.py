@@ -8,6 +8,7 @@ from gaimon.core.Route import Route
 from gaimon.core.PermissionDecorator import PermissionRule
 from gaimon.core.PreProcessor import PreProcessRule
 from gaimon.core.PostProcessor import PostProcessRule
+from gaimon.core.SecurityChecker import SecurityChecker
 from gaimon.model.UserGroup import UserGroup
 from gaimon.model.UserGroupPermission import UserGroupPermission
 from gaimon.model.PermissionType import PermissionType
@@ -37,6 +38,7 @@ class PermissionChecker:
 	def __init__(self, application, callee, role, permission):
 		from gaimon.core.AsyncApplication import AsyncApplication
 		self.application: AsyncApplication = application
+		self.security = SecurityChecker(self.application)
 		self.businessLog: AsyncServiceClient = AsyncServiceClient(
 			self.application.config['businessLog']
 		)
@@ -103,6 +105,8 @@ class PermissionChecker:
 			return False
 
 	async def run(self, request: Request, *argument, **option):
+		if not await self.security.check(request) :
+			return HTTPResponse("Bad request", code=500)
 		domainCheck = self.checkDomain(request)
 		if domainCheck is not None : return domainCheck
 		state = RequestState(self.callee, request, argument, option)
