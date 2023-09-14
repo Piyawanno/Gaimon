@@ -45,7 +45,7 @@ class User(Record):
 
 	__tablename__ = "GaimonUser"
 	inputPerLine = 2
-	__GROUP_LABEL__ = UserInputGroup
+	__grouplabel__ = UserInputGroup
 
 	username = StringColumn(
 		length=255,
@@ -218,10 +218,11 @@ class User(Record):
 	@staticmethod
 	def hashPassword(password, salt):
 		return hashlib.pbkdf2_hmac('SHA512',
-									password,
-									salt,
-									HASH_ITERATION,
-									HASH_LENGTH).hex()
+			password,
+			salt,
+			HASH_ITERATION,
+			HASH_LENGTH
+		).hex()
 
 	@staticmethod
 	def getSalt():

@@ -34,7 +34,7 @@ PersonalScheduleGroup.order = {
 
 class PersonalSchedule(Record):
 	inputPerLine = 3
-	__GROUP_LABEL__ = PersonalScheduleGroup
+	__grouplabel__ = PersonalScheduleGroup
 
 	uid = IntegerColumn(default=-1, foreignKey="User.id")
 	subject = StringColumn(
