@@ -199,6 +199,7 @@ const AbstractView = function(page) {
 		if (config == undefined) config = {};
 		let destination = await object.getRenderDestination(viewType);
 		let view = await object.getBlankView(config, viewType);
+		console.log(config);
 		await object.initViewEvent(view, config, viewType);
 		destination.html('');
 		destination.append(view);

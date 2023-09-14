@@ -18,7 +18,20 @@ EMAIL_PATTERN = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 
 #TODO : Replace Redis with MicroService
 
+__JS__ = [
+	'utils/Utils.js',
+	'LoginPage.js',
+	'Authentication.js',
+]
 
+__CSS__ = [
+	'AlertDialog.css',
+	'Login.css',
+]
+
+__INCOMPRESSIBLE_CSS__ = [
+	'FontFamily.css',
+]
 class AuthenticationController:
 	def __init__(self, application):
 		from gaimon.core.AsyncApplication import AsyncApplication
@@ -114,12 +127,9 @@ class AuthenticationController:
 		self.page.reset()
 		self.page.title = f"{self.title} - LOGIN"
 		self.page.enableCrypto()
-		self.page.js.append('utils/Utils.js')
-		self.page.js.append('LoginPage.js')
-		self.page.js.append('Authentication.js')
-		self.page.css.append('Login.css')
-		self.page.css.append('AlertDialog.css')
-		self.page.css.append('FontFamily.css')
+		self.page.extendJS(__JS__)
+		self.page.extendCSS(__INCOMPRESSIBLE_CSS__, isCompressible=False)
+		self.page.extendCSS(__CSS__)
 		template = self.theme.getTemplate('Login.tpl')
 		data = {
 			'rootURL': self.page.rootURL,

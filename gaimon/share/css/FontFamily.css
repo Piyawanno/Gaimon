@@ -302,3 +302,13 @@
 	font-weight: 800;
 	font-style: normal;
 }
+
+@font-face{
+    font-family: 'PSLpro';
+    src: url('/share/font/PSL006PRO.TTF') format('truetype');
+}
+
+@font-face {
+	font-family: 'Kanit-Regular';
+	src: url('/share/font/Kanit-Regular.ttf') format('truetype');
+}

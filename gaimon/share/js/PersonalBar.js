@@ -45,7 +45,7 @@ const PersonalBar = function(main) {
 			icon: 'Avatar',
 		}];
 		
-		let locale = new DOMObject(TEMPLATE.Locale);
+		let locale = new DOMObject(TEMPLATE.Locale, {rootURL});
 		object.localeButton = locale;
 		object.initLocaleButton(locale);
 		dom.personalIcon.append(locale);
@@ -72,9 +72,9 @@ const PersonalBar = function(main) {
 	this.setLanguage = async function(locale) {
 		await object.renderByLocale(locale);
 		let tag = object.localeButton;
-		if (LANGUAGE == 'th') tag.dom.localeFlag.src = "./share/icon/Flag-Thailand.jpg";
-		else if (LANGUAGE == 'en') tag.dom.localeFlag.src = "./share/icon/Flag-England.jpg";
-		else if (LANGUAGE == 'cn') tag.dom.localeFlag.src = "./share/icon/Flag-China.jpg";
+		if (LANGUAGE == 'th') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-Thailand.jpg`;
+		else if (LANGUAGE == 'en') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-England.jpg`;
+		else if (LANGUAGE == 'cn') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-China.jpg`;
 	}
 
 	this.renderLocalize = function(html, isKeepOriginal) {
@@ -120,8 +120,8 @@ const PersonalBar = function(main) {
 			tag.dom.floatLocale.hide();
 		}
 
-		if (LANGUAGE == 'th') tag.dom.localeFlag.src = "./share/icon/Flag-Thailand.jpg";
-		else if (LANGUAGE == 'en') tag.dom.localeFlag.src = "./share/icon/Flag-England.jpg";
-		else if (LANGUAGE == 'cn') tag.dom.localeFlag.src = "./share/icon/Flag-China.jpg";
+		if (LANGUAGE == 'th') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-Thailand.jpg`;
+		else if (LANGUAGE == 'en') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-England.jpg`;
+		else if (LANGUAGE == 'cn') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-China.jpg`;
 	}
 }

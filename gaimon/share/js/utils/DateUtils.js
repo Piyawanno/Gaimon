@@ -48,6 +48,20 @@ Date.prototype.resetTime = function() {
 	this.setMilliseconds(0);
 }
 
+function getDateFormat (date){
+	let day = `${date.getDate()}`.length == 1 ? `0${date.getDate()}` : date.getDate();
+	let month = `${date.getMonth()+1}`.length == 1 ? `0${date.getMonth()+1}` : date.getMonth()+1;
+	let year = date.getFullYear();
+	return `${day}/${month}/${year}`;
+}
+
+this.getPythonDateFormat = async function(date){
+	let day = `${date.getDate()}`.length == 1 ? `0${date.getDate()}` : date.getDate();
+	let month = `${date.getMonth()+1}`.length == 1 ? `0${date.getMonth()+1}` : date.getMonth()+1;
+	let year = date.getFullYear();
+	return `${year}-${month}-${day}`;
+}
+
 function dateToDateID(date) {
 	let now = new Date();
 	let DAY_SECONDS = 60 * 60 * 24 * 1000.0;
@@ -63,4 +77,8 @@ function dateIDToDate(dateID) {
 	let timestamp = (dateID * DAY_SECONDS) + timezone;
 	let datetime = new Date(timestamp);
 	return datetime;
+}
+
+function dateToMonthID(date) {
+	return parseInt(12 * (date.getFullYear() - 1970) + (date.getMonth() + 1))
 }

@@ -1,12 +1,3 @@
-@font-face{
-    font-family: 'PSLpro';
-    src: url('/share/font/PSL006PRO.TTF') format('truetype');
-}
-
-@font-face {
-	font-family: 'Kanit-Regular';
-	src: url('/share/font/Kanit-Regular.ttf') format('truetype');
-}
 
 body {
 	/* background: linear-gradient(-45deg, #8BC6F7, #6793B8, #3D576C, #436078, #2E4152); */

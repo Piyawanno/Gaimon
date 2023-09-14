@@ -92,10 +92,10 @@ class PermissionChecker:
 		permissions = await self.authen.getRoleByGroupID(
 			state.session, state.request.ctx.session['gid']
 		)
+		state.request.ctx.session['permission'] = permissions
 		permissions = set(permissions)
 		if state.uid != -1: permissions.add('user')
 		state.permissions = list(permissions)
-		print(permissions.intersection(self.permissions), self.permissions, state.callable.__name__)
 		if self.role.intersection(role): return True
 		if len(permissions.intersection(self.permissions)):
 			return True
@@ -103,6 +103,8 @@ class PermissionChecker:
 			return False
 
 	async def run(self, request: Request, *argument, **option):
+		domainCheck = self.checkDomain(request)
+		if domainCheck is not None : return domainCheck
 		state = RequestState(self.callee, request, argument, option)
 		state.hasSession = self.callee.__ROUTE__.hasDBSession
 		controller = self.application.getController(self.controllerName)
@@ -275,6 +277,14 @@ class PermissionChecker:
 				state.request, state.result, *state.argument, **state.option
 			)
 			processor.releaseDecorator(decorator)
+	
+	def checkDomain(self, request:Request) :
+		isCheck = self.application.config.get('isCheckDomain', False)
+		if not isCheck : return None
+		domain = self.application.config.get('domain', None)
+		if domain is None : return None
+		rootURL = self.application.config['rootURL']
+		if request.host != domain : return redirect(rootURL)
 	
 	@staticmethod
 	async def processRole(session, user, isForce=True):

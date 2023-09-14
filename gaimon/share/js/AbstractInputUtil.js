@@ -433,6 +433,8 @@ AbstractInputUtil.prototype.getRawInputConfig = async function(inputs){
 		if(inputs[i].isForm == undefined) inputs[i].isForm = true;
 		if(inputs[i].isEditable == undefined) inputs[i].isEditable = true;
 		if(inputs[i].size == undefined) inputs[i].size = 'normal';
+		if(inputs[i].isNumber == undefined) inputs[i].isNumber = false;
+			if(inputs[i].typeName == 'Currency' || inputs[i].typeName == 'Fraction' || inputs[i].typeName == 'Number') inputs[i].isNumber = true;
 		if(inputs[i].url != undefined && inputs[i].typeName != 'AutoComplete' && inputs[i].typeName != 'PrerequisiteReferenceSelect'){
 			let response = await GET(inputs[i].url, undefined, 'json', true);
 			if (response != undefined && response.isSuccess) {
@@ -462,6 +464,7 @@ AbstractInputUtil.prototype.getDefaultInputConfig = async function(){
 	input.isSearch = false;
 	input.isForm = true;
 	input.isEditable = true;
+	input.isNumber = false;
 	input.size = 'normal';
 	return input;
 }

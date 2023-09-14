@@ -16,10 +16,7 @@ class NotificationWebSocketHandler(WebSocketHandler):
 
 	async def register(self, request: Request, socket: Websocket, parameter: dict):
 		entity = parameter.get('entity', 'main')
-		management: NotificationManagement = self.application.managementMap.get(
-			entity,
-			None
-		)
+		management: NotificationManagement = await self.application.getManagement(parameter)
 		if management is None:
 			raise RuntimeError(f'Entity {entity} cannot be found.')
 		else:

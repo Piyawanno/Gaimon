@@ -3,11 +3,25 @@
 		<div localize>{{{label}}}</div>
 		{{#isRequired}}<div><label class="required">*</label></div>{{/isRequired}}
 	</div>
-	<div>
-		<select rel="{{{columnName}}}" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}} localize>
-			{{^isFilter}}<option rel="defaultValue_{{{columnName}}}" value="-1" localize>None</option>{{/isFilter}}
-			{{#isFilter}}<option value="-1" localize>All</option>{{/isFilter}}
-		</select>
+	<div class="flex gap-5px">
+		<div class="width-100-percent">
+			<select rel="{{{columnName}}}" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}} localize>
+				{{^isFilter}}<option rel="defaultValue_{{{columnName}}}" value="-1" localize>None</option>{{/isFilter}}
+				{{#isFilter}}<option value="-1" localize>All</option>{{/isFilter}}
+			</select>
+		</div>
+		{{#SVG}}
+			{{#isSVG}}
+			<div class="abstract_input_svg_icon {{{cssClass}}}" rel="{{{columnName}}}_icon">
+				{{{icon}}}
+			</div>
+			{{/isSVG}}
+			{{^isSVG}}
+			<div class="abstract_input_img_icon {{{cssClass}}}" rel="{{{columnName}}}_icon">
+				<img class="menuImg" src="{{{icon}}}">
+			</div>
+			{{/isSVG}}
+		{{/SVG}}
 	</div>
 	<div class="error text-align-center hidden" rel="{{{columnName}}}_error"></div>
 </div>

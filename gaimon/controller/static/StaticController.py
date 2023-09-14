@@ -39,11 +39,11 @@ class StaticController:
 		stat = os.stat(path)
 		if stat.st_size > __MAX_SIZE__ :
 			return await response.file(path)
-		with open(path) as fd :
+		with open(path, 'rb') as fd :
 			content = fd.read()
 			type = mimetypes.guess_type(path)
 			__CACHE__[path] = {
 				'content' : content,
-				'type' : type,
+				'type' : type[0],
 			}
-		return response.raw(content, content_type=type)
+		return response.raw(content, content_type=type[0])

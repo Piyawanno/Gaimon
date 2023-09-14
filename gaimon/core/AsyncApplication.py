@@ -267,6 +267,7 @@ class AsyncApplication(Application):
 		config = await self.configHandler.getExtensionConfig(
 			f"{splitted[0]}.{splitted[1]}"
 		)
+		print(config[splitted[2]])
 		client = AsyncServiceClient(config[splitted[2]])
 		return client
 
@@ -431,7 +432,8 @@ class AsyncApplication(Application):
 		if self.isDevelop:
 			self.processNumber = 1
 		else:
-			self.processNumber = config.get("processNumber", cpu_count())
+			self.processNumber = config.get("processNumber", -1)
+			if self.processNumber < 0 : self.processNumber = cpu_count()
 		self.loadController()
 		self.application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
 

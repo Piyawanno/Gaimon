@@ -13,7 +13,7 @@ __namespace__ = '' if __option__.namespace is None else __option__.namespace
 
 from gaimon.util.ProcessUtil import readConfig
 from gaimon.util.ServiceStarter import ServiceStarter
-if len(__namespace__) : setSystemPath(__namespace__)
+# if len(__namespace__) : setSystemPath(__namespace__)
 
 __config__ = readConfig(
 	[],
@@ -22,5 +22,5 @@ __config__ = readConfig(
 )
 
 print(__config__)
-starter = ServiceStarter(__config__)
+starter = ServiceStarter(__config__, __namespace__)
 starter.operate(__option__.operation)

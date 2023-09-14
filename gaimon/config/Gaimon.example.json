@@ -7,6 +7,8 @@
 	"resourcePath" : "/var/gaimon/",
 	"home": "/backend",
 	"theme" : null,
+	"isDomainCheck" : 0,
+	"domain" : "",
 	"country" : "th",
 	"extension" : [
 	],
@@ -26,6 +28,7 @@
 	"isCompress" : 0,
 	"isPreload" : 0,
 	"timeOut" : 60,
+	"processNumber": -1,
 	"title" : "TITLE",
 	"authentication" : {
 		"facebook" : {

@@ -4,7 +4,7 @@ from gaimon.model.UserGroupPermission import UserGroupPermission
 from gaimon.service.notification.NotificationStorage import NotificationStorage
 from gaimon.service.notification.NotificationItem import NotificationItem
 from gaimon.service.notification.NotificationType import NotificationType
-from gaimonerp.erpbase.util.DateUtil import getDateID
+from gaimon.util.DateTimeUtil import getCurrentDateID
 
 from gaimon.model.User import User
 
@@ -200,7 +200,7 @@ class NotificationManagement:
 
 	async def send(self):
 		while True:
-			self.dateID = getDateID()
+			self.dateID = getCurrentDateID()
 			current = self.unsent[:]
 			self.unsent = []
 			unsent = []

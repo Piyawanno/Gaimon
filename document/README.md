@@ -29,11 +29,13 @@ reduce the development process, the system deployment and administration.
 
 ### Single Page Application
 
-Gaimon emphasizes and is designed for the [**Single Page Application (SPA)**](https://en.wikipedia.org/wiki/Single-page_application).
+Gaimon emphasizes and is designed for the [**Single Page Application (SPA)**](https://en.wikipedia.org/wiki/Single-page_application) as the first class citizen.
 With No Line-of-Code, the Controller provides REST-API for CRUD
-out of the box. Front-End for SPA can be built under a proper
-software engineering and design. No more mingle Frankenstein code base
-in Front-End development.
+out of the box. Front-End for SPA can be built under a modular
+software engineering and design. Data structure and Model can be directly
+imported from the Back-End to the Front-End to ensure the consistency.
+The state of data, user interface and event work together in harmony.
+No more mingle Frankenstein code base in Front-End development.
 
 ### Fast and Scalable
 
@@ -47,4 +49,4 @@ applications written with Gaimon can be scaled via mouse click.
 ## Getting Start
 
 - [Installation](LinuxInstallation.md)
-- [Tutorial](tutorial/README.md)
+- [Tutorial](tutorial/)

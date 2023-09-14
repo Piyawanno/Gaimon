@@ -61,7 +61,8 @@ const UserManagementPage = function(main, parent) {
 			}
 			delete data.avatar;
 			let formData = new FormData();
-			formData = result.file;
+			if(view.dom.avatar.files.length) formData = result.file;
+			result.data.avatarRemoved = view.dom.avatar.removed;
 			formData.append('data', JSON.stringify(data));
 			// await object.getFile(formData, view.dom.avatar, 'avatar');
 			let handle = ('id' in data) ? main.protocol.user.update : main.protocol.user.insert;

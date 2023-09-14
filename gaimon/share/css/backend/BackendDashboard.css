@@ -239,11 +239,85 @@
     box-shadow: var(--box-shadow);
 }
 
-.common_statistic .chart_container .topic {
-    font-size: 1.5em;
-    text-align: center;
-    color: var(--main-sidebar-background-color);
+.common_statistic.dashboard .chart_container.currency {
+    gap: 10px;
 }
+
+.common_statistic .chart_container.currency .currencyContainer {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.common_statistic .chart_container .topic {
+    font-size: 1.1em;
+    font-weight: bold;
+    text-align: left;
+    color: var(--main-font-color);
+}
+
+.common_statistic .chart_container .currencyBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.common_statistic .chart_container .currencyBox .currencyValue {
+    display: flex;
+    gap: 5px;
+    font-size: 3em;
+    font-weight: bolder;
+}
+
+.common_statistic .chart_container .currencyBox .comparatorBox.equal {
+    color: #2962FF !important;
+}
+
+.common_statistic .chart_container .currencyBox .comparatorBox.up {
+    color: var(--main-sidebar-menu-button-selected-background-color) !important;
+}
+
+.common_statistic .chart_container .currencyBox .comparatorBox.down {
+    color: #ff474e !important;
+}
+
+.common_statistic .chart_container .currencyBox .comparatorBox {
+    display: flex;
+    align-items: center;
+}
+
+.common_statistic .chart_container .currencyBox .comparatorBox .sign {
+    width: 24px;
+    height: 24px;
+}
+
+.common_statistic .chart_container .currencyBox .comparatorBox svg {
+    width: 24px;
+    height: 24px;
+}
+
+.common_statistic .chart_container .comparatorLabelBox {
+    text-align: center;
+    margin-bottom: 10px;
+    color: var(--main-font-color);
+    font-size: 0.9em;
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+}
+
+
+.common_statistic .chart_container .currencyBox .currency {
+    font-size: 0.6em;
+    margin-top: 2px;
+}
+
+/* .common_statistic .chart_container .currencyBox .number {
+   
+} */
 
 .common_statistic .chart_container .chart {
     width: 100%;
@@ -327,6 +401,10 @@
     background-color: #F7F7F7;
     border-radius: 10px;
     box-shadow: var(--box-shadow);
+}
+
+.common_statistic.dashboard .chart_container.small {
+    width: calc(25% - 15px);
 }
 
 .common_statistic.dashboard .chart_container.medium {

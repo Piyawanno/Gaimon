@@ -7,7 +7,6 @@ from gaimon.core.RESTResponse import(
 	SuccessRESTResponse as Success,
 	ErrorRESTResponse as Error,
 )
-from gaimon.util.RequestUtil import processRequestQuery
 from gaimon.model.User import User
 from gaimon.model.UserGroup import UserGroup
 from gaimon.model.UserGroupPermission import UserGroupPermission, __GAIMON_ROLE__
@@ -16,7 +15,14 @@ from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from sanic import response
 from typing import List
 import math, os, string, random, json, mimetypes
-
+from gaimon.util.RequestUtil import (
+	processRequestQuery,
+	createInsertHandler,
+	createUpdateHandler,
+	createSelectHandler,
+	createDropHandler,
+	createFileStore
+)
 
 @ROLE('gaimon.User')
 class UserController:
@@ -26,6 +32,7 @@ class UserController:
 		self.session: AsyncDBSessionBase = None
 		self.resourcePath = self.application.resourcePath
 		self.avatar = {}
+		self.storeAvatarFile = createFileStore(self.application, 'user/avatar/')
 		self.path = "/user/avatar/"
 		self.notification = None
 
@@ -490,17 +497,15 @@ class UserController:
 			logging.error(traceback.format_exc())
 		userDict = user.toTransportDict()
 		userDict['additional'] = data
-		# userDict['additionalFile'] = request
 		return Success(userDict)
 
 	@POST("/user/update", permission=[PT.WRITE, PT.UPDATE])
 	async def update(self, request):
 		data = json.loads(request.form['data'][0])
-		if 'avatar' in request.files:
-			data['avatar'] = await self.saveAttachedFile(
-				request.files['avatar'],
-				self.path
-			)
+		if 'avatar' in request.files: 
+			avatar = await self.storeAvatarFile(request, 'avatar')
+			data['avatar'] = avatar[0][1] if len(avatar) else ""
+		if data['avatarRemoved']: data['avatar'] = ''
 		user = await self.updateUser(data)
 		await self.session.update(user)
 		try:
@@ -510,7 +515,6 @@ class UserController:
 			logging.error(traceback.format_exc())
 		userDict = user.toTransportDict()
 		userDict['additional'] = data
-		# userDict['additionalFile'] = request
 		return Success(userDict)
 
 	@POST("/user/role/update", permission=[PT.WRITE, PT.UPDATE])
@@ -539,9 +543,9 @@ class UserController:
 		model:User = await self.session.selectByID(User, ID)
 		if model is None:
 			return response.text("File cannot be found.", status=404)
-		if len(model.avatar) == 0:
-			return response.text("File cannot be found.", status=404)		
+		if model.avatar is None or len(model.avatar) == 0:
+			return await response.file(f"{self.resourcePath}share/icon/logo_padding.png")		
 		path = f"{self.resourcePath}file/{model.avatar}"
 		if not os.path.isfile(path):
-			return response.text("File cannot be found.", status=404)
+			return await response.file(f"{self.resourcePath}share/icon/logo_padding.png")
 		return await response.file(path)

@@ -1,6 +1,6 @@
 <div class="subMenuItem" rel="menu">
 	<div class="flex space-between width-100-percent">
-		<div class="flex gap-10px" rel="menuButton">
+		<div class="flex {{#isMobile}}flex-column width-100-percent{{/isMobile}} gap-10px" rel="menuButton">
 			{{#isSVG}}
 			<div class="menuSVGIcon flex-column-center">
 				{{{icon}}}
@@ -13,6 +13,7 @@
 			{{/isSVG}}
 			<div class="menuLabel" localize>{{name}}</div>
 		</div>
+		{{^isMobile}}
 		{{#hasAdd}}
 		<div class="subMenuButton add_button" rel="add" title="Add">
 			<svg style="width:20px;height:20px;" viewBox="0 0 24 24">
@@ -20,5 +21,6 @@
 			</svg>
 		</div>
 		{{/hasAdd}}
+		{{/isMobile}}
 	</div>
 </div>

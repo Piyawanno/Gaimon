@@ -6,23 +6,23 @@ const CommonDashboard = function(main, parent) {
 	object.isInit = false;
 	object.maxValue = {};
 
-    this.init = async function(config) {
-        if (!object.isInit) {
+	this.init = async function(config) {
+		if (!object.isInit) {
 			Chart.register(ChartDataLabels);
 			object.isInit = true;
 		}
-        object.chartList = [];
-        object.dashboard = new DOMObject(await TEMPLATE.get("CommonDashboard"), {title: config.title, rootURL});
-        object.dateRangeInput = await getDateRangeInput();
+		object.chartList = [];
+		object.dashboard = new DOMObject(await TEMPLATE.get("CommonDashboard"), {title: config.title, rootURL});
+		object.dateRangeInput = await getDateRangeInput();
 		object.dateRangeInput.onchange = function(filter) {
 			object.refresh();
 		}
-        object.dashboard.dom.filterContainer.html(object.dateRangeInput)
-    }
+		object.dashboard.dom.filterContainer.html(object.dateRangeInput)
+	}
 
 	this.render = async function(target) {
-        object.dashboard.dom.container.html('');
-        target.html(object.dashboard);
+		object.dashboard.dom.container.html('');
+		target.html(object.dashboard);
 	}
 
 	this.getTableLog = async function(config, fetchProtocol) {
@@ -38,12 +38,12 @@ const CommonDashboard = function(main, parent) {
 		let filterData = await object.getCommonFilterData();
 		Object.keys(filterData.date).map(x => { filter[x] =  filterData.date[x] });
 
-        if (filterData.filterBy) {
-            filter[filterData.filterBy] = config.data.id;
-        }
+		if (filterData.filterBy) {
+			filter[filterData.filterBy] = config.data.id;
+		}
 
 		let log = await fetchProtocol(filter);
-        let innerFilter = {};
+		let innerFilter = {};
 		let filterLogType = -1;
 		let filterVehicle = -1;
 		let data = {
@@ -75,7 +75,7 @@ const CommonDashboard = function(main, parent) {
 			}
 			let filterData = await object.getCommonFilterData();
 			Object.keys(filterData.date).map(x => { filter[x] =  filterData.date[x] });
-            Object.keys(innerFilter).map(x => { filter[x] =  innerFilter[x] });
+			Object.keys(innerFilter).map(x => { filter[x] =  innerFilter[x] });
 			return filter
 		}
 
@@ -90,19 +90,19 @@ const CommonDashboard = function(main, parent) {
 		table.renderFunction = table.component.renderFunction;
 		view.renderFunction = table.component.renderFunction;
 
-        if (config.modelName == undefined && config.inputs == undefined) view.dom.search.hide();
+		if (config.modelName == undefined && config.inputs == undefined) view.dom.search.hide();
 
 		view.dom.search.onclick = async function() {
-            let searchConfig = {};
-            if (config.search) searchConfig = config.search;
+			let searchConfig = {};
+			if (config.search) searchConfig = config.search;
 			let searhForm = await object.parent.getView(config.modelName == undefined ? '': config.modelName, searchConfig, 'SearchForm');
-            let inner = new DOMObject(`<div class="abstract_form_input">${searhForm.dom.form.innerHTML}</div>`);
+			let inner = new DOMObject(`<div class="abstract_form_input">${searhForm.dom.form.innerHTML}</div>`);
 			let dialog = await object.parent.renderBlankView({title: 'Filter'}, 'Dialog');
 			dialog.dom.form.html(inner);
-            inner.setData(innerFilter);
+			inner.setData(innerFilter);
 			dialog.dom.submit.onclick = async function() {
 				let result = inner.getData();
-                innerFilter = result.data;
+				innerFilter = result.data;
 				await table.component.renderFunction(table.component.limit.value);
 				dialog.close();
 			}
@@ -112,44 +112,72 @@ const CommonDashboard = function(main, parent) {
 		return view;
 	}
 
-    this.getFilterData = async function() {
-        
+	this.getFilterData = async function() {
+		
 	}
 
 	this.getCommonFilterData = async function() {
-        let result = {};
+		let result = {};
 		let dateFilter = object.dateRangeInput.getFilterData();
-        if (dateFilter != undefined) Object.keys(dateFilter).map(x => { result[x] =  dateFilter[x] });
-        let externalFilter = await object.getFilterData();
-        if (externalFilter != undefined) Object.keys(externalFilter).map(x => { result[x] =  externalFilter[x] });
+		if (dateFilter != undefined) Object.keys(dateFilter).map(x => { result[x] =  dateFilter[x] });
+		let externalFilter = await object.getFilterData();
+		if (externalFilter != undefined) Object.keys(externalFilter).map(x => { result[x] =  externalFilter[x] });
 		return result
 	}
 
 	this.refresh = async function() {
 		object.maxValue = {};
+		object.fetched = {}
+		for (let view of object.chartList) {
+			if (view.fetchProtocol) {
+				if (object.fetched[view.fetchProtocol] == undefined) {
+					let fetched = await view.fetchProtocol(await view.getFilter());
+					object.fetched[view.fetchProtocol] = fetched;
+				}
+				view.fetched = object.fetched[view.fetchProtocol];
+			}
+		}
 		for (let view of object.chartList) {
 			if (view.renderFunction) view.renderFunction();
 		}
 	}
 
-    this.appendTableLog = async function(config = {}, fetchProtocol) {
+	this.appendTableLog = async function(config = {}, fetchProtocol) {
 		let table = await object.getTableLog(config, fetchProtocol);
 		object.dashboard.dom.container.append(table);
-        object.chartList.push(table);
+		object.chartList.push(table);
 		return table;
 	}
 
-    this.appendChart = async function(config = {}, fetchProtocol) {
+	this.appendChart = async function(config = {}, fetchProtocol) {
 		let chart = await object.renderChartByTime(object.dashboard, config, fetchProtocol);
-        object.chartList.push(chart);
+		object.chartList.push(chart);
 		return chart;
-    }
+	}
 
-    this.appendPieChart = async function(config = {}, fetchProtocol) {
-        let chart = await object.renderPieChart(object.dashboard, config, fetchProtocol);
-        object.chartList.push(chart);
+	this.appendPieChart = async function(config = {}, fetchProtocol) {
+		let chart = await object.renderPieChart(object.dashboard, config, fetchProtocol);
+		object.chartList.push(chart);
 		return chart;
-    }
+	}
+
+	this.appendDashboardBox = async function(config = {}, fetchProtocol) {
+		let chart = await object.renderDashboardBox(object.dashboard, config, fetchProtocol);
+		object.chartList.push(chart);
+		return chart;
+	}
+
+	this.appendCurrencyBox = async function(config = {}, fetchProtocol) {
+		let chart = await object.renderCurrencyBox(object.dashboard, config, fetchProtocol);
+		object.chartList.push(chart);
+		return chart;
+	}
+
+	this.appendCurrencyCompareBox = async function(config = {}, fetchProtocol) {
+		let chart = await object.renderCurrencyCompareBox(object.dashboard, config, fetchProtocol);
+		object.chartList.push(chart);
+		return chart;
+	}
 
 	this.getPieChartConfig = async function(){
 		let config = {
@@ -293,12 +321,12 @@ const CommonDashboard = function(main, parent) {
 	}
 
 	this.renderPieChart = async function(dashboard, config, fetchProtocol) {
-        let ID = config.data.id;
+		let ID = config.data.id;
 		let view = new DOMObject(await TEMPLATE.get('CommonChart'), {title: config.title});
 		dashboard.dom.container.append(view);
 		async function render() {
-            let filter = await object.getCommonFilterData();
-            filter.id = ID;
+			let filter = await object.getCommonFilterData();
+			filter.id = ID;
 			let statistic = await fetchProtocol(filter);
 			console.log(statistic);
 			statistic.datasets[0].data[1] = 110;
@@ -316,6 +344,214 @@ const CommonDashboard = function(main, parent) {
 		return view;
 	}
 
+	this.renderDashboardBox = async function(dashboard, config, fetchProtocol) {
+		let ID = config.data.id;
+
+		let view = await object.getDashboardBoxView(config.title, config.classList)
+		dashboard.dom.container.append(view);
+
+		view.fetchProtocol = fetchProtocol;
+
+		view.getFilter = async function() {
+			let filter = await object.getCommonFilterData();
+			let innerFilter = {
+				id: ID, 
+				start: filter[filter.timeType].start, 
+				end: filter[filter.timeType].end, 
+				filterBy: filter.filterBy,
+				timeType: filter.timeType, 
+				groupBy: filter.groupBy
+			}
+			if (config.additional) {
+				Object.keys(config.additional).map(x => { innerFilter[x] =  config.additional[x] });
+			}
+			return innerFilter;
+		}
+
+		async function render() {
+			if (view.fetched == undefined) view.fetched = await view.fetchProtocol(await view.getFilter());
+			let formatter = new Intl.NumberFormat(LANGUAGE, {});
+			let value = view.fetched[config.key] == undefined ? 0 : view.fetched[config.key]
+			view.dom.value.innerHTML = formatter.format(value);
+			if (config.color) {
+				view.html.style.borderRight = `20px solid ${config.color}`;
+			}
+		}
+
+		await render();
+		view.renderFunction = render;
+		return view;
+	}
+
+	this.getDashboardBoxView = async function(title, classList = []) {
+		let template = await TEMPLATE.get('CommonDashboardBox');
+
+		let view = new DOMObject(template, {title});
+		for (let item of classList) {
+			view.html.classList.add(item);
+		}
+		return view;
+	}
+
+	this.renderCurrencyBox = async function(dashboard, config, fetchProtocol) {
+		let ID = config.data.id;
+
+		let view = await object.getCurrencyBoxView(config.title, config.classList)
+		dashboard.dom.container.append(view);
+
+		view.fetchProtocol = fetchProtocol;
+
+		view.getFilter = async function() {
+			let filter = await object.getCommonFilterData();
+			let innerFilter = {
+				id: ID, 
+				start: filter[filter.timeType].start, 
+				end: filter[filter.timeType].end, 
+				filterBy: filter.filterBy,
+				timeType: filter.timeType, 
+				groupBy: filter.groupBy
+			}
+			if (config.additional) {
+				Object.keys(config.additional).map(x => { innerFilter[x] =  config.additional[x] });
+			}
+			return innerFilter;
+		}
+
+		async function render() {
+			if (view.fetched == undefined) view.fetched = await view.fetchProtocol(await view.getFilter());
+			let formatter = new Intl.NumberFormat(LANGUAGE, {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, currency: view.fetched[config.key].originCurrency});
+			view.dom.value.innerHTML = formatter.format(view.fetched[config.key].originValue);
+			let currencyFormatter = new Intl.NumberFormat(LANGUAGE, {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, style: "currency", currency: view.fetched[config.key].originCurrency});
+			let result = currencyFormatter.formatToParts(view.fetched[config.key].originValue);
+			for (let item of result) {
+				if (item.type == "currency") {
+					view.dom.currency.innerHTML = item.value;
+					break;
+				}
+			}
+			if (config.color) {
+				view.html.style.borderRight = `20px solid ${config.color}`;
+			}
+		}
+
+		await render();
+		view.renderFunction = render;
+		return view;
+	}
+
+	this.getCurrencyBoxView = async function(title, classList = []) {
+		let template = await TEMPLATE.get('CommonCurrencyBox');
+
+		let view = new DOMObject(template, {title});
+		for (let item of classList) {
+			view.html.classList.add(item);
+		}
+		return view;
+	}
+
+	this.renderCurrencyCompareBox = async function(dashboard, config, fetchProtocol) {
+		let ID = config.data.id;
+
+		let view = await object.getCurrencyCompareBoxView(config.title, config.classList)
+		dashboard.dom.container.append(view);
+
+		view.fetchProtocol = fetchProtocol;
+
+		view.getFilter = async function() {
+			let filter = await object.getCommonFilterData();
+			let innerFilter = {
+				id: ID, 
+				start: filter[filter.timeType].start, 
+				end: filter[filter.timeType].end, 
+				filterBy: filter.filterBy,
+				timeType: filter.timeType, 
+				groupBy: filter.groupBy
+			}
+			if (config.additional) {
+				Object.keys(config.additional).map(x => { innerFilter[x] =  config.additional[x] });
+			}
+			return innerFilter;
+		}
+
+		
+		async function render() {
+			let filter = await view.getFilter();
+			let formatter = new Intl.NumberFormat(LANGUAGE, {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2});
+			if (view.fetched == undefined) view.fetched = await view.fetchProtocol(filter);
+			view.dom.value.innerHTML = formatter.format(view.fetched[config.key].originValue);
+
+			let currencyFormatter = new Intl.NumberFormat(LANGUAGE, {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, style: "currency", currency: view.fetched[config.key].originCurrency});
+			let result = currencyFormatter.formatToParts(view.fetched[config.key].originValue);
+			for (let item of result) {
+				if (item.type == "currency") {
+					view.dom.currency.innerHTML = item.value;
+					break;
+				}
+			}
+
+			view.dom.percent.innerHTML = formatter.format(view.fetched[config.percentKey].originValue);
+
+			let diff = filter.end - filter.start + 1;
+			let unit = '';
+			if (filter.timeType == 'date') {
+				unit = 'days';
+			} else if (filter.timeType == 'month') {
+				unit = 'months';
+			}else if (filter.timeType == 'year') {
+				unit = 'years';
+			}
+
+			
+			view.dom.comparatorValue.innerHTML = diff;
+			view.dom.comparatorUnit.html(unit);
+			
+			let isNotChange = view.fetched[config.percentKey].originValue == 0;
+			let isIncrease = view.fetched[config.percentKey].originValue > 0 && !config.isInvert;
+
+			if (isNotChange) {
+				view.dom.comparatorBox.classList.add('equal');
+				view.dom.comparatorBox.classList.remove('down');
+				view.dom.comparatorBox.classList.remove('up');
+				view.dom.equal.show();
+				view.dom.down.hide();
+				view.dom.up.hide();
+				view.html.style.borderRight = `20px solid #039BE5`;
+			} else if (isIncrease) {
+				view.dom.comparatorBox.classList.remove('equal');
+				view.dom.comparatorBox.classList.remove('down');
+				view.dom.comparatorBox.classList.add('up');
+				view.dom.equal.hide();
+				view.dom.down.hide();
+				view.dom.up.show();
+				view.html.style.borderRight = `20px solid var(--main-sidebar-menu-button-selected-background-color)`;
+			} else {
+				view.dom.comparatorBox.classList.remove('equal');
+				view.dom.comparatorBox.classList.add('down');
+				view.dom.comparatorBox.classList.remove('up');
+				view.dom.equal.hide();
+				view.dom.down.show();
+				view.dom.up.hide();
+				view.html.style.borderRight = `20px solid #ff474e`;
+			}
+			
+		}
+
+		await render();
+		view.renderFunction = render;
+		return view;
+	}
+
+	this.getCurrencyCompareBoxView = async function(title, classList = []) {
+		let years = []
+		let template = await TEMPLATE.get('CommonCurrencyCompareBox');
+
+		let view = new DOMObject(template, {title});
+		for (let item of classList) {
+			view.html.classList.add(item);
+		}
+		return view;
+	}
+
 	this.renderChartByTime = async function(dashboard, config, fetchProtocol) {
 		let ID = config.data.id;
 
@@ -324,14 +560,14 @@ const CommonDashboard = function(main, parent) {
 
 		async function render() {
 			let filter = await object.getCommonFilterData();
-            let innerFilter = {
-                id: ID, 
-                start: filter[filter.timeType].start, 
-                end: filter[filter.timeType].end, 
-                filterBy: filter.filterBy,
-                timeType: filter.timeType, 
-                groupBy: filter.groupBy
-            }
+			let innerFilter = {
+				id: ID, 
+				start: filter[filter.timeType].start, 
+				end: filter[filter.timeType].end, 
+				filterBy: filter.filterBy,
+				timeType: filter.timeType, 
+				groupBy: filter.groupBy
+			}
 			if (config.additional) {
 				Object.keys(config.additional).map(x => { innerFilter[x] =  config.additional[x] });
 			}

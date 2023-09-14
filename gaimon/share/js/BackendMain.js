@@ -52,9 +52,8 @@ const BackendMain = function() {
 	object.tableViewType = 'Table';
 
 	this.init = async function() {
-		await object.getENUM();
 		for(let process of BACKEND_PREPROCESS){
-			process(object);
+			await process(object);
 		}
 		let result = await GLOBAL.AUTHEN.checkLogin();
 		if (!result.isSuccess) {
@@ -82,7 +81,6 @@ const BackendMain = function() {
 		}
 		let language = localStorage.getItem('LANGUAGE');
 		if (language != undefined && language != 'en') {
-			console.log(language);
 			object.personalBar.setLanguage(language);
 		}
 	}
@@ -118,6 +116,7 @@ const BackendMain = function() {
 		if (isMobile()) await object.initMobile();
 		else await object.initDesktop();
 		object.tabExtension = []
+		console.log('GeneralPage', object.menuDict['GeneralPage'])
 		await object.renderGaimonMenu();
 		await object.renderExtensionMenu();
 		let tabs = await object.protocol.utility.getJSPageTabExtension();
@@ -132,6 +131,11 @@ const BackendMain = function() {
 			object.menuDict['GeneralPage'] = {menu: generalMenu};
 			if (object.subMenu['GeneralPage'].length > 0) {
 				object.home.dom.menuBar.append(generalMenu);
+			}
+		} else {
+			if (object.subMenu['GeneralPage'].length == 0) {
+				console.log(object.menuDict['GeneralPage']);
+				console.log(object.menuDict['GeneralPage'].menu.html.classList.add("hidden"));
 			}
 		}
 		for (let pageID in main.pageIDDict) {
@@ -422,14 +426,5 @@ const BackendMain = function() {
 	this.appendNotificationEventType = async function(eventType, callback) {
 		if (GLOBAL.NOTIFICATION_EVENT_TYPE == undefined) GLOBAL.NOTIFICATION_EVENT_TYPE = {};
 		GLOBAL.NOTIFICATION_EVENT_TYPE[eventType] = callback;
-	}
-	
-	this.getENUM = async function() {
-		let result = await GET(`backend/enum/get`, undefined, undefined, undefined, true);
-		if (result.isSuccess) {
-			for (let key in result.result) {
-				window[key] = result.result[key];
-			}
-		}
 	}
 }

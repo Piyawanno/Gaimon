@@ -282,7 +282,7 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 	let iconDict = {}
 	if (!isImage) iconDict = await CREATE_SVG_ICON(icon)
 	else iconDict = await CREATE_IMAGE_ICON(icon)
-	let menu = {'name': name, 'isSVG': iconDict.isSVG, 'icon': iconDict.icon, 'hasAdd': hasAdd};
+	let menu = {'name': name, 'isSVG': iconDict.isSVG, 'icon': iconDict.icon, 'hasAdd': hasAdd, 'isMobile': isMobile()};
 	let tag;
 	if (isSubMenu == undefined) isSubMenu = false;
 	if (isSubMenu) {
@@ -589,6 +589,20 @@ async function SHOW_CONFIRM_DELETE_DIALOG(text, confirmCallback, cancelCallback)
 	}
 }
 
+async function SHOW_INFORMATION_DIALOG(text, callback){
+	let dialog = new DOMObject(TEMPLATE.InformationDialog, {text: text});
+	main.home.dom.alertDialog.html(dialog);
+
+	let body = document.getElementsByTagName('body')[0];
+	body.style.overflow = 'hidden';
+	dialog.html.style.top = `${window.pageYOffset}px`;
+
+	dialog.dom.confirm.onclick = async function(){
+		await CLOSE_ALERT_DIALOG();
+		if(callback != undefined) callback();
+	}
+}
+
 async function CLOSE_ALERT_DIALOG(){
 	main.home.dom.alertDialog.html('');
 	let body = document.getElementsByTagName('body')[0];
@@ -612,7 +626,7 @@ async function getDateRangeInput() {
 	let timeType = 'date';
 	let now = new Date();
 	let view = new DOMObject(await TEMPLATE.get("DateRangeInput"), {rootURL});
-	let startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+	let startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
 	let endDate = now;
 
 	function setDate(startDate, endDate) {
@@ -687,7 +701,7 @@ async function getDateRangeInput() {
 	view.dom.lastSevenDays.onclick = async function() {
 		let now = new Date();
 		let start = new Date();
-		start.setDate(start.getDate() - 7);
+		start.setDate(start.getDate() - 6);
 		timeType = 'date';
 		setDate(start, now);
 		highlightMenu(this);
@@ -697,7 +711,7 @@ async function getDateRangeInput() {
 	view.dom.lastThirtyDays.onclick = async function() {
 		let now = new Date();
 		let start = new Date();
-		start.setDate(start.getDate() - 30);
+		start.setDate(start.getDate() - 29);
 		timeType = 'date';
 		setDate(start, now);
 		highlightMenu(this);
@@ -746,7 +760,7 @@ async function getDateRangeInput() {
 
 	view.dom.lastFiveYears.onclick = async function() {
 		let now = new Date();
-		let start = new Date(now.getFullYear() - 5, 0, 1);
+		let start = new Date(now.getFullYear() - 4, 0, 1);
 		let end = new Date(now.getFullYear(), 12, 0);
 		timeType = 'year';
 		setDate(start, end);

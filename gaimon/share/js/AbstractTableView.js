@@ -683,7 +683,9 @@ const AbstractTableView = function(page) {
 		} else if (column.typeName == "Status") {
 			let item = data[column.columnName];
 			let classList = item.classList != undefined ? item.classList.join(" "): "";
-			value = `<div class="status_flag ${classList}"><span class="tooltiptext">${item.label}</span></div>`
+			let color = item.color != undefined ? item.color: '';
+			let style = color != '' ? `style="background:${color} !important;"`: '';
+			value = `<div ${style} class="status_flag ${classList}"><span class="tooltiptext" localize>${item.label}</span></div>`;
 		} else if (column.typeName == "Image") {
 			let item = data[column.columnName];
 			let icon = await CREATE_SVG_ICON("Image");

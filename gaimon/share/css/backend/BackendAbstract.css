@@ -389,6 +389,7 @@ input[type=color]{
 	height: 28px;
 	border-radius: 50%;
 	background-color: var(--main-sidebar-background-color);
+	object-fit: cover;
 }
 
 .abstract_table table, .abstract_table td, .abstract_table th{
@@ -455,6 +456,15 @@ input[type=color]{
 .abstract_input_box.full, .abstract_form_input_box.full{
 	flex-basis: 100%;
 	max-width: 100% !important;
+}
+
+.abstract_map{
+	width: 100%;
+    height: 500px;
+    position: relative;
+	z-index: 1;
+    border: 1px solid #afc6c9;
+    border-radius: 10px;
 }
 
 .abstract_form_input input, .abstract_search_input input{
@@ -888,7 +898,7 @@ input[type=color]{
 
 .abstract_personal_bar .navigator_container .item{
 	padding: 5px 10px;
-    background: #212429;	
+    background: #1f435b;	
     border-radius: 10px;
 	cursor: pointer;
 }
@@ -1298,6 +1308,12 @@ input[type=color]{
   
 .status_flag:hover .tooltiptext {
 	visibility: visible;
+}
+
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+	background-color: #162936;
+    color: #fff;
+    text-align: center;
 }
 
 @keyframes abstract_status_label_animation {

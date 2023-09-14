@@ -125,7 +125,7 @@ fieldset {
 
 .menuBar {
 	width: 100%;
-    height: calc(100% - 57px);
+    height: calc(100% - 45px);
     overflow-y: auto;
 }
 

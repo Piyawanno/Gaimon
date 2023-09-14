@@ -137,6 +137,12 @@ const AbstractPage = function(main, parent) {
 		return button;
 	}
 
+	this.prependButton = async function(config){
+		let button = await object.getButton(config);
+		object.home.dom.button.prepend(button);
+		return button;
+	}
+
 	this.appendTab = function(config) {
 		if (object.tabs.length == 0) {
 			if (object.isTabVisible) {
@@ -343,7 +349,7 @@ const AbstractPage = function(main, parent) {
 			filterDate.dom.startDate.value = startDate;
 			object.dateFilter.start = startDate;
 		} else {
-			filterDate.dom.startDate.start = object.dateFilter.start;
+			filterDate.dom.startDate.value = object.dateFilter.start;
 		}
 		object.home.dom.button.prepend(filterDate);
 	}

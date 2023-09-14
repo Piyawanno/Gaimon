@@ -9,6 +9,7 @@
 					</svg>
 				</div>
 			</div>
+			<div class="abstract_avatar_container hidden" rel="avatar"></div>
 			<div class="abstract_menu_mobile_cotaniner" rel="menuBar"></div>
 		</div>
 	</div>

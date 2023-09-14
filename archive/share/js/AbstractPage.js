@@ -509,7 +509,9 @@ const AbstractPage = function(main, parent) {
 			if(inputs[i].isRequired == undefined) inputs[i].isRequired = false;
 			if(inputs[i].isSearch == undefined) inputs[i].isSearch = false;
 			if(inputs[i].size == undefined) inputs[i].size = 'normal';
-			if(inputs[i].url != undefined && inputs[i].typeName != 'AutoComplete' && inputs[i].typeName != 'PrerequisiteReferenceSelect'){
+			if(inputs[i].isNumber == undefined) inputs[i].isNumber = false;
+			if(inputs[i].typeName == 'Currency' || inputs[i].typeName == 'Fraction' || inputs[i].typeName == 'Number') inputs[i].isNumber = true;
+			if(inputs[i].url != undefined && inputs[i].typeName != 'AutoComplete' && inputs[i].typeName != 'PrerequisiteReferenceSelect' && inputs[i].typeName != 'Image'){
 				let response = await GET(inputs[i].url, undefined, 'json', true);
 				if (response != undefined && response.isSuccess) {
 					inputs[[i]].option = response.results;
@@ -534,6 +536,7 @@ const AbstractPage = function(main, parent) {
 		input.isTable = false;
 		input.isRequired = false;
 		input.isSearch = false;
+		input.isNumber = false;
 		input.size = 'normal';
 		return input;
 	}
