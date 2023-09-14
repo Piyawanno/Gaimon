@@ -15,8 +15,10 @@ class ServiceStarter:
 			print(f"*** Error : Operation {operation} is not defined.")
 
 	def manageService(self, operation):
-		if self.namespace is None : namespaceOption = ''
-		else : namespaceOption = f' -n {self.namespace}'
+		if self.namespace is None or len(self.namespace) == 0:
+			namespaceOption = ''
+		else :
+			namespaceOption = f' -n {self.namespace}'
 		for service in self.config['service']:
 			name = service['name']
 			serviceCommand = service['command']
