@@ -105,11 +105,13 @@ const LoginPage = function() {
 	}
 
 	this.initEvent = function() {
-		object.home.dom.showPassword.onclick = function() {
-			if (object.home.dom.password.type == 'password') {
-				object.home.dom.password.type = 'text';
-			} else {
-				object.home.dom.password.type = 'password';
+		if(object.home.dom.showPassword){
+			object.home.dom.showPassword.onclick = function() {
+				if (object.home.dom.password.type == 'password') {
+					object.home.dom.password.type = 'text';
+				} else {
+					object.home.dom.password.type = 'password';
+				}
 			}
 		}
 

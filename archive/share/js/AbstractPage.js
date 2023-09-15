@@ -135,7 +135,6 @@ const AbstractPage = function(main, parent) {
 		if (GLOBAL.MERGED_INPUT[modelName] == undefined) {
 			let response = await GET(`input/${modelName}`, undefined, 'json', true);
 			if (response != undefined && response.isSuccess) {
-				console.log(response);
 				GLOBAL.INPUT_GROUP_ORDER[modelName] = response.inputGroup ? response.inputGroup : [];
 				let {inputs, reference, group} = await object.getMergedInput(response.mergedInput);
 				let parsedInput = await object.parseInputData(response.input);

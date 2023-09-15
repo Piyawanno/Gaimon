@@ -60,10 +60,13 @@ class UtilityController:
 			input = self.processDefault(modelClass)
 			mergedInput = self.processMergedDefault(modelClass)
 		else :
-			if not hasattr(modelClass, 'inputDict' ) or not hasattr(modelClass, 'input')  :
+			if hasattr(modelClass,'inputDict') and hasattr(modelClass,'input' )  :
+				input = modelClass.inputDict
+				mergedInput = modelClass.input
+			else:
 				Record.extractInput(modelClass, [])
-			input = modelClass.inputDict
-			mergedInput = modelClass.input
+				input = modelClass.inputDict
+				mergedInput = modelClass.input
 		
 		result = {
 			'isSuccess': True,
