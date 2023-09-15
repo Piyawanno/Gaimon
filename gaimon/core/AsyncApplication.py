@@ -189,8 +189,19 @@ class AsyncApplication(Application):
 				if len(currentList) == 0 : extended[modelName] = currentList
 				currentList.extend(inputList)
 		
+		extendedModel:InputExtension = {}
+		for name, modelClass in self.session.model.items() :
+			for name, column in modelClass.meta :
+				for parent in column.parentModel :
+					currentList = extendedModel.get(parent.__name__, [])
+					if len(currentList) == 0 : extendedModel[parent.__name__] = currentList
+					currentList.append(column.input)
+
+		if len(extendedModel) > 0 : print(extendedModel)
+
 		for name, modelClass in self.session.model.items() :
 			inputList = extended.get(name, [])
+			inputList.extend(extendedModel.get(name, []))
 			Record.extractInput(modelClass, inputList)
 	
 	def extendJSPageTab(self) :

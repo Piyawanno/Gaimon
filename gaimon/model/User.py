@@ -34,7 +34,7 @@ UserInputGroup.order = {
 class User(Record):
 	__avatar__ = {'column': 'id','url': 'user/avatar/image/'}
 	__tablename__ = "GaimonUser"
-	__grouplabel__ = UserInputGroup
+	__group_label__ = UserInputGroup
 
 	inputPerLine = 2
 

@@ -75,7 +75,7 @@ sudo ./setup.py link
 
 From this step, `setup.py` script will check the required configuration,
 if not existing, the required information will be requested over the CLI.
-Note that host of Database should be `localhost` and port of PostgreSQL `5431`.
+Note that host of Database should be `localhost` and port of PostgreSQL `5432`.
 For further configuration, the configuration file in `/etc/gaimon/`
 can be edited, see [Configuration](configuration/README.md) for more information.
 
