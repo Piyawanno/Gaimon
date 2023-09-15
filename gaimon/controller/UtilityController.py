@@ -60,19 +60,16 @@ class UtilityController:
 			input = self.processDefault(modelClass)
 			mergedInput = self.processMergedDefault(modelClass)
 		else :
-			print(modelClass)
-			if hasattr(modelClass, 'inputDict' ) and hasattr(modelClass, 'input')  :
-				input = modelClass.inputDict
-				mergedInput = modelClass.input
-			else:
+			if not hasattr(modelClass, 'inputDict' ) or not hasattr(modelClass, 'input')  :
 				Record.extractInput(modelClass, [])
-				input = modelClass.inputDict
-				mergedInput = modelClass.input
+			input = modelClass.inputDict
+			mergedInput = modelClass.input
 		
 		result = {
 			'isSuccess': True,
 			'inputGroup': getattr(modelClass, 'inputGroup', None),
 			'inputPerLine': getattr(modelClass, 'inputPerLine', None),
+			'children': [i.toMetaDict() for i in modelClass.children],
 			'input': input,
 			'avatar': getattr(modelClass, '__avatar__', 'share/icon/logo_padding.png'),
 			'mergedInput': mergedInput
