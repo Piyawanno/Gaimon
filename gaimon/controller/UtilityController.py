@@ -45,7 +45,6 @@ class UtilityController:
 		modelClass = self.session.model.get(model, None)
 		if modelClass is None:
 			modelClass = await self.application.dynamicHandler.getModel(model)
-			print('modelClass', modelClass)
 			if modelClass is None:
 				return RESTResponse({
 					'isSuccess': False,
@@ -57,14 +56,12 @@ class UtilityController:
 			parameter=[model],
 			limit=1
 		)
-  
 		if hasattr(modelClass,'__has_callable_default__' ) and modelClass.__has_callable_default__ :
 			input = self.processDefault(modelClass)
 			mergedInput = self.processMergedDefault(modelClass)
 		else :
 			print(modelClass)
-			
-			if hasattr(modelClass,'inputDict' )  and hasattr(modelClass,'input' )  :
+			if hasattr(modelClass, 'inputDict' ) and hasattr(modelClass, 'input')  :
 				input = modelClass.inputDict
 				mergedInput = modelClass.input
 			else:

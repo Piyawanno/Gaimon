@@ -22,30 +22,21 @@ SALT_LENGTH = 64
 
 class UserInputGroup(IntEnum):
 	GENERIC = 10
-	DRIVER_GENERIC = 20
-	DRIVER_LICENSE = 21	
-	ORGANIZATION_GENERIC = 30
 
 UserInputGroup.label = {
 	UserInputGroup.GENERIC: 'Generic Data',
-	UserInputGroup.DRIVER_GENERIC: 'Driver Generic Data',
-	UserInputGroup.DRIVER_LICENSE: 'Driver License',
-	UserInputGroup.ORGANIZATION_GENERIC: 'Organization Generic Data',
 }
 
 UserInputGroup.order = {
 	UserInputGroup.GENERIC: '1.0',
-	UserInputGroup.DRIVER_GENERIC: '2.0',
-	UserInputGroup.DRIVER_LICENSE: '3.0',
-	UserInputGroup.ORGANIZATION_GENERIC: '4.0'
 }
 
 class User(Record):
 	__avatar__ = {'column': 'id','url': 'user/avatar/image/'}
-
 	__tablename__ = "GaimonUser"
-	inputPerLine = 2
 	__grouplabel__ = UserInputGroup
+
+	inputPerLine = 2
 
 	username = StringColumn(
 		length=255,
@@ -86,9 +77,10 @@ class User(Record):
 	type = IntegerColumn(
 		default=0,
 		input=HiddenInput(label="Type",
-							isTable=False,
-							isSearch=False,
-							isRequired=False)
+			isTable=False,
+			isSearch=False,
+			isRequired=False
+		)
 	)
 	firstName = StringColumn(
 		length=255,
@@ -160,9 +152,7 @@ class User(Record):
 
 	isRoot = IntegerColumn(length=1, default=0)
 	isOwner = IntegerColumn(length=1, default=0)
-
 	isActive = IntegerColumn(default=0)
-
 	isDrop = IntegerColumn(length=1, isIndex=True, default=0)
 
 	def toOption(self):
@@ -227,3 +217,4 @@ class User(Record):
 	@staticmethod
 	def getSalt():
 		return secrets.token_bytes(SALT_LENGTH)
+
