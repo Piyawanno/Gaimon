@@ -197,8 +197,6 @@ class AsyncApplication(Application):
 					if len(currentList) == 0 : extendedModel[parent.__name__] = currentList
 					currentList.append(column.input)
 
-		if len(extendedModel) > 0 : print(extendedModel)
-
 		for name, modelClass in self.session.model.items() :
 			inputList = extended.get(name, [])
 			inputList.extend(extendedModel.get(name, []))
@@ -278,7 +276,6 @@ class AsyncApplication(Application):
 		config = await self.configHandler.getExtensionConfig(
 			f"{splitted[0]}.{splitted[1]}"
 		)
-		print(config[splitted[2]])
 		client = AsyncServiceClient(config[splitted[2]])
 		return client
 

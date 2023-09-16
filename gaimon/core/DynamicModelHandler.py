@@ -1,7 +1,7 @@
 from xerial.DBSessionBase import DBSessionBase
 from xerial.DBSessionPool import DBSessionPool
 from xerial.ModelClassGenerator import ModelClassGenerator
-from xerial.Record import Record
+from xerial.MetaDataExtractor import MetaDataExtractor
 from gaimon.model.DynamicModel import DynamicModel
 
 from typing import List
@@ -24,7 +24,7 @@ class DynamicModelHandler:
 			if model.attributeList == None: continue
 			model.attributeList = json.loads(model.attributeList)
 			modelClass = self.generator.append(model.modelName, model.attributeList)
-			Record.checkBackup(modelClass)
+			MetaDataExtractor.checkBackup(modelClass)
 			session.appendModel(modelClass)
 		if isCreateTable: await session.createTable()
 		self.sessionPool.model = session.model
