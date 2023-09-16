@@ -13,7 +13,7 @@ class PasswordRenewCodeGenerator(CommonDBBounded):
 			clause,
 			parameter=[uid],
 			isRelated=False,
-			isChildren=False
+			hasChildren=False
 		)
 		if len(userList) == 0:
 			print(f"*** Error : User ID={uid} cannot be found.")

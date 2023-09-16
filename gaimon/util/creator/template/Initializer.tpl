@@ -31,7 +31,7 @@ class {modelName}Initializer (BaseInitializer) :
 
 	async def drop(self, session) :
 		URL = f"{{self.rootURL}}{modulePath}/delete"
-		models = await session.select({modelName}, '', isChildren=True)
+		models = await session.select({modelName}, '', hasChildren=True)
 		result = [i.toDict() for i in models]
 		for i in result :
 			response = self.handler.post(URL, {{'id' : i['id']}})
