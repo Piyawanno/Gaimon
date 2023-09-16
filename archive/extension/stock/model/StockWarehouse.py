@@ -6,7 +6,7 @@ from xerial.FloatColumn import FloatColumn
 from xerial.JSONColumn import JSONColumn
 
 class StockWarehouse (Record) :
-	__tablename__ = 'StockWarehouse'
+	__table_name__ = 'StockWarehouse'
 
 	name = StringColumn(default="")
 	typeName = StringColumn(default="")

@@ -6,9 +6,12 @@ from gaimon.core.RESTResponse import RESTResponse, SuccessRESTResponse as Succes
 from xerial.ColumnType import ColumnType
 from xerial.input.InputType import InputType
 from xerial.Record import Record
+from xerial.DateColumn import DATE_FORMAT
+from xerial.DateTimeColumn import DATETIME_FORMAT
 from packaging.version import Version
 from typing import Dict, List
 from sanic import response
+from datetime import datetime, date
 
 import os, json, markdown, importlib, mimetypes, pystache, copy
 
@@ -56,17 +59,14 @@ class UtilityController:
 			parameter=[model],
 			limit=1
 		)
+		
+		if not (hasattr(modelClass,'inputDict') and hasattr(modelClass,'input')) :
+			Record.extractInput(modelClass, [])
+		input = modelClass.inputDict
+		mergedInput = modelClass.input
 		if hasattr(modelClass,'__has_callable_default__' ) and modelClass.__has_callable_default__ :
 			input = self.processDefault(modelClass)
 			mergedInput = self.processMergedDefault(modelClass)
-		else :
-			if hasattr(modelClass,'inputDict') and hasattr(modelClass,'input' )  :
-				input = modelClass.inputDict
-				mergedInput = modelClass.input
-			else:
-				Record.extractInput(modelClass, [])
-				input = modelClass.inputDict
-				mergedInput = modelClass.input
 		
 		result = {
 			'isSuccess': True,
@@ -75,8 +75,10 @@ class UtilityController:
 			'children': [i.toMetaDict() for i in modelClass.children],
 			'input': input,
 			'avatar': getattr(modelClass, '__avatar__', 'share/icon/logo_padding.png'),
-			'mergedInput': mergedInput
+			'mergedInput': mergedInput,
+			'attachedGroup': modelClass.attachedGroup,
 		}
+
 		if len(formList) == 0: return RESTResponse(result)
 		form = formList[0].toDict()
 		self.processInput(form['inputList'], form['groupList'], result)
@@ -89,6 +91,8 @@ class UtilityController:
 			default = copied.get('default', None)
 			default = default() if callable(default) else default
 			if hasattr(default, 'toDict') : default = default.toDict()
+			elif isinstance(default, date) : default = default.strftime(DATE_FORMAT)
+			elif isinstance(default, datetime) : default = default.strftime(DATETIME_FORMAT)
 			copied['default'] = default
 			input.append(copied)
 		return input
@@ -108,6 +112,8 @@ class UtilityController:
 				default = j.get('default', None)
 				default = default() if callable(default) else default
 				if hasattr(default, 'toDict') : default = default.toDict()
+				elif isinstance(default, date) : default = default.strftime(DATE_FORMAT)
+				elif isinstance(default, datetime) : default = default.strftime(DATETIME_FORMAT)
 				j['default'] = default
 		return mergedInput
 
