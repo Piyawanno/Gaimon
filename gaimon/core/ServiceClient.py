@@ -19,6 +19,8 @@ class ServiceClient:
 			self.user = user
 			self.password = password.encode()
 			self.isCheckPermission = True
+		self.ID = config.get('ID', None)
+		self.lastCheck = -1.0
 
 	def call(self, route, parameter=None, payload=None, headers=None):
 		headers = {} if headers is None else headers

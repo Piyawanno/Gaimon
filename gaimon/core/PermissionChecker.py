@@ -114,12 +114,15 @@ class PermissionChecker:
 		controller = self.application.getController(self.controllerName)
 		await self.setController(controller)
 		state.setController(controller)
+		return await self.runState(state)
+	
+	async def runState(self, state:RequestState) :
 		try:
-			await self.setSession(request)
+			await self.setSession(state.request)
 			await self.checkPermission(state)
 			if not state.isAllowed :
 				await self.releaseHandler(state)
-				return self.createException(request, "Unauthorized", 401)
+				return self.createException(state.request, "Unauthorized", 401)
 			await self.setControllerConfig(state)
 			await self.callPreProcess(state)
 			if self.isSocket: await state.callSocket()
@@ -129,12 +132,12 @@ class PermissionChecker:
 			await self.appendBusinessLog(state)
 		except CancelledError as error:
 			logging.error(f"Operation Canceled {self.callee.__ROUTE__.rule}")
-			state.result = self.createException(request, "Internal Error", 500)
+			state.result = self.createException(state.request, "Internal Error", 500)
 		except:
 			state.errorMessage = "Error by Checking Permission/Connecting DB"
 			state.result = None
 			self.setErrorLog(state)
-			state.result = self.createException(request, "Internal Error", 500)
+			state.result = self.createException(state.request, "Internal Error", 500)
 		await self.releaseHandler(state)
 		state.finalizeResult()
 		return state.result

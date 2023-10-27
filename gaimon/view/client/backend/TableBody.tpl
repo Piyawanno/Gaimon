@@ -9,6 +9,6 @@
     <td class="avatar"><img src="{{{rootURL}}}{{{avatar}}}{{#hasAvatarURL}}{{{avatarID}}}?{{{timestamp}}}{{/hasAvatarURL}}"></td>
     {{/hasAvatar}}
     {{#tbody}}
-    <td class="{{#isHidden}}hidden{{/isHidden}}" align="{{{align}}}" rel="{{{key}}}" localize>{{{value}}}</td>
+    <td class="{{#isLink}}hotLink{{/isLink}} {{#isHidden}}hidden{{/isHidden}}" align="{{{align}}}" rel="{{{key}}}" localize>{{{value}}}</td>
     {{/tbody}}
 </tr>

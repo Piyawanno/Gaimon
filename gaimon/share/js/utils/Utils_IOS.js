@@ -247,3 +247,15 @@ async function parseFromNative(json) {
 	}
 	return result;
 };
+
+async function REDIRECT(operation, data) {
+	if(window.CALLBACK == undefined) window.CALLBACK = {};
+	return new Promise(function(resolve, reject) {
+		try {
+			webkit.messageHandlers.operation.postMessage(JSON.stringify({operation, data}));
+			resolve();
+		} catch(error) {
+			reject(error);
+		}
+	});
+}

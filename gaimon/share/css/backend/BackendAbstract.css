@@ -161,6 +161,7 @@ input[type=color]{
 	gap: 10px;
 	align-items: center;
 	box-shadow: var(--box-shadow);
+	justify-content: center;
 }
 
 .abstract_button:hover{
@@ -202,6 +203,12 @@ input[type=color]{
 	border: none;
 	transition: .2s;
 }
+
+.abstract_menu_container .abstract_menu a {
+	color: var(--main-sidebar-background-color);
+	text-decoration: none;
+}
+
 
 .abstract_menu_container .abstract_menu:first-child{
 	border: none;
@@ -259,6 +266,12 @@ input[type=color]{
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	vertical-align: middle;
+}
+
+.abstract_table td.hotLink{
+	text-decoration: underline;
+	cursor: pointer;
+	color: cornflowerblue;
 }
 
 .abstract_formTable td, .abstract_formTable th{
@@ -421,6 +434,7 @@ input[type=color]{
 
 .abstract_table th{
 	text-align: left;
+	vertical-align: middle;
 }
 
 .abstract_form_input, .abstract_search_input{
@@ -460,7 +474,8 @@ input[type=color]{
 
 .abstract_map{
 	width: 100%;
-    height: 500px;
+    /* height: 500px; */
+	height: calc(100vh - 273px);
     position: relative;
 	z-index: 1;
     border: 1px solid #afc6c9;
@@ -733,6 +748,22 @@ input[type=color]{
 	text-align: center;
 }
 
+.abstract_input_view {
+	border-bottom: 1px solid;
+    border-color: #afc6c9;
+    border-radius: 0;
+    width: 100%;
+    text-align: left;
+    line-height: 20px;
+    padding: 7px 10px;
+    min-height: 31px;
+}
+
+.abstract_input_view.hotLink {
+	cursor: pointer;
+	color: cornflowerblue;
+}
+
 .abstract_pagination_container{
 	display: flex;
 	justify-content: center;
@@ -749,6 +780,10 @@ input[type=color]{
 	/* text-decoration: underline; */
 	/* text-underline-offset: 3px; */
 	/* text-decoration-thickness: 1.5px; */
+}
+
+.abstract_tab_menu.highlightTab a, .abstract_tab_menu:hover a{
+	color: #fff;
 }
 
 .abstract_pagination{
@@ -1255,13 +1290,14 @@ input[type=color]{
 	background-color: var(--main-sidebar-background-color);
 	color: #fff;
 	text-align: center;
-	padding: 5px 0;
+	/* padding: 5px 0; */
 	border-radius: 6px;
+	padding: 10px;
    
 	position: absolute;
 	z-index: 10;
 
-	width: 120px;
+	/* width: 120px; */
 	bottom: 100%;
 	left: 50%;
 	margin-left: -60px;
@@ -1305,6 +1341,30 @@ input[type=color]{
     border-style: solid;
     border-color: transparent transparent transparent var(--main-sidebar-background-color);
 }
+
+.abstract .abstract_step_container{
+	/* display: flex;
+	gap: 10px; */
+	margin: 0;
+	margin-bottom: 10px;
+	background: #fff;
+    border-color: #afc6c9;
+	padding: 0px;
+    gap: 5px;
+    border: 1px solid;
+    width: 100%;
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 1px 5px 0px rgba(0,0,0,0.2);
+}
+
+/* .abstract .abstract_step_container .abstract_step{
+	background: #fff;
+    box-shadow: var(--box-shadow);
+	border-radius: 10px;
+	padding: 10px 15px;
+	cursor: pointer;
+} */
   
 .status_flag:hover .tooltiptext {
 	visibility: visible;
@@ -1314,6 +1374,15 @@ input[type=color]{
 	background-color: #162936;
     color: #fff;
     text-align: center;
+}
+
+.abstract_form.none_style{
+	padding: 0 !important;
+    background: unset !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: unset !important;
+    /* display: block !important; */
 }
 
 @keyframes abstract_status_label_animation {

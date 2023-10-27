@@ -13,7 +13,7 @@ class LogFlusher:
 		self.application: AsyncApplication = application
 		if 'logFlusher' in config:
 			self.sleepTime = config['logFlusher']['sleepTime']
-			self.maxCount = 5  #config['logFlusher']['maxCount']
+			self.maxCount = config['logFlusher'].get('maxCount', 200)
 		else:
 			self.sleepTime = 30
 			self.maxCount = 200

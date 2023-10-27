@@ -41,6 +41,10 @@ class RequestState :
 		if self.callee.__ROUTE__.isLogData :
 			self.log['requestData'] = request.json
 	
+	def setEntity(self, entity:str) :
+		self.log['entity'] = entity
+		self.entity = entity
+	
 	def setController(self, controller) :
 		self.controller = controller
 		self.callable = getattr(controller, self.callee.__name__)

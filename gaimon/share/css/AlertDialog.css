@@ -47,6 +47,13 @@
     border-radius: unset;
 }
 
+.alertDialog .dialog .container .abstract_form_input {
+	background: #fff;
+    padding: 20px 30px;
+    padding-top: 0;
+    margin-top: -10px;
+}
+
 .alertDialog .dialog .container .body{
 	width: 100%;
 	background: #fff;

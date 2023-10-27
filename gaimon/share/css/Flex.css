@@ -154,8 +154,8 @@
 
 .flex { display: flex; }
 .flex-start {
-    display: flex;
-    justify-content: flex-start;
+    display: flex !important;
+    justify-content: flex-start !important;
 }
 
 .flex-end {

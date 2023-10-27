@@ -7,8 +7,7 @@ import json, sys, os, psutil, time
 
 def readConfig(
 	mainConfig: List[str],
-	sideConfig: Dict[str,
-						str],
+	sideConfig: Dict[str, str],
 	namespace: str = '',
 	basePath: str = None
 ) -> dict:
@@ -22,11 +21,13 @@ def readConfig(
 	config = {}
 	for configPath in mainConfig:
 		path = conform(f'{basePath}{configPath}')
+		if not os.path.isfile(path) : continue
 		with open(path, encoding="utf-8") as fd:
 			config.update(json.load(fd))
 
 	for name, configPath in sideConfig.items():
 		path = conform(f'{basePath}/{configPath}')
+		if not os.path.isfile(path) : continue
 		with open(path, encoding="utf-8") as fd:
 			config[name] = json.load(fd)
 	return config
@@ -98,11 +99,13 @@ def daemonize(name, action, callee, namespace: str = '', pidFilePath: str = None
 		if os.path.isfile(pidFilePath):
 			os.remove(pidFilePath)
 
-
 def setSystemPath(namespace):
-	import gaimon, site
+	path = f'/var/gaimon/package/{namespace}'
+	if not os.path.isdir(path) : return
+	import gaimon, site, pip
 	sitePackages = set(site.getsitepackages())
 	sitePackages = sitePackages.union({os.path.dirname(i) for i in gaimon.__path__})
 	filtered = [i for i in sys.path if i not in sitePackages]
-	filtered.append(f'/var/gaimon/package/{namespace}')
+	filtered.append(path)
 	sys.path = filtered
+	

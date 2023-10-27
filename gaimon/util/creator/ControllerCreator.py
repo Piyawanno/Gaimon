@@ -16,7 +16,7 @@ class ControllerCreator(CommonCodeGenerator):
 			print(f">>> Controller will not be created.")
 			return
 
-		path = f'{self.workingPath}/creator/template/Controller.tpl'
+		path = f'{self.workingPath}/template/Controller.tpl'
 		with open(path, 'rt', encoding="utf-8") as fd:
 			template = fd.read()
 

@@ -211,3 +211,20 @@ function readOfflineFile(name, type, index = 0, content="") {
 function getOfflineItems() {
 	return window.OFFLINE_ITEMS;
 }
+
+async function SEND_OPERATION(operation, data) {
+	console.log(operation);
+	console.log(data);
+	if (window.CALLBACK == undefined) window.CALLBACK = {}
+	let key = randomString(10);
+	return new Promise(function(resolve, reject) {
+		CALLBACK[key] = function(result) {
+			resolve(result)
+		};
+		Android.postMessage(JSON.stringify({
+			method: operation,
+			key: key,
+			data: data,
+		}));
+	});
+}

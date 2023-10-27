@@ -6,7 +6,7 @@ Gaimon promotes the **Design by Coding** method, which we apply
 in [XimpleSoft](https://www.ximplesoft.com/). The method allows us to develop
 our product in **Agile** fashion.
 Our team follows neither Scrum nor ExtremeProgramming.
-No tools like Kaban will be used, just pure coding.
+No tools like Kanban will be used, just pure coding.
 Our method is very similar to the method from 
 [Allen Holub](https://holub.com/), one of the author of
 [Agile Manifesto](https://agilemanifesto.org/display/000000305.html), who
@@ -83,7 +83,7 @@ the developer can start anywhere and implement the dependent component
 backwardly. Note that, each component should be firstly implemented
 in minimal form and add features only if required or necessary.
 
-Note that the mentioned principles or methods must not be strictly
+The mentioned principles or methods must not be strictly
 followed. They can be used, if they suit to the team and the project.
 They can be seen as a set of utilities like Gaimon, which is
 designed to provide framework and tools for the agile development
@@ -114,7 +114,7 @@ wait until the first implementation will be released. It is a far better
 option, if the design is directly implemented in the code and
 directly tested.
 
-In the Design by Coding, software is testing is equivalent to design testing.
+In the Design by Coding, software testing is equivalent to design testing.
 The automated testing or unit testing can be applied but not obligated to.
 Gaimon provides tools for unit testing as well as functional testing.
 In the Gaimon project, we prefer the functional testing over the unit testing
@@ -125,7 +125,7 @@ What if the implemented software component does not pass the test?
 For the simplest case, the error can be debugged. In the more complicated
 cases, the design must be revised. The rare but most complicated case
 is the redesign. Each team member, who gets involved more or less with
-the design by coding, must  be ready for all change situations.
+the design by coding, must be ready for all situations to change.
 The mentioned principles and methods in the prior chapter make the code
 ready to change but not given how to change. The change process can
 be achieved via [Refactoring](https://refactoring.com/).

@@ -7,6 +7,8 @@ AbstractInputUtil.prototype.getMergedInput = async function(mergedInput) {
 	for (let item of mergedInput) {
 		if (item.isGroup) {
 			let detail = JSON.parse(JSON.stringify(item));
+			if (item.input == undefined) item.input = [];
+			item.group = item.id;
 			let {inputs, reference, group} = await object.parseInputData(item.input);
 			for (let url in reference) {
 				if (referenceMap[url] == undefined) referenceMap[url] = reference[url];
@@ -25,84 +27,16 @@ AbstractInputUtil.prototype.getMergedInput = async function(mergedInput) {
 	return {inputs: input, reference: referenceMap, group: groupMap};
 }
 
-AbstractInputUtil.prototype.getMergedInputData = async function(modelName) {
+AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw = true) {
 	let object = this;
 	let result = {input: [], reference: [], groupDict: {}, groupInput: [], groupOrder: [], inputPerLine: 2};
 	if (GLOBAL.INPUT_RESPONSE == undefined) GLOBAL.INPUT_RESPONSE = {};
 	if (GLOBAL.INPUT == undefined) GLOBAL.INPUT = {};
-	if (GLOBAL.AVATAR == undefined) GLOBAL.AVATAR = {};
 	if (GLOBAL.MERGED_INPUT == undefined) GLOBAL.MERGED_INPUT = {};
-	if (GLOBAL.INPUT_REFERENCE == undefined) GLOBAL.INPUT_REFERENCE = {};
-	if (GLOBAL.INPUT_GROUP == undefined) GLOBAL.INPUT_GROUP = {};
-	if (GLOBAL.INPUT_GROUP_DICT == undefined) GLOBAL.INPUT_GROUP_DICT = {};
-	if (GLOBAL.INPUT_GROUP_ORDER == undefined) GLOBAL.INPUT_GROUP_ORDER = {};
-	if (GLOBAL.INPUT_PER_LINE == undefined) GLOBAL.INPUT_PER_LINE = {};
-	if (GLOBAL.MERGED_INPUT[modelName] == undefined) {
-		let response;
-		if (modelName.length != 0) response = await GET(`input/${modelName}`, undefined, 'json', true);
-		if (response != undefined && response.isSuccess) {
-			GLOBAL.INPUT_GROUP_ORDER[modelName] = response.inputGroup ? response.inputGroup : [];
-			GLOBAL.INPUT_RESPONSE[modelName] = response;
-			let {inputs, reference, group} = await object.getMergedInput(response.mergedInput);
-			let parsedInput = await object.parseInputData(response.input);
-			GLOBAL.INPUT[modelName] = parsedInput.inputs;
-			if (response.inputPerLine == null) GLOBAL.INPUT_PER_LINE[modelName] = 2
-			else GLOBAL.INPUT_PER_LINE[modelName] = response.inputPerLine
-			GLOBAL.MERGED_INPUT[modelName] = inputs;
-			GLOBAL.INPUT_REFERENCE[modelName] = reference;
-			GLOBAL.INPUT_GROUP_DICT[modelName] = group;
-			GLOBAL.AVATAR[modelName] = response.avatar;
-			let groupInputs = [];
-			for (let i in GLOBAL.INPUT_GROUP_ORDER[modelName]) {
-				let groupLabel = GLOBAL.INPUT_GROUP_ORDER[modelName][i];
-				let groupInput = GLOBAL.INPUT_GROUP_DICT[modelName][groupLabel.id];
-				groupInputs.push({'label': groupLabel.label, 'inputs': groupInput, 'isGroupInput': true})
-			}
-			GLOBAL.INPUT_GROUP[modelName] = groupInputs;
-		} else { 
-			if (modelName.length != 0) console.error(`${modelName} is not exist.`);
-			GLOBAL.INPUT_GROUP_ORDER[modelName] = [];
-			GLOBAL.INPUT_PER_LINE[modelName] = 2;
-			GLOBAL.INPUT[modelName] = [];
-			GLOBAL.MERGED_INPUT[modelName] = [];
-			GLOBAL.INPUT_REFERENCE[modelName] = [];
-			GLOBAL.INPUT_GROUP_DICT[modelName] = {};
-			GLOBAL.AVATAR[modelName] = '/share/icon/image.jpg';
-			let groupInputs = [];
-			for (let i in GLOBAL.INPUT_GROUP_ORDER[modelName]) {
-				let groupLabel = GLOBAL.INPUT_GROUP_ORDER[modelName][i];
-				let groupInput = GLOBAL.INPUT_GROUP_DICT[modelName][groupLabel.id];
-				groupInputs.push({'label': groupLabel.label, 'inputs': groupInput, 'isGroupInput': true})
-			}
-			GLOBAL.INPUT_GROUP[modelName] = groupInputs;
-			return result;
-		}
-	} else {
-		let response = GLOBAL.INPUT_RESPONSE[modelName];
-		if (response == undefined) return result;
-		let {inputs, reference, group} = await object.parseInputData(response.input);
-		GLOBAL.INPUT[modelName] = inputs;
-		GLOBAL.INPUT_REFERENCE[modelName] = reference;
-		GLOBAL.INPUT_GROUP_DICT[modelName] = group;
-		GLOBAL.AVATAR[modelName] = response.avatar;
-	}
-	result.input = JSON.parse(JSON.stringify(GLOBAL.MERGED_INPUT[modelName]));
-	result.reference = JSON.parse(JSON.stringify(GLOBAL.INPUT_REFERENCE[modelName]));
-	result.groupDict = JSON.parse(JSON.stringify(GLOBAL.INPUT_GROUP_DICT[modelName]));
-	result.groupInput = JSON.parse(JSON.stringify(GLOBAL.INPUT_GROUP[modelName]));
-	result.groupOrder = JSON.parse(JSON.stringify(GLOBAL.INPUT_GROUP_ORDER[modelName]));
-	result.inputPerLine = GLOBAL.INPUT_PER_LINE[modelName];
-	result.avatar = GLOBAL.AVATAR[modelName];
-	return result;
-}
-
-AbstractInputUtil.prototype.getRawInputData = async function(modelName) {
-	let object = this;
-	let result = {input: [], reference: [], groupDict: {}, groupInput: [], groupOrder: [], inputPerLine: 2};
-	if (GLOBAL.INPUT_RESPONSE == undefined) GLOBAL.INPUT_RESPONSE = {};
-	if (GLOBAL.INPUT == undefined) GLOBAL.INPUT = {};
 	if (GLOBAL.AVATAR == undefined) GLOBAL.AVATAR = {};
 	if (GLOBAL.INPUT_REFERENCE == undefined) GLOBAL.INPUT_REFERENCE = {};
+	if (GLOBAL.INPUT_CHILDREN == undefined) GLOBAL.INPUT_CHILDREN = {};
+	if (GLOBAL.INPUT_CHILDREN_MAP == undefined) GLOBAL.INPUT_CHILDREN_MAP = {};
 	if (GLOBAL.INPUT_GROUP == undefined) GLOBAL.INPUT_GROUP = {};
 	if (GLOBAL.INPUT_GROUP_DICT == undefined) GLOBAL.INPUT_GROUP_DICT = {};
 	if (GLOBAL.INPUT_GROUP_ORDER == undefined) GLOBAL.INPUT_GROUP_ORDER = {};
@@ -111,12 +45,43 @@ AbstractInputUtil.prototype.getRawInputData = async function(modelName) {
 		let response;
 		if (modelName.length != 0) response = await GET(`input/${modelName}`, undefined, 'json', true);
 		if (response != undefined && response.isSuccess) {
+			for (let input of response.input) {
+				for (let groupInput of response.inputGroup) {
+					groupInput.isGroup = true;
+					groupInput.group = groupInput.id;
+					if (groupInput.input == undefined) groupInput.input = [];
+					if (groupInput.id != input.group) continue;
+					groupInput.input.push(input);
+				}
+			}
+			for (let groupInput of response.inputGroup) {
+				response.input.push(groupInput);
+			}
+			for (let mergedInput of response.mergedInput) {
+				mergedInput.group = mergedInput.id;
+			}
+			if (GLOBAL.INPUT_CHILDREN[modelName] == undefined) GLOBAL.INPUT_CHILDREN[modelName] = [];
+			if (GLOBAL.INPUT_CHILDREN_MAP[modelName] == undefined) GLOBAL.INPUT_CHILDREN_MAP[modelName] = {};
+			let childInputs = [];
+			for (let child of response.children) {
+				if (!child.isTableForm) continue;
+				GLOBAL.INPUT_CHILDREN_MAP[modelName][child.modelName] = child.name;
+				childInputs.push(await object.getBaseInputData(child.modelName));
+			}
+			GLOBAL.INPUT_CHILDREN[modelName] = childInputs;
 			GLOBAL.INPUT_GROUP_ORDER[modelName] = response.inputGroup ? response.inputGroup : [];
 			GLOBAL.INPUT_RESPONSE[modelName] = response;
-			let {inputs, reference, group} = await object.parseInputData(response.input);
+			let reference, group;
+			let parsedInput = await object.parseInputData(response.input);
+			GLOBAL.INPUT[modelName] = parsedInput.inputs;
+			let parsedMergedInput = await object.getMergedInput(response.mergedInput);
+			GLOBAL.MERGED_INPUT[modelName] = parsedMergedInput.inputs;
+
+			reference = parsedInput.reference;
+			group = parsedInput.group
+			
 			if (response.inputPerLine == null) GLOBAL.INPUT_PER_LINE[modelName] = 2
 			else GLOBAL.INPUT_PER_LINE[modelName] = response.inputPerLine
-			GLOBAL.INPUT[modelName] = inputs;
 			GLOBAL.INPUT_REFERENCE[modelName] = reference;
 			GLOBAL.INPUT_GROUP_DICT[modelName] = group;
 			GLOBAL.AVATAR[modelName] = response.avatar;
@@ -133,6 +98,8 @@ AbstractInputUtil.prototype.getRawInputData = async function(modelName) {
 			GLOBAL.INPUT_PER_LINE[modelName] = 2;
 			GLOBAL.INPUT[modelName] = [];
 			GLOBAL.INPUT_REFERENCE[modelName] = [];
+			GLOBAL.INPUT_CHILDREN[modelName] = []
+			GLOBAL.INPUT_CHILDREN_MAP[modelName] = {};
 			GLOBAL.INPUT_GROUP_DICT[modelName] = {};
 			GLOBAL.AVATAR[modelName] = '/share/icon/image.jpg';
 			let groupInputs = [];
@@ -148,19 +115,41 @@ AbstractInputUtil.prototype.getRawInputData = async function(modelName) {
 		let response = GLOBAL.INPUT_RESPONSE[modelName];
 		if (response == undefined) return result;
 		let {inputs, reference, group} = await object.parseInputData(response.input);
+		let parsedMergedInput = await object.getMergedInput(response.mergedInput);
+		GLOBAL.MERGED_INPUT[modelName] = parsedMergedInput.inputs;
 		GLOBAL.INPUT[modelName] = inputs;
 		GLOBAL.INPUT_REFERENCE[modelName] = reference;
 		GLOBAL.INPUT_GROUP_DICT[modelName] = group;
 		GLOBAL.AVATAR[modelName] = response.avatar;
+		let childInputs = [];
+		for (let child of response.children) {
+			if (!child.isTableForm) continue;
+			GLOBAL.INPUT_CHILDREN_MAP[modelName][child.modelName] = child.name;
+			childInputs.push(await object.getBaseInputData(child.modelName));
+		}
+		GLOBAL.INPUT_CHILDREN[modelName] = childInputs;
 	}
-	result.input = JSON.parse(JSON.stringify(GLOBAL.INPUT[modelName]));
+	result.input = isRaw ? JSON.parse(JSON.stringify(GLOBAL.INPUT[modelName])) : JSON.parse(JSON.stringify(GLOBAL.MERGED_INPUT[modelName]));
 	result.reference = JSON.parse(JSON.stringify(GLOBAL.INPUT_REFERENCE[modelName]));
 	result.groupDict = JSON.parse(JSON.stringify(GLOBAL.INPUT_GROUP_DICT[modelName]));
 	result.groupInput = JSON.parse(JSON.stringify(GLOBAL.INPUT_GROUP[modelName]));
 	result.groupOrder = JSON.parse(JSON.stringify(GLOBAL.INPUT_GROUP_ORDER[modelName]));
 	result.inputPerLine = GLOBAL.INPUT_PER_LINE[modelName];
+	result.childInput = GLOBAL.INPUT_CHILDREN[modelName];
+	result.childInputParentMap = GLOBAL.INPUT_CHILDREN_MAP[modelName];
+	result.modelName = modelName;
 	result.avatar = GLOBAL.AVATAR[modelName];
 	return result;
+}
+
+AbstractInputUtil.prototype.getMergedInputData = async function(modelName) {
+	let object = this;
+	return await object.getBaseInputData(modelName, false);
+}
+
+AbstractInputUtil.prototype.getRawInputData = async function(modelName) {
+	let object = this;
+	return await object.getBaseInputData(modelName, true);
 }
 
 AbstractInputUtil.prototype.getInputData = async function(modelName) {
@@ -199,10 +188,24 @@ AbstractInputUtil.prototype.mergeInputFromModelName = async function(modelName, 
 	if (isForm) {
 		let result = await object.getMergedInputData(modelName);
 		for (let input of additionalInput) {
+			if (input.typeName == "Select"){
+				let currentOptions = JSON.parse(JSON.stringify(input.option));
+				input.option = [];
+				for(let j in currentOptions){
+					if(currentOptions[j].label != undefined){
+						input.option = currentOptions;
+						break;
+					}
+					input.option.push({
+						label: currentOptions[j][1],
+						value: currentOptions[j][0]
+					});
+				}
+			}
 			if (input.group != undefined) {
 				for (let item of result.input) {
 					if (!item.isGroup) continue;
-					if (item.id != input.group) continue;
+					if (item.group != input.group) continue;
 					if (item.input == undefined) item.input = [];
 					item.input.push(input);
 					item.input = object.sortInput(item.input);
@@ -256,56 +259,58 @@ AbstractInputUtil.prototype.mergeInput = async function(defaultInput, additional
 	
 AbstractInputUtil.prototype.parseInputData = async function(inputs, reference = {}, group = {}) {
 	let object = this;
-	for (let i in inputs) {
-		if (inputs[i].isGroup) {
-			await object.parseInputData(inputs[i].input, reference, group);
+	for (let input of inputs) {
+		if (input.isGroup) {
+			await object.parseInputData(input.input, reference, group);
 			continue;
 		}
 		let defaultData = await object.getDefaultInputData();
-		inputs[i] = Object.assign(defaultData, inputs[i]);
-		if (inputs[i].typeName == "Select"){
-			let currentOptions = JSON.parse(JSON.stringify(inputs[i].option));
-			inputs[i].option = [];
+		input = Object.assign(defaultData, input);
+		if (input.typeName == "Select"){
+			let currentOptions = JSON.parse(JSON.stringify(input.option));
+			input.option = [];
 			for(let j in currentOptions){
 				if(currentOptions[j].label != undefined){
-					inputs[i].option = currentOptions;
+					input.option = currentOptions;
 					break;
 				}
-				inputs[i].option.push({
+				input.option.push({
 					label: currentOptions[j][1],
 					value: currentOptions[j][0]
 				});
 			}
-		} else if (inputs[i].typeName == "ReferenceSelect") {
-			if (reference[inputs[i].url] == undefined) reference[inputs[i].url] = [];
-			reference[inputs[i].url].push(inputs[i].columnName);
-		} else if (inputs[i].typeName == "PrerequisiteReferenceSelect") {
-			inputs[i].isPrerequisiteReferenceSelect = true;
-			if (reference[inputs[i].url] == undefined) reference[inputs[i].url] = [];
-			reference[inputs[i].url].push(inputs[i].columnName)
-		} else if (inputs[i].typeName == "CheckBox"){
-			let currentOptions = JSON.parse(JSON.stringify(inputs[i].option));
-			inputs[i].option = [];
+		} else if (input.typeName == "ReferenceSelect") {
+			if (reference[input.url] == undefined) reference[input.url] = [];
+			reference[input.url].push(input.columnName);
+		} else if (input.typeName == "PrerequisiteReferenceSelect") {
+			input.isPrerequisiteReferenceSelect = true;
+			if (reference[input.url] == undefined) reference[input.url] = [];
+			reference[input.url].push(input.columnName)
+		} else if (input.typeName == "CheckBox"){
+			let currentOptions = JSON.parse(JSON.stringify(input.option));
+			input.option = [];
 			for(let j in currentOptions){
 				if(currentOptions[j].label != undefined){
-					inputs[i].option = currentOptions;
+					input.option = currentOptions;
 					break;
 				}
-				inputs[i].option.push({
+				input.option.push({
 					label: currentOptions[j][1],
 					value: currentOptions[j][0]
 				});
 			}
-		} else if (inputs[i].typeName == "AutoComplete"){
-			inputs[i].isAutoComplete = true;
-		} else if (inputs[i].typeName == "Image"){
-			inputs[i].isImage = true;
-		} else if (inputs[i].typeName == "FileMatrix"){
-			inputs[i].isFileMatrix = true;
+		} else if (input.typeName == "AutoComplete"){
+			input.isAutoComplete = true;
+		} else if (input.typeName == "Image"){
+			input.isImage = true;
+		} else if (input.typeName == "FileMatrix"){
+			input.isFileMatrix = true;
+		} else if (input.isAdvanceForm) {
+			input.isHidden = true;
 		}
-		if (inputs[i].group == undefined) continue;
-		if (group[inputs[i].group] == undefined) group[inputs[i].group] = [];
-		group[inputs[i].group].push(inputs[i]);
+		if (input.group == undefined) continue;
+		if (group[input.group] == undefined) group[input.group] = [];
+		group[input.group].push(input);
 	}
 	return {inputs: inputs, reference: reference, group: group};
 }
@@ -563,15 +568,16 @@ AbstractInputUtil.prototype.prepareInput = async function(modelName, input) {
 	let autoCompleteMap = {};
 	let fileMatrixMap = {};
 	let imageMap = {};
+	let advanceInputMap = {};
 	for (let item of input) {
 		if (item.isGroup) {
 			if (item.input == undefined) continue;
 			for (let detail of item.input) {
-				await object.setInputMapper(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap);
+				await object.setInputMapper(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap);
 			}
 		} else {
 			let detail = item;
-			await object.setInputMapper(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap)
+			await object.setInputMapper(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap);
 		}
 	}
 	if (Object.keys(inputs).length > 0) {
@@ -587,10 +593,10 @@ AbstractInputUtil.prototype.prepareInput = async function(modelName, input) {
 			}
 		}
 	}
-	return {exceptURL, autoCompleteMap, fileMatrixMap, imageMap, inputs}
+	return {exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap, inputs}
 }
 
-AbstractInputUtil.prototype.setInputMapper = async function(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap) {
+AbstractInputUtil.prototype.setInputMapper = async function(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap) {
 	inputs[detail.columnName] = detail;
 	if (detail.typeName == "PrerequisiteReferenceSelect") {
 		if (exceptURL[detail.url] == undefined) exceptURL[detail.url] = [];
@@ -599,6 +605,7 @@ AbstractInputUtil.prototype.setInputMapper = async function(detail, inputs,  exc
 	if (detail.typeName == "AutoComplete") autoCompleteMap[detail.columnName] = detail;
 	if (detail.typeName == "FileMatrix") fileMatrixMap[detail.columnName] = detail;
 	if (detail.typeName == "Image") imageMap[detail.columnName] = detail;
+	if (detail.isAdvanceForm) advanceInputMap[detail.columnName] = detail;
 }
 
 AbstractInputUtil.prototype.initCropperEvent = async function(key, dom){
@@ -798,4 +805,54 @@ AbstractInputUtil.prototype.getQuillConfig = async function(inputConfig){
 	}
 
 	return config;
+}
+
+AbstractInputUtil.prototype.getLinkColumn = function(input, data) {
+	let columnLinkMap = {};
+	function checkLinkColumn(item) {
+		if (item.isLink) {
+			let referenceValue = data[item.columnName];
+			if (item.linkColumn) {
+				referenceValue = data[item.linkColumn];
+			}
+			columnLinkMap[item.columnName] = {column: item, value: referenceValue};
+		} else {
+			item.isLink = false;
+		}
+	}
+
+	for (let item of input) {
+		if (item.isGroup) {
+			for (let subItem of item.input) {
+				checkLinkColumn(subItem);
+			}
+		} else {
+			checkLinkColumn(item);
+		}
+	}
+	return columnLinkMap;
+}
+
+AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMap) {
+	let value = columnLinkMap.value;
+	if (value == "") return;
+	if (columnLinkMap.column.foreignModelName) {
+		if (page.main.pageModelDict[columnLinkMap.column.foreignModelName] == undefined) return;
+		let modelName = columnLinkMap.column.foreignModelName;
+		let config = {};
+		config.data = {};
+		config.isView = true;
+		config.data[columnLinkMap.column.foreignColumn] = value;
+		page.main.pageModelDict[modelName].renderViewFromExternal(modelName, config, 'Form');
+	} else {
+		let config = {};
+		config.data = {};
+		config.isView = true;
+		if (columnLinkMap.column.linkColumn.length > 0) {
+			config.data[columnLinkMap.column.linkColumn] = value;
+		} else {
+			config.data[columnLinkMap.column.columnName] = value;
+		}
+		page.renderViewFromExternal(page.model, config, 'Form')
+	}
 }

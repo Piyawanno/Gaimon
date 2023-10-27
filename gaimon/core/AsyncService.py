@@ -14,7 +14,7 @@ class AsyncService(Service):
 	async def getHandler(self, name):
 		return super().getHandler(name)
 
-	async def prepareHandler(self, handler, request, parameter):
+	async def prepareHandler(self, handler, request, parameter, hasDBSession):
 		pass
 
 	async def releaseHandler(self, handler):

@@ -1,0 +1,17 @@
+{
+	"ID" : "gaimon",
+	"name" : "Gaimon",
+	"version" : "1.0",
+	"require" : [
+	],
+	"role" : [
+	],
+	"backend" : {
+		"script" : [
+		],
+		"css" : [
+		],
+		"menu" : [
+		]
+	}
+}

@@ -229,8 +229,18 @@ async function GET_CURRENT_PAGE(event) {
 async function RENDER_STATE(event) {
 	if (event == undefined) event = history;
 	let query = new URLSearchParams(window.location.search);
-	pageName = query.get('page');
-	if (pageName == null || event.state == null) {
+	let state = event.state;
+	let pageID = query.get('pageID');
+	if (pageID != null) {
+		state = query.get('state');
+		state= JSON.parse(state.b64decode());
+	}
+	let pageName = query.get('p');
+	// if (pageName != null) {
+	// 	state = localStorage.getItem(pageName);
+	// 	state = JSON.parse(state);
+	// }
+	if ((pageName == null && pageID == null) || state == null) {
 		if (main.homeMenu != undefined) {
 			await main.homeMenu.dom.menu.click();
 		} else {
@@ -238,42 +248,102 @@ async function RENDER_STATE(event) {
 		}
 		return;
 	}
-	let page = main.pageIDDict[event.state.PAGE];
+	let page = main.pageIDDict[state.PAGE];
 	if (page == undefined) return;
-	// await RENDER_NAVIGATOR();
-	if (event.state.isInit != undefined && event.state.isInit) {
+	await RENDER_NAVIGATOR();
+	if (state.isInit != undefined && state.isInit) {
 		let isSubMenu = false;
 		let menuDetail = main.menuDict[page.pageID];
-		if (menuDetail && menuDetail.parent) isSubMenu = true;
+		let parentID;
+		if (menuDetail && menuDetail.parent) {
+			parentID = menuDetail.parent;
+			isSubMenu = true;
+		}
+		if (state.isRenderFromTab) {
+			menuDetail = main.menuDict[state.tabPageID];
+			if (menuDetail && menuDetail.parent) {
+				parentID = menuDetail.parent;
+				isSubMenu = true;
+			}
+		}
+		let subMenu = main.subMenu[page.pageID];
+		
+		if (menuDetail && !isSubMenu && subMenu != undefined) {
+			for (let item of subMenu) {
+				if (!item.html.classList.contains("hidden")) {
+					let subPage = main.pageIDDict[item.data.pageID];
+					await subPage.highlightMenu(item.dom.menu, isSubMenu, false);
+					await page.highlightMenu(menuDetail.menu.dom.menu, false, false);
+					main.selectedSubMenu.push(item.dom.menu);
+					await subPage.setPageState();
+					SHOW_LOADING_DIALOG(async function(){
+						await subPage.onPrepareState();
+						await subPage.render();
+					});
+					return;
+				}
+			}
+		}
+
 		if (menuDetail && isSubMenu) {
-			let parent = main.extensionMenuMap[menuDetail.parent];
-			if (parent) await page.highlightMenu(parent.dom.menu, false, true);
+			let parent = main.menuDict[parentID];
+			if (parent) await page.highlightMenu(parent.menu.dom.menu, false, true);
 			await page.highlightMenu(menuDetail.menu.dom.menu, isSubMenu, !isSubMenu);
-			if (parent) main.selectedMenu.push(parent.dom.menu);
+			if (parent) main.selectedMenu.push(parent.menu.dom.menu);
 			main.selectedSubMenu.push(menuDetail.menu.dom.menu);
 		} else if (menuDetail) {
 			await page.highlightMenu(menuDetail.menu.dom.menu, false, false);
 			main.selectedMenu.push(menuDetail.menu.dom.menu);
-		}
+		} 
+		
 		SHOW_LOADING_DIALOG(async function(){
-			await page.prepare();
-			await page.render(event.state);
+			await page.onPrepareState();
+			await page.render(state);
 		});
 	} else {
 		SHOW_LOADING_DIALOG(async function(){
-			await page.prepare();
-			await page.renderState(event.state);
+			await page.onPrepareState();
+			await page.renderState(state);
+			await page.renderOtherState(state);
 		});
 	}
 	// await RENDER_MOST_USED(page);
 }
 
-async function PUSH_STATE(page, data, url) {
-	// url = await sha512(`${randomString(20)}_${Date.now()}`);
-	url = await sha1(`${randomString(20)}_${Date.now()}`);
+async function GET_STATE_URL(page, data) {
 	data.PAGE = page.pageID;
 	data.PAGE_NAME = page.title;
-	let pathName = window.location.pathname + '?page='+url;
+	state = JSON.stringify(data);
+	state = state.b64encode();
+	// let url = await sha1(`${randomString(10)}_${Date.now()}`);
+	// localStorage.setItem(url, state);
+	return window.location.pathname + `?pageID=${page.pageID}&title=${page.title}&state=${state}`;
+	// return rootURL + `?pageID=${page.pageID}&title=${page.title}&state=${state}`;
+	// return rootURL + `?p=${url}`;
+}
+
+async function PUSH_STATE(page, data, url) {
+	if(history.state){
+		let state = history.state;
+		let dataPAGE = url.split('/')[0];
+		let dataState = url.split('/')[1];
+		if(state.PAGE == dataPAGE && state.state == dataState) return;
+		else if(state.PAGE == dataPAGE && !dataState) return;
+	}
+	data.PAGE = page.pageID;
+	data.PAGE_NAME = page.title;
+	state = JSON.stringify(data)
+	state = state.b64encode()
+
+	let pathName = "";
+	// localStorage.setItem(url, state);
+	if (!data.isLegacy) {
+		let parameter = `?pageID=${page.pageID}&title=${page.title}&state=${state}`
+		pathName = window.location.pathname + parameter;
+	} else {
+		url = await sha1(`${randomString(10)}_${Date.now()}`);
+		pathName = window.location.pathname + '?p='+url;
+	}
 	history.pushState(data, '', pathName);
 }
 
@@ -285,18 +355,27 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 	let menu = {'name': name, 'isSVG': iconDict.isSVG, 'icon': iconDict.icon, 'hasAdd': hasAdd, 'isMobile': isMobile()};
 	let tag;
 	if (isSubMenu == undefined) isSubMenu = false;
+	let page = main.pageIDDict[pageID];
+	if (page == undefined) return;
+	let url = await page.getPageStateURL();
+	menu.url = url;
+	menu.pageID = pageID;
 	if (isSubMenu) {
 		tag = new DOMObject(TEMPLATE.SubMenuItem, menu);
 	} else {
 		tag = new DOMObject(TEMPLATE.MenuItem, menu);
 	}
-	let page = main.pageIDDict[pageID];
-	if (page == undefined) return;
+	
 	main.home.dom.container.onclick = function(){
 		main.home.dom.subMenuContainer.hide();
 	}
+	tag.dom.link.onclick = async function(e) {
+		e.preventDefault();
+	}
 	if (!isSubMenu) {
-		tag.dom.menu.addEventListener('click', async function() {
+		
+		tag.dom.menu.addEventListener('click', async function(e) {
+			e.preventDefault();
 			if (tag.hasChild) {
 				await page.highlightMenu(tag.dom.menu, isSubMenu, true);
 				main.selectedMenu.push(tag.dom.menu);
@@ -310,27 +389,28 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 				if (isMobile()) main.home.dom.menuContainer.classList.add('hidden');				
 				await page.setPageState();
 				SHOW_LOADING_DIALOG(async function(){
-					await page.prepare();
+					await page.onPrepareState();
 					await page.render();
 				});
 				main.home.dom.subMenuContainer.hide();
 				await setMostUsed(page);
 				// await RENDER_MOST_USED(page);
 			}
-			// await RENDER_NAVIGATOR();
+			await RENDER_NAVIGATOR();
 		});
 	} else {
 		tag.dom.menuButton.addEventListener('click', async function(e) {
+			e.preventDefault();
 			if (isMobile()) main.home.dom.menuContainer.classList.add('hidden');
 			await page.highlightMenu(tag.dom.menu, isSubMenu, false);
 			main.selectedSubMenu.push(tag.dom.menu);
 			await page.setPageState();
 			SHOW_LOADING_DIALOG(async function(){
-				await page.prepare();
+				await page.onPrepareState();
 				await page.render();
 			});
 			main.home.dom.subMenuContainer.hide();
-			// await RENDER_NAVIGATOR();
+			await RENDER_NAVIGATOR();
 			await setMostUsed(page);
 			// await RENDER_MOST_USED(page);
 		});
@@ -342,8 +422,8 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 					await page.highlightMenu(tag.dom.menu, isSubMenu, false);
 					main.selectedSubMenu.push(tag.dom.menu);
 					SHOW_LOADING_DIALOG(async function(){
-						await page.prepare();
-						await page.renderForm(page.model);
+						await page.onPrepareState();
+						await page.renderView(page.model);
 					});
 					main.home.dom.subMenuContainer.hide();
 					await setMostUsed(page);
@@ -412,7 +492,7 @@ async function RENDER_MOST_USED(page){
 
 async function RENDER_MOST_USED_PAGE(page){
 	await page.setPageState();
-	await page.prepare();
+	await page.onPrepareState();
 	await page.render();
 	// await RENDER_MOST_USED(page);
 }
@@ -540,7 +620,7 @@ async function SHOW_ALERT_DIALOG(text, callback){
 }
 
 async function SHOW_CONFIRM_DIALOG(text, confirmCallback, cancelCallback){
-	let dialog = new DOMObject(TEMPLATE.ConfirmDialog, {text: text});
+	let dialog = new DOMObject(TEMPLATE.ConfirmDialog, {text: text, isForm: false});
 	main.home.dom.alertDialog.html(dialog);
 
 	let body = document.getElementsByTagName('body')[0];
@@ -558,7 +638,7 @@ async function SHOW_CONFIRM_DIALOG(text, confirmCallback, cancelCallback){
 }
 
 async function SHOW_FINISHED_DIALOG(text, callback){
-	let dialog = new DOMObject(TEMPLATE.FinishedDialog, {text: text});
+	let dialog = new DOMObject(TEMPLATE.FinishedDialog, {text: text, isForm: false});
 	main.home.dom.alertDialog.html(dialog);
 
 	let body = document.getElementsByTagName('body')[0];
@@ -572,7 +652,7 @@ async function SHOW_FINISHED_DIALOG(text, callback){
 }
 
 async function SHOW_CONFIRM_DELETE_DIALOG(text, confirmCallback, cancelCallback){
-	let dialog = new DOMObject(TEMPLATE.ConfirmDeleteDialog, {text: text});
+	let dialog = new DOMObject(TEMPLATE.ConfirmDeleteDialog, {text: text, isForm: false});
 	main.home.dom.alertDialog.html(dialog);
 
 	let body = document.getElementsByTagName('body')[0];
@@ -590,7 +670,7 @@ async function SHOW_CONFIRM_DELETE_DIALOG(text, confirmCallback, cancelCallback)
 }
 
 async function SHOW_INFORMATION_DIALOG(text, callback){
-	let dialog = new DOMObject(TEMPLATE.InformationDialog, {text: text});
+	let dialog = new DOMObject(TEMPLATE.InformationDialog, {text: text, isForm: false});
 	main.home.dom.alertDialog.html(dialog);
 
 	let body = document.getElementsByTagName('body')[0];
@@ -816,4 +896,40 @@ function CHECK_PERMISSION_USER(extension, roles, permissions){
 		}		
 	}
 	return false;
+}
+
+async function SEND_OPERATION(operation, data) {
+}
+
+String.prototype.b64encode = function() { 
+	let text = this + '';
+	let result = btoa(unescape(encodeURIComponent(text)));
+    return result; 
+};
+String.prototype.b64decode = function() {
+	let text = this + '';
+    return decodeURIComponent(escape(atob(text))); 
+};
+
+String.prototype.hexEncode = function(){
+    let hex, i;
+
+    let result = "";
+    for (i=0; i<this.length; i++) {
+        hex = this.charCodeAt(i).toString(16);
+        result += ("000"+hex).slice(-4);
+    }
+
+    return result
+}
+
+String.prototype.hexDecode = function(){
+    let j;
+    let hexes = this.match(/.{1,4}/g) || [];
+    let back = "";
+    for(j = 0; j<hexes.length; j++) {
+        back += String.fromCharCode(parseInt(hexes[j], 16));
+    }
+
+    return back;
 }

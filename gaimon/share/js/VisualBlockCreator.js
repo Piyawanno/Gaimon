@@ -8,24 +8,62 @@ const VisualBlockCreator = function() {
 	this.isInit = false;
 	object.isDragAble = true;
 	object.isInputValid = true;
+	object.count = 0;
 
 	this.render = async function(page, stepForm, header, toolData, record) {
 		object.page = page;
 		object.stepForm = stepForm;
 		this.isInit = false;
 		const toolList = [];
+		object.count = 0;
 		for(const tool of toolData) {
 			const template = await TEMPLATE.get('VisualBlockTool', false);
 			const rendered = Mustache.render(template, tool);
 			toolList.push(rendered);
+			tool.originalLabel = tool.label;
 			object.toolDict[tool.step] = tool;
 		}
 		object.form = new DOMObject(await TEMPLATE.get('VisualBlockCreator', false), {toolList});
+		object.form.dom.visualblock_operation_container.style.maxHeight = '100%';
+		object.form.dom.visualblock_operation_container.style.overflowY = 'auto';
 		object.form.dom.visualblock_header.html(header);
 		stepForm.dom.form.html(object.form);
 		await object.canvas.create(object.form);
 		await object.handleTool();
 		await object.handleData(record);
+		this.isInit = true;
+	}
+
+	this.renderNewUI = async function(page, stepForm, header, toolData, record) {
+		object.page = page;
+		object.stepForm = stepForm;
+		this.isInit = false;
+		const toolList = [];
+		object.count = 0;
+		for(const tool of toolData) {
+			const template = await TEMPLATE.get('VisualBlockTool', false);
+			const rendered = Mustache.render(template, tool);
+			toolList.push(rendered);
+			tool.originalLabel = tool.label;
+			object.toolDict[tool.step] = tool;
+		}
+		object.form = new DOMObject(await TEMPLATE.get('VisualBlockCreator', false), {toolList});
+		object.form.dom.visualblock_operation_dialog.hide();
+		object.form.dom.visualblock_operation_dialog.classList.add('abstract_dialog');
+		object.form.dom.visualblock_operation_container.classList.add('large');
+		object.form.dom.visualblock_operation_container.classList.add('abstract_dialog_container');
+		object.form.dom.operation_container.style.paddingTop = '20px';
+		object.form.dom.operation_container.style.display = 'flex';
+		object.form.dom.operation_container.style.justifyContent = 'flex-end';
+		object.form.dom.operation_container.show();
+		object.form.dom.visualblock_header.html(header);
+		object.form.dom.cancel.onclick = async function(){
+			object.form.dom.visualblock_operation_dialog.hide();
+		}
+		stepForm.dom.form.html(object.form);
+		await object.canvas.create(object.form);
+		await object.handleTool(isNewUI = true);
+		await object.handleData(record, isNewUI = true);
 		this.isInit = true;
 	}
 
@@ -37,7 +75,7 @@ const VisualBlockCreator = function() {
 		object.isDragAble = false;
 	}
 
-	this.handleTool = async function() {
+	this.handleTool = async function(isNewUI = false) {
 		async function handleStart(event) {
 			const toolType = event.target.getAttribute('rel');
 			event.dataTransfer.setData("toolType", toolType.split('_')[2]);
@@ -49,9 +87,10 @@ const VisualBlockCreator = function() {
 		const content = object.form.dom.visualblock_content;
 		content.ondragover = object.handleDragTool;
 		content.ondrop = object.handleDropTool;
+		if(isNewUI) content.ondrop = object.handleNewUIDropTool;
 	};
 
-	this.handleData = async function(record) {
+	this.handleData = async function(record, isNewUI = false) {
 		const layout = record.stepLayout;
 		for(let i in record.step) {
 			const item = record.step[i];
@@ -71,11 +110,9 @@ const VisualBlockCreator = function() {
 				item.nextStep = `${record.step[item.nextStep].detailTable}_${item.nextStep}`;
 			}
 			await object.handleClearOperation();
-			console.log(item);
-			console.log(object.toolDict);
-			console.log(tool);
 			await object.createInput(id, tool, item);
-			await object.createTool(event, id, tool, item);
+			// await object.createTool(event, id, tool, item);
+			await object.createTool(event, id, tool, isNewUI);
 		}
 		await object.checkNextStep();
 		for(let i in record.step) {
@@ -133,6 +170,21 @@ const VisualBlockCreator = function() {
 		await object.checkNextStep();
 	};
 
+	this.handleNewUIDropTool = async function(event) {
+		event.preventDefault();
+		if(event.target != object.form.dom.visualblock_content) return;
+		const toolType = event.dataTransfer.getData("toolType");
+		const tool = object.toolDict[toolType];
+		let id = -1;
+		if(tool.oncreate != undefined) id = await tool.oncreate();
+		if(id != -1) {
+			await object.handleClearOperation();
+			await object.createInput(id, tool);
+			await object.createTool(event, id, tool, isNewUI = true);
+		}
+		await object.checkNextStep();
+	}
+
 	this.handleDragContent = async function(element) {
 		if (!object.isDragAble) return
 		let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -171,7 +223,6 @@ const VisualBlockCreator = function() {
 			blockOperation.classList.remove('hidden');
 			const splited = element.getAttribute('rel').split('_');
 			const form = object.form.dom.visualblock_operation[`visualblock_form_${splited[2]}_${splited[3]}`];
-			
 			if(form) {
 				form.tool = tool;
 				form.classList.remove('hidden');
@@ -179,6 +230,33 @@ const VisualBlockCreator = function() {
 			}
 		}
 	};
+
+	this.handleNewUIClickContent = async function(element, tool){
+		element.ondblclick = async function(){
+			await object.handleClearFocus();
+			await object.handleClearOperation();
+			element.classList.add('focus');
+			const blockOperation = element.querySelector('div[rel="visualblock_block_operation"]');
+			blockOperation.classList.remove('hidden');
+			const splited = element.getAttribute('rel').split('_');
+			const form = object.form.dom.visualblock_operation[`visualblock_form_${splited[2]}_${splited[3]}`];
+			object.form.dom.visualblock_operation_dialog.show();
+			object.form.dom.visualblock_operation_container.scrollTo(0, 0);
+			if(form) {
+				form.tool = tool;
+				form.classList.remove('hidden');
+				if(tool.onClick != undefined) await tool.onClick(element, object, `${splited[2]}_${splited[3]}`);
+			}
+		}
+
+		element.onclick = async function(event) {
+			await object.handleClearFocus();
+			await object.handleClearOperation();
+			element.classList.add('focus');
+			const blockOperation = element.querySelector('div[rel="visualblock_block_operation"]');
+			blockOperation.classList.remove('hidden');
+		}
+	}
 
 	this.handleBlockOperationClick = async function(element) {
 		const blockOperation = element.querySelector('div[rel="visualblock_block_operation"]');
@@ -241,7 +319,7 @@ const VisualBlockCreator = function() {
 		});
 	};
 
-	this.createTool = async function(event, id, tool) {
+	this.createTool = async function(event, id, tool, isNewUI = false) {
 		const sim = {...tool};
 		sim.id = id;
 		sim.operation = true;
@@ -254,16 +332,29 @@ const VisualBlockCreator = function() {
 		dom.html.style.left = `${event.offsetX - dom.html.clientWidth/2}px`;
 		dom.html.style.top = `${event.offsetY - dom.html.clientHeight/2}px`;
 		await object.handleDragContent(dom.html);
-		await object.handleClickContent(dom.html, tool);
+		if(!isNewUI) await object.handleClickContent(dom.html, tool);
+		else await object.handleNewUIClickContent(dom.html, tool);
 		await object.handleBlockOperationClick(dom.html);
 		dom.html.click();
 	};
 
 	this.createInput = async function(id, tool, data) {
+		object.count = object.count+1;
+		let label = tool.label;
+
+		if(data == undefined) {
+			label = object.count+' '+tool.originalLabel;
+		}else if(data['name'] && data['name'] != '') {
+			label = data['name'];
+			data['name']= {'name': data['name']};
+		}else{
+			label = object.count+' '+tool.originalLabel;
+		}
+		tool.label = label;
 		const option = {
 			id,
 			step : tool.step,
-			label : tool.label
+			label : label
 		};
 		const form = new DOMObject(await TEMPLATE.get('VisualBlockForm'), option);
 		for(const item of tool.input) {
@@ -349,7 +440,7 @@ const VisualBlockCreator = function() {
 			data: data,
 			title: '',
 			inputs: inputList,
-			inputPerLine: 1});
+			inputPerLine: 2});
 		// return new DOMObject(form.dom.form.html);
 		// return form.dom.form;
 		form.html = form.dom.form;

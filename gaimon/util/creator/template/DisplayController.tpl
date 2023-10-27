@@ -17,6 +17,11 @@ __EXTENSION_CSS__ = [
 	'{modelName}.css'
 ]
 
+__EXTENSION_INCOMPRESSIBLE_CSS__ = [
+	'FontFamily.css',
+]
+
+
 __EXTENSION_JS__ = [
 	'{modelName}Display.js'
 ]
@@ -34,13 +39,16 @@ class {modelName}DisplayController :
 	
 	@GET('/{modulePath}', role=['guest'])
 	async def renderIndex(self, request) :
+		self.page.setRequest(request)
 		self.page.reset()
 		self.page.title = self.title
 		self.page.enableAuthentication()
 		self.page.extendCSS(__CSS__)
 		self.page.extendJS(__JS__)
 		self.page.extendCSS(__EXTENSION_CSS__, '{modulePath}')
+		self.page.extendIncompressibleCSS(__EXTENSION_INCOMPRESSIBLE_CSS__, '{modulePath}')
 		self.page.extendJS(__EXTENSION_JS__, '{modulePath}')
+
 		self.page.favicon = 'share/icon/favicon.png'
 
 		template = self.theme.getTemplate('{modulePath}/{modelName}Display.tpl')

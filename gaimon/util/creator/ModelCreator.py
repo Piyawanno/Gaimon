@@ -16,7 +16,7 @@ class ModelCreator(CommonCodeGenerator):
 			print(f">>> Model will not be created.")
 			return
 
-		path = f'{self.workingPath}/creator/template/Model.tpl'
+		path = f'{self.workingPath}/template/Model.tpl'
 		with open(path, 'rt', encoding="utf-8") as fd:
 			template = fd.read()
 

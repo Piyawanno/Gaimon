@@ -549,3 +549,11 @@ class UserController:
 		if not os.path.isfile(path):
 			return await response.file(f"{self.resourcePath}share/icon/logo_padding.png")
 		return await response.file(path)
+
+	@POST("/user/option/getByIDList", permission=[PT.READ])
+	async def getUserOptionByIDList(self, request):
+		IDList = [int(i) for i in request.json['IDList']]
+		IDclause = ",".join(len(IDList)*'?')
+		clause = f"WHERE id IN ({IDclause}) AND isDrop=0"
+		models:List[User] = await self.session.select(User, clause, parameter=IDList)
+		return Success({i.id:i.toOption() for i in models})

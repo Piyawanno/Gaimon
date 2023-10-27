@@ -1,6 +1,7 @@
 from gaimon.core.ExtensionConfigHandler import ExtensionConfigHandler
 from gaimon.util.PathUtil import conform, copy, link
 from xerial.Input import Input
+from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from typing import Dict, List
 
 import os, logging, json
@@ -30,42 +31,68 @@ class Extension:
 		)
 		self.configHandler.path = self.path
 
-	# NOTE
-	# This method will be called by initializing the extension by running
-	# the extension for the first time. It prepares configuration path
-	# and resource path of extension and will be used application wide.
 	async def initialize(
 		self,
 		isCopy: bool = True,
 		isForce: bool = False,
 		isSetLocalConfig: bool = True
 	):
+		"""
+		This method will be called by initializing the extension by running
+		the extension for the first time. It prepares configuration path
+		and resource path of extension and will be used application wide.
+
+		Parameter
+		---------
+		isCopy: If True, the configuration will be copied to the destination path.
+		isForce: If True, the Extension will be initialized without checking the previous initialization.
+		isSetLocalConfig: If True, the configuration will be set to the local
+		"""
 		if isCopy: self.initializeCopy(isForce)
 		else: self.initializeLink(isForce)
 		if isSetLocalConfig:
 			self.configHandler.setExtensionLocalConfig()
 
-	# NOTE
-	# This method will be called by every start of application.
-	# It should prepare extension state, which will be used from
-	# start to the termination of application.
 	async def load(self, application):
+		"""
+		This method will be called by every start of application.
+		It should prepare extension state, which will be used from
+		start to the termination of application.
+
+		Parameter
+		---------
+		application: The GaimonApplication to get the application configuration and setup.
+		"""
 		pass
 
-	# NOTE
-	# This method will be called by activation of extension for
-	# the entity. Since Gaimon does not support multiple tenancies
-	# (multiple entities), this method will never be called.
-	# The method will be used for GaimonCloud.
-	async def activate(self, entity, application, session):
+	async def activate(self, entity:str, application, session:AsyncDBSessionBase):
+		"""
+		This method will be called by activation of extension for
+		the entity. Since Gaimon does not support multiple tenancies
+		(multiple entities), this method will never be called.
+		The method will be used for GaimonCloud.
+
+		Parameter
+		---------
+		entity: Name of the entity
+		application: The GaimonApplication to get the application configuration and setup.
+		session: Database Session
+		"""
 		if application.isLocalConfig:
 			self.configHandler.setEntityConfig(entity)
 
-	# NOTE
-	# This method will be called by creating an user account.
-	# Configuration of user should be copplied to resource path
-	# or it can be extended to other purpose.
-	async def activateByUserCreation(self, uid, application, session):
+	async def activateByUserCreation(self, uid:int, application, session:AsyncDBSessionBase):
+		"""
+		This method will be called by creating an user account.
+		Configuration of user should be copied to resource path
+		or it can be extended to other purpose.
+
+		Parameter
+		---------
+		uid: User ID
+		application: The GaimonApplication to get the application configuration and setup.
+		session: Database Session
+		"""
 		if application.isLocalConfig:
 			self.configHandler.setUserConfig(uid)
 

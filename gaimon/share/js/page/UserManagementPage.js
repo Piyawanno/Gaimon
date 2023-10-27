@@ -27,19 +27,19 @@ const UserManagementPage = function(main, parent) {
 	}
 
 	this.renderState = async function(state) {
-		if (state.state == 'form') await object.renderForm('User', {isSetState: false, data: state.data, inputs: state.inputs, isView: state.isView});
+		if (state.state == 'form') await object.renderView('User', {isSetState: false, data: state.data, inputs: state.inputs, isView: state.isView});
 	}
 
 	this.getData = async function(limit){
 		await object.renderUser(limit);
 	}
 
-	this.renderForm = async function(modelName, config = {}, viewType='Form') {
+	this.renderView = async function(modelName, config = {}, viewType='Form') {
 		if(config.data != undefined){
 			delete config.data.localize;
 			config.data = await main.protocol.user.getUserByID({id: config.data.id});
 		}
-		let view = await object.renderView(modelName, config, viewType);
+		let view = await AbstractPage.prototype.renderView.call(this, modelName, config, viewType);
 		if(config.data && config.data.driver){
 			view.setData(config.data.driver);
 		}

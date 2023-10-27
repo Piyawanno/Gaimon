@@ -25,14 +25,14 @@ const PermissionRoleManagementPage = function(main, parent) {
 	}
 
 	this.renderState = async function(state) {
-		if (state.state == 'form') await object.renderForm('UserGroup', {isSetState: false, data: state.data, inputs: state.inputs, isView: state.isView});
+		if (state.state == 'form') await object.renderView('UserGroup', {isSetState: false, data: state.data, inputs: state.inputs, isView: state.isView});
 	}
 
 	this.getData = async function(limit){
 		await object.renderRole(limit);
 	}
 
-	this.renderForm = async function(modelName, config = {}) {
+	this.renderView = async function(modelName, config = {}, viewType = 'Form') {
 		await object.renderRoleForm(modelName, config);
 	}
 
@@ -46,10 +46,10 @@ const PermissionRoleManagementPage = function(main, parent) {
 		let table = await object.renderTable('UserGroup', results);
 	}
 
-	this.renderRoleForm = async function(modelName, config = {}) {
+	this.renderRoleForm = async function(modelName, config = {}, viewType = 'Form') {
 		config.title = 'Add Permission Role';
 		if (config.data) config.title = 'Edit Permission Role';
-		let form = await AbstractPage.prototype.renderForm.call(this, modelName, config);
+		let form = await AbstractPage.prototype.renderView.call(this, modelName, config, viewType);
 		form.dom.form.tables = [];
 		let permissions = undefined;
 		if (config == undefined) config = {};

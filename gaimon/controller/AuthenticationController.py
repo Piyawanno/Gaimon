@@ -5,7 +5,7 @@ from gaimon.model.User import User
 from gaimon.model.PasswordRenew import PasswordRenew
 from gaimon.core.RESTResponse import RESTResponse 
 from sanic import response
-from redis import Redis
+from aioredis import Redis
 from datetime import datetime
 from typing import List
 
@@ -124,11 +124,12 @@ class AuthenticationController:
 		request.ctx.session['role'] = ['guest']
 		cached = __CACHED_PAGE__.get('authentication', None)
 		if cached is not None: return response.html(cached)
+		self.page.setRequest(request)
 		self.page.reset()
 		self.page.title = f"{self.title} - LOGIN"
 		self.page.enableCrypto()
 		self.page.extendJS(__JS__)
-		self.page.extendCSS(__INCOMPRESSIBLE_CSS__, isCompressible=False)
+		self.page.extendIncompressibleCSS(__INCOMPRESSIBLE_CSS__)
 		self.page.extendCSS(__CSS__)
 		template = self.theme.getTemplate('Login.tpl')
 		data = {
@@ -188,6 +189,7 @@ class AuthenticationController:
 			)
 			return response.html(page, status=status)
 		await self.setUserSession(request, reference.uid)
+		self.page.setRequest(request)
 		return await self.renderRenewPassword(reference.uid, code)
 
 	@POST("/authentication/check/renewPassword", role=['guest'])
@@ -256,6 +258,7 @@ class AuthenticationController:
 	async def renderResetPasswordIndex(self, request, hash):
 		userID = await self.application.redis.hget(self.RESET_PASSWORD_KEY, hash)
 		if userID is None: return response.html("404 Not Found", status=404)
+		self.page.setRequest(request)
 		return await self.renderResetPasswordPage(hash, userID)
 
 	@POST("/authentication/reset/password", role=['guest'])

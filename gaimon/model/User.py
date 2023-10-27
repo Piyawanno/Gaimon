@@ -85,7 +85,7 @@ class User(Record):
 	firstName = StringColumn(
 		length=255,
 		input=TextInput(
-			label="First Name",
+			label="Name",
 			order="3",
 			group=UserInputGroup.GENERIC,
 			isTable=True,
@@ -96,7 +96,7 @@ class User(Record):
 	lastName = StringColumn(
 		length=255,
 		input=TextInput(
-			label="Last Name",
+			label="Surname",
 			order="4",
 			group=UserInputGroup.GENERIC,
 			isTable=True,

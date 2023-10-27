@@ -23,8 +23,8 @@ const TemplateCreator = function(main, page) {
 		object.creator.image = new TemplateImageCreator(main, this);
 		object.creator.table = new TemplateTableCreator(main, this);
 		if(home == undefined) return;
-		let button = await object.getButton({cssClass: 'import_button', ID: 'template', label: 'Template', SVG: await CREATE_SVG_ICON('Template')});
-		home.dom.button.append(button);
+		object.home = home;
+		let button = await object.appendAdditionalButton({cssClass: 'import_button', ID: 'template', label: 'Template', SVG: await CREATE_SVG_ICON('Template')});
 		button.dom.template.onclick = async function(){
 			await object.getData(object.limit);
 			await object.changeState({state: 'template'}, `${object.page.pageID}/template`, object.page);
@@ -32,7 +32,7 @@ const TemplateCreator = function(main, page) {
 	}
 
 	this.renderState = async function(state) {
-		if (state.state == 'form') await object.renderForm(page.model, {isSetState: false, data: state.data, isView: state.isView});
+		if (state.state == 'form') await object.renderView(page.model, {isSetState: false, data: state.data, isView: state.isView});
 	}
 
 	this.getData = async function(limit = 10){
@@ -83,16 +83,16 @@ const TemplateCreator = function(main, page) {
 		object.title = `${page.title} Template`;
 		await AbstractPage.prototype.render.call(this);
 		object.home.dom.add.onclick = async function(){
-			await object.renderForm('Template', {isSetState: true});
+			await object.renderView('Template', {isSetState: true});
 		}
 	}
 
-	this.renderForm = async function(model, config){
+	this.renderView = async function(model, config, viewType = 'Form'){
 		if(config == undefined) config = {};
 		if(config.isSetState == undefined) config.isSetState = true;
 		let formConfig = JSON.parse(JSON.stringify(config));
 		formConfig.isSetState = false;
-		object.templateForm = await AbstractPage.prototype.renderForm.call(this, model, formConfig);
+		object.templateForm = await AbstractPage.prototype.renderView.call(this, model, formConfig, viewType);
 		object.templateForm.dom.title.html(`Add ${page.title} Template`);
 		let template = new DOMObject(TEMPLATE.Template);
 		object.templateForm.dom.additionalForm.append(template);

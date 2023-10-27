@@ -62,6 +62,16 @@ this.getPythonDateFormat = async function(date){
 	return `${year}-${month}-${day}`;
 }
 
+this.getPythonDateTimeFormat = async function(date){
+	let day = `${date.getDate()}`.length == 1 ? `0${date.getDate()}` : date.getDate();
+	let month = `${date.getMonth()+1}`.length == 1 ? `0${date.getMonth()+1}` : date.getMonth()+1;
+	let year = date.getFullYear();
+	let hour = `${date.getHours()}`.length == 1 ? `0${date.getHours()}` : date.getHours();
+	let minute = `${date.getMinutes()}`.length == 1 ? `0${date.getMinutes()}` : date.getMinutes();
+	let second = `${date.getSeconds()}`.length == 1 ? `0${date.getSeconds()}` : date.getSeconds();
+	return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
 function dateToDateID(date) {
 	let now = new Date();
 	let DAY_SECONDS = 60 * 60 * 24 * 1000.0;

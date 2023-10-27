@@ -48,13 +48,29 @@ const AbstractTableForm = function(page) {
 		await object.page.util.setFileMatrixMap(view, fileMatrixMap);
 		await object.page.util.setImageMap(view, imageMap);
 		await object.page.util.setPrerequisiteInput(modelName, exceptURL, view, config.data);
+
+		let columnLinkMap = {};
+		if (config.data) {
+			columnLinkMap = AbstractInputUtil.prototype.getLinkColumn(input, config.data)
+		}
+
 		if (config.isUpdate) {
 			view.id = config.data.id;
 			view.record = config.data;
 			view.setData(config.data);
 			for (let i in view.__autocomplete__) {
-				await view.fetchValueAutocomplete(view.__autocomplete__[i], config.data[i]);
+				await view.fetchValueAutocomplete(view.__autocomplete__[i], config.data[i], config.data, view.dom[`${i}_view`], i);
 			}
+			for (let columnName in columnLinkMap) {
+				if (config.isView && columnLinkMap[columnName]) {
+					view.dom[`${columnName}_view`].classList.add('hotLink');
+					view.dom[`${columnName}_view`].onclick = async function() {
+						AbstractInputUtil.prototype.triggerLinkEvent(object.page, columnLinkMap[columnName]);
+					}
+				}
+			}
+			
+			// view
 		}
 		
 		if(config.hasDelete){

@@ -13,7 +13,7 @@ __namespace__ = '' if __option__.namespace is None else __option__.namespace
 __config__ = readGaimonConfig(__namespace__)
 
 from gaimon.GaimonApplication import GaimonApplication
-# if len(__namespace__) : setSystemPath(__namespace__)
+if len(__namespace__) : setSystemPath(__namespace__)
 
 __gaimon__ = GaimonApplication(__config__, __namespace__)
 application = __gaimon__.application

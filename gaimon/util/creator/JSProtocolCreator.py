@@ -16,7 +16,7 @@ class JSProtocolCreator(CommonCodeGenerator):
 			print(f">>> JS-Protocol will not be created.")
 			return
 
-		path = f'{self.workingPath}/creator/template/JSProtocol.tpl'
+		path = f'{self.workingPath}/template/JSProtocol.tpl'
 		with open(path, 'rt', encoding="utf-8") as fd:
 			template = fd.read()
 

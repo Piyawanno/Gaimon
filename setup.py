@@ -45,12 +45,7 @@ def __copy__(source, destination):
 class GaimonSetup :
 	def __init__(self) :
 		self.rootPath = os.path.dirname(os.path.abspath(__file__))
-		self.sitePackagesPath = ''
-		for path in site.getsitepackages()[::-1]:
-			if os.path.isdir(path): 
-				self.sitePackagesPath = path
-				break
-		
+		self.getSitePackagePath()
 		self.script = [
 			'gaimon',
 			'gaimon-notification',
@@ -58,6 +53,7 @@ class GaimonSetup :
 			'gaimon-module-create',
 			'gaimon-extension-create',
 			'gaimon-extension-init',
+			'gaimon-extension-enable',
 			'gaimon-mvc-create',
 			'gaimon-display-create',
 			'gaimon-user-create',
@@ -75,6 +71,7 @@ class GaimonSetup :
 			'gaimon-log-analyze',
 			'gaimon-service',
 			'gaimon-namespace-init',
+			'gaimon-namespace-package',
 			'gaimon-code-format',
 		]
 
@@ -115,6 +112,14 @@ class GaimonSetup :
 			(f'ServiceStarter.example.json', 'ServiceStarter.json'),
 			(f'ServiceMonitor.example.json', 'ServiceMonitor.json'),
 		]
+	
+	def getSitePackagePath(self) :
+		self.sitePackagesPath = ''
+		for path in site.getsitepackages()[::-1]:
+			if os.path.isdir(path): 
+				self.sitePackagesPath = path
+				break
+		return self.sitePackagesPath
 
 	def operate(self, operation, platform) :
 		if operation == 'setup' :

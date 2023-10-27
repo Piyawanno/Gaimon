@@ -99,6 +99,7 @@ const AbstractTableView = function(page) {
 		let prerequisiteTasks = {}
 		let data = config.data;
 		let list = [];
+		let columnLinkMap = [];
 		if (column == undefined) column = table.input;
 		for(let item of column){
 			let value = await object.getColumnValue(item, data);
@@ -113,14 +114,31 @@ const AbstractTableView = function(page) {
 					if (prerequisiteTasks[item.tableURL] == undefined) prerequisiteTasks[item.tableURL] = [];
 					prerequisiteTasks[item.tableURL].push({column: item.columnName, value: [data[prerequisite], data[item.columnName]]})
 				}
+			} else if (item.typeName == "Status") {
+				
 			}
+			if (item.isLink) {
+				let referenceValue = data[item.columnName];
+				if (item.linkColumn) {
+					referenceValue = data[item.linkColumn];
+				}
+				columnLinkMap[item.columnName] = {column: item, value: referenceValue};
+				// value = `<a rel="${item.columnName}_link">${value}</a>`;
+			} else {
+				item.isLink = false;
+			}
+			let align = '';
+			if (item.isNumber) align = 'right';
+			else if (item.isStatus) align = 'center';
 			let option = {
-				'align': item.isNumber == true ? 'right' : '',
+				'align': align,
 				'value': value,
 				'key': item.columnName,
 				'label': item.label,
+				'isLink': item.isLink,
 				'isHidden': item.typeName == 'Hidden' ? true : false
 			}
+			
 			list.push(option);
 		}
 		let now = new Date();
@@ -143,6 +161,7 @@ const AbstractTableView = function(page) {
 			'timestamp': now.getTime()
 		};
 		let record = new DOMObject(recordTemplate, options);
+		await object.setMouseOverOnStatus(record);
 		record.id = data.id;
 		record.uid = `${randomString(10)}_${Date.now()}`;
 		record.modelName = modelName;
@@ -150,12 +169,40 @@ const AbstractTableView = function(page) {
 		record.tasks = tasks;
 		record.prerequisiteTasks = prerequisiteTasks;
 		await object.renderOperation(record, operationTemplate, config);
+		for (let column in columnLinkMap) {
+			if (record.dom[column] == undefined) continue;
+			if (record.dom[`${column}_link`] != undefined) {
+				record.dom[`${column}_link`].onclick = async function(e) {
+					e.preventDefault();
+				}
+			}
+			record.dom[column].onclick = async function(e) {
+				e.preventDefault();
+				if (columnLinkMap[column] == '') return;
+				if (columnLinkMap[column] == -1) return;
+				AbstractInputUtil.prototype.triggerLinkEvent(object.page, columnLinkMap[column]);
+				// let value = columnLinkMap[column].value;
+				// if (columnLinkMap[column].column.foreignModelName) {
+				// 	if (main.pageModelDict[columnLinkMap[column].column.foreignModelName] == undefined) return;
+				// 	let modelName = columnLinkMap[column].column.foreignModelName;
+				// 	main.pageModelDict[modelName].renderViewFromExternal(modelName, {data: {id: value}, isView: true}, 'Form');
+				// } else {
+				// 	object.page.renderViewFromExternal(object.page.model, {data: {id: value}, isView: true}, 'Form')
+				// }
+			}
+		}
 		if(config.hasView){
 			record.dom.view.onclick = async function(){
 				if(config.viewFunction != undefined) config.viewFunction(data.id);
 				else if (table.onViewRecord != undefined) await table.onViewRecord(record);
 				else{
-					await object.page.renderForm(modelName, {data: data, isView: true});
+					let detail = data;
+					if (object.page.config == undefined) object.page.config = {};
+					if (object.page.config.isFetchByID == undefined) object.page.config.isFetchByID = true;
+					if (object.page.restProtocol != undefined && object.page.config.isFetchByID) {
+						detail = await object.page.restProtocol.getByID(data.id);
+					}
+					await object.page.renderView(modelName, {data: detail, isView: true}, 'Form');
 				}
 			}
 		}
@@ -163,7 +210,16 @@ const AbstractTableView = function(page) {
 			record.dom.edit.onclick = async function(){
 				if(config.editFunction != undefined) config.editFunction(data.id);
 				else if (table.onEditRecord != undefined) await table.onEditRecord(record);
-				else await object.page.renderForm(modelName, {data: data, isView: false});
+				else {
+					let detail = data;
+					if (object.page.config == undefined) object.page.config = {};
+					if (object.page.config.isFetchByID == undefined) object.page.config.isFetchByID = true;
+					if (object.page.restProtocol != undefined && object.page.config.isFetchByID) {
+						detail = await object.page.restProtocol.getByID(data.id);
+					}
+					console.log(data);
+					await object.page.renderView(modelName, {data: detail, isView: false}, 'Form');
+				}
 			}
 		}
 		if(config.hasDelete){
@@ -208,6 +264,19 @@ const AbstractTableView = function(page) {
 		return record;
 	}
 
+	this.setMouseOverOnStatus = async function(record){
+		let statusList = record.html.getElementsByClassName('status_flag');
+		for(let item in statusList){
+			if(typeof(statusList[item]) != 'object') continue;
+			statusList[item].onmouseover = async function(){
+				let tooltip = statusList[item].getElementsByClassName('tooltiptext');
+				tooltip = tooltip[0];
+				let width = tooltip.getBoundingClientRect().width;
+				tooltip.style.marginLeft = `-${width/2}px`;
+			}
+		}
+	}
+
 	this.renderView = async function(modelName, config, viewType) {
 		let component, pagination;
 		let generalView = await object.getView(modelName, config, viewType);
@@ -224,7 +293,7 @@ const AbstractTableView = function(page) {
 		if(pagination != undefined) object.page.home.dom.table.append(pagination);
 		if (object.page.config.hasAdd) {
 			object.page.home.dom.add.onclick = async function(){
-				await object.page.renderForm(modelName);
+				await object.page.renderView(modelName, undefined, 'Form');
 			}
 		}
 		if (object.page.config.hasFilter) {
@@ -236,6 +305,7 @@ const AbstractTableView = function(page) {
 		}
 		if (object.page.config.hasLimit) {
 			object.page.home.dom.limit.onchange = async function() {
+				object.page.home.dom.additionalButton.html('');
 				let limit = parseInt(this.value);
 				// component.limit = limit;
 				SHOW_LOADING_DIALOG(async function(){
@@ -410,6 +480,7 @@ const AbstractTableView = function(page) {
 			let records = [];
 			let tableTasks = {};
 			let prerequisiteTableTasks = {};
+			if (data == undefined) data = [];
 			for (let item of data) {
 				if (item == null || item == undefined) continue; 
 				let record = await table.createRecord(item);
@@ -560,6 +631,8 @@ const AbstractTableView = function(page) {
 		let column = [];
 		for(let i in input){
 			input[i].width = '150px';
+			input[i].isStatus = false;
+			if(input[i].typeName == 'Status') input[i].isStatus = true;
 			if(input[i].isNumber) input[i].width = '150px';
 			if(input[i].typeName == 'AutoComplete' || input[i].typeName == 'TextArea') input[i].width = '300px';
 			if(input[i].typeName == 'FileMatrix') input[i].width = '400px';

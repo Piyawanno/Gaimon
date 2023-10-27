@@ -46,6 +46,15 @@ The special work and calculation, can be implemented with
 One server is not enough? No problem, with [GaimonCloud]()
 applications written with Gaimon can be scaled via mouse click.
 
+
+### Extensible
+
+The Extension written in Gaimon can be further extended with the other Extension.
+With the unique [Decorator](Decorator.md) and [FormAttachment](FormAttachement.md),
+the developer has an option to extend the existing Extension. The concept
+can significantly reduce and relax the design work, since the future features
+must not be considered now but can be implemented tomorrow without the side effect
+on today work.
 ## Getting Start
 
 - [Installation](LinuxInstallation.md)

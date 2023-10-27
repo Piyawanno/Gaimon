@@ -16,7 +16,7 @@ class JSPageCreator(CommonCodeGenerator):
 			print(f">>> JS-Page will not be created.")
 			return
 
-		path = f'{self.workingPath}/creator/template/JSPage.tpl'
+		path = f'{self.workingPath}/template/JSPage.tpl'
 		with open(path, 'rt', encoding="utf-8") as fd:
 			template = fd.read()
 

@@ -3,6 +3,7 @@ from gaimon.core.StaticCompressor import StaticCompressor, StaticType
 from gaimon.util.PathUtil import conform
 
 from typing import List, Dict, Tuple
+from sanic.request import Request
 
 import json, pystache
 
@@ -31,6 +32,7 @@ class HTMLPage:
 		isCompress: bool = True,
 		isPreload: bool = True
 	):
+		self.originalRootURL = rootURL
 		self.rootURL = rootURL
 		self.websocketURL = websocketURL
 		self.resourcePath = resourcePath
@@ -50,8 +52,8 @@ class HTMLPage:
 			'lib/mustache.min.js',
 			'lib/DOMObject.js'
 		]
+		
 		self.incompressibleJS = [
-			'lib/fraction.min.js'
 		]
 
 		self.extensionJS = {}
@@ -74,55 +76,63 @@ class HTMLPage:
 
 		self.title = ''
 		self.body = ''
+	
+	def setRequest(self, request:Request) :
+		entity = request.headers.get('entity', None)
+		if entity is not None :
+			self.rootURL = f'{self.originalRootURL}{entity}/'
+		else :
+			self.rootURL = self.originalRootURL
 
-	def extendCSS(self, css: List, extensionName: str=None, isCompressible=True):
-		if isCompressible:
-			if extensionName is None:
-				self.css.extend(css)
-			else:
-				extensionCSS: List = self.extensionCSS.get(extensionName, None)
-				if extensionCSS is None:
-					self.extensionCSS[extensionName] = css
-				else:
-					extensionCSS.extend(css)
+	def extendCSS(self, css: List, extensionName: str=None):
+		if extensionName is None:
+			self.css.extend(css)
 		else:
-			if extensionName is None:
-				self.incompressibleCSS.extend(css)
+			extensionCSS: List = self.extensionCSS.get(extensionName, None)
+			if extensionCSS is None:
+				self.extensionCSS[extensionName] = css
 			else:
-				extensionCSS: List = self.extensionIncompressibleCSS.get(
-					extensionName,
-					None
-				)
-				if extensionCSS is None:
-					self.extensionIncompressibleCSS[extensionName] = css
-				else:
-					extensionCSS.extend(css)
+				extensionCSS.extend(css)
 
-	def extendJS(self, js: List, extensionName: str = None, isCompressible=True):
-		print(js, extensionName)
-		if isCompressible:
-			if extensionName is None:
-				self.js.extend(js)
-			else:
-				extensionJS: List = self.extensionJS.get(extensionName, None)
-				if extensionJS is None:
-					self.extensionJS[extensionName] = js
-				else:
-					extensionJS.extend(js)
+	def extendIncompressibleCSS(self, css: List, extensionName: str=None) :
+		if extensionName is None:
+			self.incompressibleCSS.extend(css)
 		else:
-			if extensionName is None:
-				self.incompressibleJS.extend(js)
+			extensionCSS: List = self.extensionIncompressibleCSS.get(
+				extensionName,
+				None
+			)
+			if extensionCSS is None:
+				self.extensionIncompressibleCSS[extensionName] = css
 			else:
-				extensionJS: List = self.extensionIncompressibleJS.get(
-					extensionName,
-					None
-				)
-				if extensionJS is None:
-					self.extensionIncompressibleJS[extensionName] = js
-				else:
-					extensionJS.extend(js)
+				extensionCSS.extend(css)
+
+	def extendJS(self, js: List, extensionName: str = None):
+		if extensionName is None:
+			self.js.extend(js)
+		else:
+			extensionJS: List = self.extensionJS.get(extensionName, None)
+			if extensionJS is None:
+				self.extensionJS[extensionName] = js
+			else:
+				extensionJS.extend(js)
+		
+	def extendIncompressibleJS(self, js: List, extensionName: str = None) :
+		if extensionName is None:
+			self.incompressibleJS.extend(js)
+		else:
+			extensionJS: List = self.extensionIncompressibleJS.get(
+				extensionName,
+				None
+			)
+			if extensionJS is None:
+				self.extensionIncompressibleJS[extensionName] = js
+			else:
+				extensionJS.extend(js)
+
 
 	def enableAllAddOns(self):
+		self.enableFraction()
 		self.enableCrypto()
 		self.enableIndexedDB()
 		self.enableAutocomplete()
@@ -133,6 +143,9 @@ class HTMLPage:
 		self.enableXSLX()
 		self.enableEPUB()
 		self.enableCropper()
+
+	def enableFraction(self) :
+		self.incompressibleJS.append('lib/fraction.min.js')
 
 	def enableIndexedDB(self):
 		self.js.append('utils/IndexedDBConnector.js')
@@ -150,8 +163,18 @@ class HTMLPage:
 		self.css.append('lib/cropper/cropper.min.css')
 
 	def enableLeafLet(self):
-		self.js.append('lib/leaflet/leaflet.js')
+		self.js.append('lib/leaflet/leaflet-src.js')
+		self.js.append('lib/leaflet/leaflet.draw.js')
+		self.js.append('lib/leaflet/leaflet.toolbar.min.js')
+		self.js.append('lib/leaflet/leaflet.draw-toolbar.js')
+		# self.js.append('lib/src/control/Control.js')
+		self.js.append('lib/leaflet/geosearch.umd.js')
+		# self.js.append('lib/leaflet/leaflet.draw-toolbar.min.js')
 		self.css.append('lib/leaflet/leaflet.css')
+		self.css.append('lib/leaflet/leaflet.draw.css')
+		self.css.append('lib/leaflet/leaflet.toolbar.min.css')		
+		self.css.append('lib/leaflet/leaflet.draw-toolbar.min.css')
+		self.css.append('lib/leaflet/geosearch.css')
 
 	def enableChart(self):
 		self.js.append('lib/chart.min.js')

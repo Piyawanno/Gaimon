@@ -16,7 +16,7 @@ For creation of DB configuration in ENV mode, the followed :
 
 __parser__ = argparse.ArgumentParser(description=__description__, formatter_class=argparse.RawTextHelpFormatter)
 __parser__.add_argument("-n", "--namespace", help="Namespace of gaimon application.")
-__parser__.add_argument("-w", "--wheelpath", help="Path of wheel files.", required=True)
+__parser__.add_argument("-w", "--wheelpath", help="Directory containing wheel files required for Gaimon e.g. Xerial.wheel.", required=True)
 __parser__.add_argument("-s", "--skip-config", help="Skip setting up configuration.", action='store_true')
 __parser__.add_argument("-i", "--interactive", help="Interactive setting up configuration, if not set DB config will used ENV variable.", action='store_true')
 __option__ = __parser__.parse_args(sys.argv[1:])

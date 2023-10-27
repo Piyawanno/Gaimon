@@ -12,6 +12,23 @@ const AbstractProtocol = function(main, restURL){
 		return result;
 	}
 
+	this.getByID = async function(ID) {
+        if (object.restURL == undefined) throw console.error("restURL is not exists.");
+		let result = []
+		let response = await GET(`${object.restURL}/get/by/id/${ID}`);
+		if (response == undefined) return result;
+		if (response.isSuccess) return response.result;
+		return result;
+	}
+
+	this.getByReference = async function(data) {
+		let result = []
+		let response = await POST(`${object.restURL}/get/by/reference`, {data});
+		if (response == undefined) return result;
+		if (response.isSuccess) return response.result;
+		return result;
+	}
+
 	this.getOption = async function(data) {
         if (object.restURL == undefined) throw console.error("restURL is not exists.");
 		let result = []

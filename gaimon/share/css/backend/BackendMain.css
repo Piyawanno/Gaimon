@@ -119,8 +119,9 @@ fieldset {
 	overflow-y: auto;
 }
 
-.menuGroup {
-	/* border-bottom: 1px solid #383838; */
+.menuGroup a {
+	color: var(--main-sidebar-font-color);
+	text-decoration: none;
 }
 
 .menuBar {
@@ -178,6 +179,16 @@ fieldset {
 	border-radius: 10px;
 }
 
+.subMenuItem a {
+	color: var(--main-sidebar-font-color);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    align-content: center;
+    width: 100%;
+    justify-content: flex-start;
+}
+
 .mostUsedMenuItem{
 	display: flex;
 	padding: 10px 25px;
@@ -209,8 +220,7 @@ fieldset {
     height: 100vh;
 	transition: .2s;
 	overflow-y: overlay;
-	z-index: 2;
-	overflow-y: overlay;
+	z-index: 3;
 }
 
 .subMenuContainer .menuLabel{
@@ -331,7 +341,7 @@ fieldset {
 	flex-direction: column;
 	justify-content: center;
 	border: 1px solid #afc6c9;
-    padding: 0 5px;
+    padding: 3px 6px;
 	cursor: pointer;
 	width: 50%;
     align-items: center;

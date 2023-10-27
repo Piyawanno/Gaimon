@@ -1,6 +1,18 @@
 <div class="abstract_form_container">
-	<div class="abstract_form">
-		<div class="form_header" rel="title" localize>{{{title}}}</div>
+	<div class="abstract_step_container cd-breadcrumb triangle hidden" rel="step"></div>
+	<div class="abstract_form" rel="form_container">
+		<div class="flex space-between" rel="titleContainer">
+			<div class="form_header" rel="title" localize>{{{title}}}</div>
+			<div class="hidden" rel="switch">
+				<div class="advanceSwitch button b2">
+					<input type="checkbox" class="checkbox" rel="isAdvance">
+					<div class="knobs">
+						<span></span>
+					</div>
+					<div class="layer"></div>
+				</div>
+			</div>
+		</div>
 		<div class="abstract_menu_container hidden" rel="menu">
 			<div class="flex-wrap" rel="menuList"></div>
 			<div rel="buttonList"></div>

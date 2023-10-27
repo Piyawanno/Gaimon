@@ -312,3 +312,81 @@
 	font-family: 'Kanit-Regular';
 	src: url('/share/font/Kanit-Regular.ttf') format('truetype');
 }
+
+@font-face {
+    font-family: 'DMSans';
+    src: URL('../font/DMSans-Regular.ttf');
+	font-weight: normal;
+}
+
+@font-face {
+    font-family: 'DMSans';
+    src: URL('../font/DMSans-Light.ttf');
+	font-weight: 200;
+}
+
+@font-face {
+    font-family: 'DMSans';
+    src: URL('../font/DMSans-LightItalic.ttf');
+	font-weight: 200;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'DMSans';
+    src: URL('../font/DMSans-Bold.ttf');
+	font-weight: bold;
+}
+
+@font-face {
+    font-family: 'DMSans';
+    src: URL('../font/DMSans-Italic.ttf');
+	font-weight: normal;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'DMSans';
+    src: URL('../font/DMSans-BoldItalic.ttf');
+	font-weight: bold;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: URL('../font/Lato-Regular.ttf');
+	font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: URL('../font/Lato-Light.ttf');
+	font-weight: 200;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: URL('../font/Lato-LightItalic.ttf');
+	font-weight: 200;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: URL('../font/Lato-Bold.ttf');
+	font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: URL('../font/Lato-Italic.ttf');
+	font-weight: normal;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Lato';
+    src: URL('../font/Lato-BoldItalic.ttf');
+	font-weight: bold;
+	font-style: italic;
+}

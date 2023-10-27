@@ -82,7 +82,9 @@ __BACKEND_CSS__ = [
 	'backend/LayoutCreator.css',
 	'backend/VisualBlockCreator.css',
 	'README.css',
+	'Step.css',
 	'Switch.css',
+	'AdvanceSwitch.css',
 	'Flex.css',
 	'Style.css',
 	'AlertDialog.css',
@@ -131,6 +133,7 @@ class BackendController:
 	async def renderIndex(self, request):
 		cached = __CACHED_PAGE__.get('backend', None)
 		if cached is not None: return response.html(cached)
+		self.page.setRequest(request)
 		self.page.reset()
 		self.page.title = self.title + " - BACKEND"
 		self.setJS()
@@ -146,18 +149,27 @@ class BackendController:
 	def setJS(self):
 		self.page.enableAllAddOns()
 		self.page.js.extend(__BACKEND_JS__)
+		extension = self.application.extension
 		if not 'TITLE' in self.page.jsVar:
 			self.page.jsVar['TITLE'] = self.title
 		if not 'JS_EXTENSION' in self.page.jsVar:
 			self.page.jsVar['JS_EXTENSION'] = {}
-
-		for extension in self.application.extension.script:
-			self.page.extensionJS[extension] = self.application.extension.script[extension
-																					]
+		self.page.extensionJS.update(extension.script)
+		
+		if not 'PAGE_EXTENSION' in self.page.jsVar:
+			self.page.jsVar['PAGE_EXTENSION'] = {}
+		
+		pageExtension = self.page.jsVar['PAGE_EXTENSION']
+		for name, extensionSet in extension.pageExtension.items():
+			if name in pageExtension :
+				pageExtension[name].union(extensionSet)
+			else :
+				pageExtension[name] = extensionSet
+		self.page.jsVar['PAGE_EXTENSION'] = {k:list(v) for k,v in pageExtension.items()}
 
 	def setCSS(self):
 		self.page.extendCSS(__BACKEND_CSS__)
-		self.page.extendCSS(__INCOMPRESSIBLE_CSS__, isCompressible=False)
+		self.page.extendIncompressibleCSS(__INCOMPRESSIBLE_CSS__)
 		for extension in self.application.extension.css:
 			self.page.extensionCSS[extension] = self.application.extension.css[extension]
 
@@ -166,8 +178,9 @@ class BackendController:
 		menu = self.application.config.get('menu', {})
 		disable = menu.get('disable', [])
 		entity = await self.application.configHandler.getEntityConfig(self.entity)
-		entityMenu = entity.get('menu', {})
-		disable.extend(entityMenu.get('disable', []))
+		if entity is not None :
+			entityMenu = entity.get('menu', {})
+			disable.extend(entityMenu.get('disable', []))
 		self.page.jsVar['DISABLE_MENU'] = {i: i for i in disable}
 		self.page.jsVar['DEFAULT_MENU'] = menu.get('default', "")
 
@@ -316,6 +329,7 @@ class BackendController:
 		cached = __CACHED_PAGE__.get('login', None)
 		if cached is not None: return response.html(cached)
 		await self.initRoot()
+		self.page.setRequest(request)
 		self.page.reset()
 		self.page.title = "Gaimon - LOGIN"
 		self.page.enableCrypto()

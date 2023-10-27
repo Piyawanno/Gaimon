@@ -23,6 +23,7 @@ class ExtensionLoader:
 		self.css = {}
 		self.menu = {}
 		self.scriptName = {}
+		self.pageExtension = {}
 		self.startSubroutine = []
 		self.configuration = {}
 		self.loadedController = set()
@@ -158,6 +159,12 @@ class ExtensionLoader:
 			self.css[ID] = configuration["backend"]['css'][:]
 			self.menu[ID] = configuration["backend"]['menu'][:]
 			self.role[ID] = list(set(configuration['role']))
+			if 'pageExtension' in configuration['backend'] :
+				for name, extensionList in configuration["backend"]['pageExtension'].items() :
+					if name not in self.pageExtension :
+						self.pageExtension[name] = set(extensionList)
+					else :
+						self.pageExtension[name].union(set(extensionList))
 			self.extensionRole.union(set(configuration['role']))
 		else:
 			raise EnvironmentError(

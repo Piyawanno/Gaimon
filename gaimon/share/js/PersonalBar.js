@@ -75,6 +75,7 @@ const PersonalBar = function(main) {
 		if (LANGUAGE == 'th') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-Thailand.jpg`;
 		else if (LANGUAGE == 'en') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-England.jpg`;
 		else if (LANGUAGE == 'cn') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-China.jpg`;
+		else if (LANGUAGE == 'tw') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-Taiwan.jpg`;
 	}
 
 	this.renderLocalize = function(html, isKeepOriginal) {
@@ -104,6 +105,11 @@ const PersonalBar = function(main) {
 			localStorage.setItem('LANGUAGE', 'cn');
 			location.reload();
 		}
+		tag.dom.locale_tw.onclick = async function(event) {
+			tag.dom.floatLocale.hide();
+			localStorage.setItem('LANGUAGE', 'tw');
+			location.reload();
+		}
 		tag.dom.locale.onmouseover = function(event) {
 			let rect = this.getBoundingClientRect();
 			tag.dom.floatLocale.style.top = `${rect.bottom}px`;
@@ -123,5 +129,6 @@ const PersonalBar = function(main) {
 		if (LANGUAGE == 'th') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-Thailand.jpg`;
 		else if (LANGUAGE == 'en') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-England.jpg`;
 		else if (LANGUAGE == 'cn') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-China.jpg`;
+		else if (LANGUAGE == 'tw') tag.dom.localeFlag.src = `${rootURL}share/icon/Flag-Taiwan.jpg`;
 	}
 }

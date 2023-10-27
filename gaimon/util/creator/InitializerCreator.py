@@ -16,7 +16,7 @@ class InitializerCreator(CommonCodeGenerator):
 			print(f">>> Initializer will not be created.")
 			return
 
-		path = f'{self.workingPath}/creator/template/Initializer.tpl'
+		path = f'{self.workingPath}/template/Initializer.tpl'
 		with open(path, 'rt', encoding="utf-8") as fd:
 			template = fd.read()
 

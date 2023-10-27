@@ -1,18 +1,20 @@
 <div class="subMenuItem" rel="menu">
 	<div class="flex space-between width-100-percent">
-		<div class="flex {{#isMobile}}flex-column width-100-percent{{/isMobile}} gap-10px" rel="menuButton">
-			{{#isSVG}}
-			<div class="menuSVGIcon flex-column-center">
-				{{{icon}}}
+		<a rel="link" href="{{{url}}}">
+			<div class="flex {{#isMobile}}flex-column width-100-percent{{/isMobile}} gap-10px" style="height:100%;width: 100%;" rel="menuButton">
+				{{#isSVG}}
+				<div class="menuSVGIcon flex-column-center">
+					{{{icon}}}
+				</div>
+				{{/isSVG}}
+				{{^isSVG}}
+				<div class="menuImgIcon">
+					<img class="menuImg" src="{{icon}}">
+				</div>
+				{{/isSVG}}
+				<div class="menuLabel" localize>{{name}}</div>
 			</div>
-			{{/isSVG}}
-			{{^isSVG}}
-			<div class="menuImgIcon">
-				<img class="menuImg" src="{{icon}}">
-			</div>
-			{{/isSVG}}
-			<div class="menuLabel" localize>{{name}}</div>
-		</div>
+		</a>
 		{{^isMobile}}
 		{{#hasAdd}}
 		<div class="subMenuButton add_button" rel="add" title="Add">

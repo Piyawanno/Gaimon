@@ -12,7 +12,6 @@ class NotificationController:
 		self.application: AsyncApplication = application
 		self.extensionLoader = application.extension
 		self.title = self.application.title
-		self.page = self.application.createPage()
 		self.resourcePath = self.application.resourcePath
 		self.renderer = pystache.Renderer()
 		self.pull = self.application.createNotificationClient()

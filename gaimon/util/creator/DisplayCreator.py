@@ -21,7 +21,7 @@ class DisplayCreator(CommonCodeGenerator):
 			print(f">>> Controller will not be created.")
 			return
 
-		path = f'{self.workingPath}/creator/template/DisplayController.tpl'
+		path = f'{self.workingPath}/template/DisplayController.tpl'
 		with open(path, 'rt', encoding="utf-8") as fd:
 			template = fd.read()
 
@@ -41,7 +41,7 @@ class DisplayCreator(CommonCodeGenerator):
 			print(f">>> Display Page will not be created.")
 			return
 
-		path = f'{self.workingPath}/creator/template/JSDisplay.tpl'
+		path = f'{self.workingPath}/template/JSDisplay.tpl'
 		with open(path, 'rt', encoding="utf-8") as fd:
 			template = fd.read()
 
@@ -57,7 +57,7 @@ class DisplayCreator(CommonCodeGenerator):
 			print(f">>> Display Template will not be created.")
 			return
 
-		path = f'{self.workingPath}/creator/template/DisplayTemplate.tpl'
+		path = f'{self.workingPath}/template/DisplayTemplate.tpl'
 		with open(path, 'rt', encoding="utf-8") as fd:
 			template = fd.read()
 

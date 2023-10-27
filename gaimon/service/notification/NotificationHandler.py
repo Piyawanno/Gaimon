@@ -69,13 +69,13 @@ class NotificationHandler:
 
 	@POST('/set/module')
 	async def setModule(self, request, parameter):
-		self.triggerModule(parameter)
+		await self.triggerModule(parameter)
 		return {'isSuccess': True}
 
 	@POST('/set/module/list')
 	async def setModuleList(self, request, parameter):
 		for i in parameter['notificationList']:
-			self.triggerModule(i)
+			await self.triggerModule(i)
 		return {'isSuccess': True}
 
 	@POST('/set/list', hasDBSession=False)

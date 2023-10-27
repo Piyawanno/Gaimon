@@ -1,1 +1,1 @@
-<input type="hidden" class="hidden" rel="{{{columnName}}}" value="{{{value}}}" {{^isEditable}}disabled{{/isEditable}}/>
+<input type="hidden" class="hidden {{#isHidden}}hidden{{/isHidden}}" rel="{{{columnName}}}" value="{{{value}}}" {{^isEditable}}disabled{{/isEditable}}/>

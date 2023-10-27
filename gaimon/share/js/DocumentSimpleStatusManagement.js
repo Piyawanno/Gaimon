@@ -11,7 +11,7 @@ const DocumentSimpleStatusManagement = function(main){
 		let operation = [{
 			label: 'document status', ID: 'documentStatus', icon: ''
 		}];
-		if(config.hasAction) operation.push({label: 'action', ID: 'action', icon: 'DocumentStatus'});
+		if(config.hasAction) operation.push({label: 'Operation', ID: 'action', icon: 'DocumentStatus'});
 		return operation;
 	}
 
@@ -105,7 +105,7 @@ const DocumentSimpleStatusManagement = function(main){
 
 	this.initDraftEvent = async function(record, page){
 		record.dom.action.onclick = async function(){
-			page.renderForm(page.model, {data: record.record});
+			page.renderView(page.model, {data: record.record});
 		}
 		if(record.dom.print != undefined) record.dom.print.remove();
 	}

@@ -321,7 +321,8 @@
 
 .common_statistic .chart_container .chart {
     width: 100%;
-    height: 100%;
+    /* height: 100%; */
+    max-height: 350px;
 }
 
 .common_statistic .common_log {

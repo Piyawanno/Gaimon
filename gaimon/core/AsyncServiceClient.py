@@ -1,7 +1,7 @@
 from gaimon.core.RESTResponse import RESTResponse
 from gaimon.core.ServiceClient import ServiceClient
 
-import aiohttp, json
+import aiohttp, time
 
 
 class AsyncServiceClient(ServiceClient):
@@ -21,3 +21,13 @@ class AsyncServiceClient(ServiceClient):
 		async with aiohttp.ClientSession(timeout=timeout) as session:
 			async with session.post(url, headers=headers, json=data) as response:
 				return await response.json()
+
+	def isConnect(self, recheckTime) :
+		if (self.lastCheck > time.time()-recheckTime) and self.isActive:
+			return True
+		else:
+			return self.recheck()
+
+	# TODO Implementation
+	def recheck(self) :
+		return True

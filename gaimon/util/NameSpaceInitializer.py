@@ -1,6 +1,6 @@
 from gaimon.util.PathUtil import conform, copy, link
 
-import os, sys, gaimon
+import os, sys, gaimon, pip, json, importlib
 
 
 class NameSpaceInitializer:
@@ -18,25 +18,17 @@ class NameSpaceInitializer:
 		if self.rootPath is None:
 			raise RuntimeError("Root path of Gaimon does not exist.")
 
-		self.configList = [(f'Gaimon.example.json',
-							'Gaimon.json'),
-							(f'Export.example.json',
-							'Export.json'),
-							(f'Redis.example.json',
-							'Redis.json'),
-							(f'Notification.example.json',
-							'Notification.json'),
-							(f'BackupCron.example.json',
-							'BackupCron.json'),
-							(f'BackupLocal.example.json',
-							'BackupLocal.json'),
-							(f'BusinessLog.example.json',
-							'BusinessLog.json'),
-							(f'ServiceStarter.example.json',
-							'ServiceStarter.json'),
-							(f'ServiceMonitor.example.json',
-							'ServiceMonitor.json'),
-							]
+		self.configList = [
+			(f'Gaimon.example.json', 'Gaimon.json'),
+			(f'Export.example.json', 'Export.json'),
+			(f'Redis.example.json', 'Redis.json'),
+			(f'Notification.example.json', 'Notification.json'),
+			(f'BackupCron.example.json', 'BackupCron.json'),
+			(f'BackupLocal.example.json', 'BackupLocal.json'),
+			(f'BusinessLog.example.json', 'BusinessLog.json'),
+			(f'ServiceStarter.example.json', 'ServiceStarter.json'),
+			(f'ServiceMonitor.example.json', 'ServiceMonitor.json'),
+		]
 
 		self.requirePath = [
 			f'/etc/gaimon/namespace/{self.namespace}',
@@ -61,6 +53,47 @@ class NameSpaceInitializer:
 			(f"{self.rootPath}/file",
 				f"/var/gaimon/namespace/{self.namespace}/file"),
 		]
+
+	def installPackage(self, requirementPath:str) :
+		self.installPIP(requirementPath)
+		self.linkPackage()
+	
+	def linkPackage(self) :
+		with open('/etc/gaimon/Gaimon.json') as fd :
+			config = json.load(fd)
+
+		extension = config['extension']
+		path = '/etc/gaimon/Extension.json'
+		if os.path.isfile(path) :
+			with open(path) as fd :
+				extension.extend(json.load(fd))
+
+		module = set()
+		for i in extension :
+			module.add(i.split('.')[0])
+
+		for i in module :
+			targetPath = f'/var/gaimon/package/{self.namespace}/{i}'
+			if os.path.exists(targetPath) : continue
+			imported = importlib.import_module(i)
+			for j in imported.__path__ :
+				if not os.path.isdir(j) : continue
+				link(j, targetPath)
+				break
+
+	def installPIP(self, requirementPath:str) :
+		command = ' '.join([
+			'pip3',
+			'install',
+			'-r',
+			requirementPath,
+			'--force-reinstall',
+			'--ignore-installed',
+			'--upgrade',
+			f'--target=/var/gaimon/package/{self.namespace}/'
+		])
+		print(command)
+		os.system(command)
 
 	def operate(self, operation):
 		if operation == 'link':

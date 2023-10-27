@@ -9,8 +9,11 @@
 		<div class="localeButton" rel="locale_en">
 			<img src="{{{rootURL}}}share/icon/Flag-England.jpg">
 		</div>
-		<div class="localeButton" style="border-bottom-left-radius: 5px;border-bottom-right-radius: 5px;" rel="locale_cn">
+		<div class="localeButton" rel="locale_cn">
 			<img src="{{{rootURL}}}share/icon/Flag-China.jpg">
+		</div>
+		<div class="localeButton" style="border-bottom-left-radius: 5px;border-bottom-right-radius: 5px;" rel="locale_tw">
+			<img src="{{{rootURL}}}share/icon/Flag-Taiwan.jpg">
 		</div>
 	</div>
 </div>

@@ -6,10 +6,15 @@ from gaimon.model.PermissionType import PermissionType as PT
 from gaimon.util.RequestUtil import (
 	createSelectHandler, createCountHandler, createOptionHandler,
 	createInsertHandler, createUpdateHandler, createDropHandler,
-	createInsertMultipleHandler, createOptionByIDHandler
+	createInsertMultipleHandler, createOptionByIDHandler, createSelectByIDHandler, 
+	createSelectByAttributeHandler, calculatePage
 )
 
-from gaimon.core.RESTResponse import RESTResponse 
+from gaimon.core.RESTResponse import (
+	RESTResponse as REST,
+	SuccessRESTResponse as Success,
+	ErrorRESTResponse as Error
+)
 from sanic.request import RequestParameters
 
 import pystache, math, string, json, os, random, time
@@ -30,6 +35,26 @@ def BASE(modelClass, baseRoute, role):
 			route = f"{baseRoute}/get/all"
 			decorator = POST(route, role=role, permission=[PT.READ])
 			decorator(callable.getAll)
+
+		if not hasattr(callable, 'getByReference'):
+			async def getByReference(self, request):
+				return await callable._getByReference(self, request)
+			callable.getByReference = getByReference
+
+		if not hasattr(callable.getByReference, '__ROUTE__'):
+			route = f"{baseRoute}/get/by/reference"
+			decorator = POST(route, role=role, permission=[PT.READ])
+			decorator(callable.getByReference)
+
+		if not hasattr(callable, 'getByID'):
+			async def getByID(self, request, ID):
+				return await callable._getByID(self, request, ID)
+			callable.getByID = getByID
+
+		if not hasattr(callable.getByID, '__ROUTE__'):
+			route = f"{baseRoute}/get/by/id/<ID>"
+			decorator = GET(route, role=role, permission=[PT.READ])
+			decorator(callable.getByID)
 
 		if not hasattr(callable, 'getOption'):
 			async def getOption(self, request):
@@ -103,7 +128,6 @@ class BaseController:
 		from gaimon.core.AsyncApplication import AsyncApplication
 		self.application: AsyncApplication = application
 		self.session: AsyncDBSessionBase = None
-		self.page = self.application.createPage()
 		self.resourcePath = self.application.resourcePath
 		self.renderer = pystache.Renderer()
 		self.title = self.application.title
@@ -112,6 +136,8 @@ class BaseController:
 
 	def initHandler(self, modelClass):
 		self.select = createSelectHandler(modelClass)
+		self.selectByID = createSelectByIDHandler(modelClass)
+		self.selectByReference = createSelectByAttributeHandler(modelClass)
 		self.count = createCountHandler(modelClass)
 		self.handleGetOption = createOptionHandler(modelClass)
 		self.handleGetOptionByID = createOptionByIDHandler(modelClass)
@@ -124,8 +150,8 @@ class BaseController:
 		limit = int(request.json.get('limit', 20))
 		result = await self.select(self.session, request.json)
 		count = await self.count(self.session, request.json)
-		count = math.ceil(count / limit)
-		return RESTResponse({
+		count = calculatePage(count, limit)
+		return REST({
 			'isSuccess': True,
 			'result': {
 				'data': result,
@@ -133,14 +159,25 @@ class BaseController:
 				'limit': limit
 			}
 		}, ensure_ascii=False)
+	
+	async def _getByReference(self, request):
+		result = await self.selectByReference(self.session, request.json)
+		if result is None: return Error("ID doesn't exist.")
+		return Success(result.toDict())
+	
+	async def _getByID(self, request, ID):
+		result = await self.selectByID(self.session, int(ID))
+		if result is None:
+			return Error("ID doesn't exist.")
+		return Success(result.toDict())
 
 	async def _getOption(self, request):
 		result = await self.handleGetOption(self.session)
-		return RESTResponse({'isSuccess': True, 'result': result}, ensure_ascii=False)
+		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 
 	async def _getOptionByIDList(self, request):
 		result = await self.handleGetOptionByID(self.session, request.json['IDList'])
-		return RESTResponse({'isSuccess': True, 'result': result}, ensure_ascii=False)
+		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 
 	async def _insert(self, request, hasFeedback=True):
 		inserted = await self.handleInsert(self.session, request.json)
@@ -148,7 +185,7 @@ class BaseController:
 			result = inserted.toDict()
 		else :
 			result = {'id': inserted.id}
-		return RESTResponse({'isSuccess': True, 'result': result}, ensure_ascii=False)
+		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 	
 	async def _insertMultiple(self, request, hasFeedback=True):
 		insertedList = await self.handleInsertMultiple(self.session, request.json)
@@ -156,20 +193,20 @@ class BaseController:
 			result = [i.toDict() for i in insertedList]
 		else :
 			result = [{'id': i.id} for i in insertedList]
-		return RESTResponse({'isSuccess': True, 'result': result}, ensure_ascii=False)
+		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 
 	async def _update(self, request, hasFeedback=True):
 		record = await self.handleUpdate(self.session, request.json)
 		if not hasFeedback :
-			return RESTResponse({'isSuccess': True, 'result': {}})
+			return REST({'isSuccess': True, 'result': {}})
 		else :
 			if record is None :
-				return RESTResponse({
+				return REST({
 					"isSuccess": False,
 					"message": "LMSCourseCertificate does not exist."
 				})
 			else :
-				return RESTResponse({
+				return REST({
 					'isSuccess': True,
 					'result': record.toDict()
 				}, ensure_ascii=False)
@@ -177,15 +214,15 @@ class BaseController:
 	async def _drop(self, request, hasFeedback=True):
 		record = await self.handleDrop(self.session, request.json)
 		if not hasFeedback :
-			return RESTResponse({'isSuccess': True, 'result': {}})
+			return REST({'isSuccess': True, 'result': {}})
 		else :
 			if record is None :
-				return RESTResponse({
+				return REST({
 					"isSuccess": False,
 					"message": "LMSCourseCertificate does not exist."
 				})
 			else :
-				return RESTResponse({
+				return REST({
 					'isSuccess': True,
 					'result': record.toDict()
 				}, ensure_ascii=False)

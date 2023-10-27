@@ -17,7 +17,7 @@ const MyAccount = function(main){
 	this.initEvent = async function(){
 		object.myAccountDOM.dom.user.onclick = async function(){
 			let user = JSON.parse(JSON.stringify(GLOBAL.USER));
-			await main.page.user.renderForm('User', {data: user, isSetState: true});
+			await main.page.user.renderView('User', {data: user, isSetState: true});
 			// await RENDER_NAVIGATOR();
 			object.myAccountDOM.dom.myAccount.hide();
 		}

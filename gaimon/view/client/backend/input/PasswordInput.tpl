@@ -1,4 +1,4 @@
-<div class="abstract_input_box input_per_line_{{{inputPerLine}}} normal" style="flex-direction:row;">
+<div class="abstract_input_box input_per_line_{{{inputPerLine}}} normal {{#isHidden}}hidden{{/isHidden}}" style="flex-direction:row;">
 	<div rel="labelDIV" class="abstract_input_box input_per_line_{{{inputPerLine}}} full" rel="{{{columnName}}}_box">
 		<div localize>{{{label}}}</div>
 		<div><input type="password" rel="{{{columnName}}}" autocomplete="off" {{^hasEdit}}{{#isRequired}}required{{/isRequired}}{{/hasEdit}} {{^isEditable}}disabled{{/isEditable}}></div>

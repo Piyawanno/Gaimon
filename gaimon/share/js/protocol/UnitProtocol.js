@@ -13,6 +13,20 @@ const UnitProtocol = function(main) {
 		return result;
 	}
 
+	this.getUnitCategoryByID = async function(ID, callback) {
+		let result = []
+		let response = await GET(`utility/unit/category/by/id/${ID}`);
+		if (response == undefined) { 
+			if (callback != undefined) callback(result);
+			return result;
+		}
+		if (response.isSuccess) {
+			if (callback != undefined) callback(response.result);
+			return response.result;
+		}
+		return result;
+	}
+
 	this.getUnitCategoryOption = async function(callback) {
 		let result = []
 		let response = await GET('utility/unit/category/option/get');

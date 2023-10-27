@@ -7,6 +7,7 @@ const DocumentStatus = {
 	'CUSTOMER_APPROVED': 31,
 	'CUSTOMER_NOT_APPROVED': 32,
 	'CUSTOMER_PARTIALLY_APPROVED': 34,
+	'CUSTOMER_SALE_ORDER_APPROVE': 37,
 	'CLOSE': 40,
 	'HOLD': 41,
 	'CANCEL': 42,
@@ -23,7 +24,7 @@ const DocumentStatusManagement = function(main){
 		// }];
 		let operation = [];
 		if(config.hasAction == undefined) config.hasAction = true;
-		if(config.hasAction) operation.push({label: 'Action', ID: 'action', icon: 'DocumentStatus'});
+		if(config.hasAction) operation.push({label: 'Operation', ID: 'action', icon: 'DocumentStatus'});
 		if(config.hasPrint) operation.push({label: 'Print', ID: 'print', icon: 'Printer'});
 		return operation;
 	}
@@ -32,6 +33,7 @@ const DocumentStatusManagement = function(main){
 		let role = GLOBAL.USER.role;
 		for(let i in table.records){
 			let record = table.records[i];
+			if(table.isQuotation != undefined) record.isQuotation = true;
 			await object.setStatus(record);
 			if(record.record.documentStatus == DocumentStatus.DRAFT){
 				await object.initDraftEvent(record, page);
@@ -69,6 +71,7 @@ const DocumentStatusManagement = function(main){
 	this.setStatus = async function(record){
 		let data = record.record;
 		if(data.documentStatus == undefined) return;
+		if(!record.dom.documentStatus) return;
 		record.dom.documentStatus.html(DOCUMENT_STATUS_ABBREVIATE[data.documentStatus]);
 		record.dom.documentStatus.style.color = DOCUMENT_STATUS_COLOR[data.documentStatus];
 		record.dom.documentStatus.style.textAlign = 'center';
@@ -83,18 +86,19 @@ const DocumentStatusManagement = function(main){
 		}else{
 			if(documentStatus == DocumentStatus.INTERNAL_IN_CONSIDERATION){
 				await object.appendCancelButton(form, page, isForm);
-				await object.appendHoldButton(form, page, isForm);
+				// await object.appendHoldButton(form, page, isForm);
 				await object.appenCloseButton(form, page, isForm);
 				await object.appendRejectButton(form, page, isForm);
 				await object.appendApproveButton(form, page, isForm);
 				await object.appendLabel(form, 'Internal :');
 			}else if(documentStatus == DocumentStatus.CUSTOMER_IN_CONSIDERATION){
 				await object.appendCancelButton(form, page, isForm);
-				await object.appendHoldButton(form, page, isForm);
+				// await object.appendHoldButton(form, page, isForm);
 				await object.appenCloseButton(form, page, isForm);
 				await object.appendPartiallyApproveButton(form, page, isForm);
 				await object.appendNotApproveButton(form, page, isForm);
 				await object.appendApproveButton(form, page, isForm);
+				if(form.isQuotation != undefined)await object.appendSaleOrderApproveButton(form, page, isForm);
 				await object.appendLabel(form, 'Customer :');
 			}
 		}
@@ -129,6 +133,29 @@ const DocumentStatusManagement = function(main){
 				form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
 			}else if(documentStatus == DocumentStatus.CUSTOMER_IN_CONSIDERATION){
 				form.documentStatusEnum = DocumentStatus.CUSTOMER_APPROVED;
+			}else if(documentStatus == DocumentStatus.DRAFT){
+				form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
+			}
+			if(documentStatus == undefined) form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
+			page.submit(form, isForm);
+		}
+	}
+
+	this.appendSaleOrderApproveButton = async function(form, page, isForm){
+		let options = {
+			cssClass: 'approve_button', 
+			ID: 'saleOrderApprove',
+			label: 'Sale Order Approve'
+		}
+		let documentStatus = form.rawData.documentStatus;
+		let button = new DOMObject(TEMPLATE.Button, options);
+		form.dom.operation.prepend(button);
+		button.dom.saleOrderApprove.onclick = async function(){
+
+			if(documentStatus == DocumentStatus.INTERNAL_IN_CONSIDERATION || documentStatus == DocumentStatus.CUSTOMER_PARTIALLY_APPROVED){
+				form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
+			}else if(documentStatus == DocumentStatus.CUSTOMER_IN_CONSIDERATION){
+				form.documentStatusEnum = DocumentStatus.CUSTOMER_SALE_ORDER_APPROVE;
 			}else if(documentStatus == DocumentStatus.DRAFT){
 				form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
 			}
@@ -237,22 +264,23 @@ const DocumentStatusManagement = function(main){
 	}
 
 	this.appendLabel = async function(form, label){
-		let operation = new DOMObject(`<div class="flex-column-center text-align-right width-90px bold">${label}</div>`);
+		let operation = new DOMObject(`<div class="flex-column-center text-align-right width-90px bold" localize>${label}</div>`);
 		form.dom.operation.prepend(operation);
-		let otherOperation = new DOMObject(`<div class="flex-column-center text-align-right width-90px bold">Other :</div>`);
+		let otherOperation = new DOMObject(`<div class="flex-column-center text-align-right width-90px bold" localize>Other :</div>`);
 		form.dom.otherOperation.prepend(otherOperation);
 	}
 
 	this.setDecision = async function(config, page){
 		let form = config.dialog;
 		let operation = new DOMObject(TEMPLATE.DocumentStatusOperation);
-		form.dom.dialog_container.classList.add('document_status');
+		if (form.dom.dialog_container) {
+			form.dom.dialog_container.classList.add('document_status');
+		}
 		form.dom.operation.remove();
 		form.dom.form.html('');
 		form.dom.form.append(operation);
 		form.dom.operation = operation.dom.operation;
 		form.dom.otherOperation = operation.dom.otherOperation;
-
 		form.rawData.documentStatus = config.data.documentStatus;
 		await object.appendDecisionButton(form, page, false);
 	}
@@ -266,7 +294,7 @@ const DocumentStatusManagement = function(main){
 	this.initDraftEvent = async function(record, page){
 		if(record.dom.action != undefined){
 			record.dom.action.onclick = async function(){
-				page.renderForm(page.model, {data: record.record});
+				page.renderView(page.model, {data: record.record});
 			}
 		}
 		if(record.dom.print != undefined) record.dom.print.remove();

@@ -1,11 +1,14 @@
-<div class="abstract_input_box input_per_line_{{{inputPerLine}}}" rel="{{{columnName}}}_box">
+<div class="abstract_input_box input_per_line_{{{inputPerLine}}} {{#isHidden}}hidden{{/isHidden}}" rel="{{{columnName}}}_box">
 	<div class="flex gap-5px" rel="labelDIV">
 		<div localize>{{{label}}}</div>
 		{{#isRequired}}<div><label class="required">*</label></div>{{/isRequired}}
 	</div>
 	<div class="flex gap-5px">
 		<div class="width-100-percent">
-			<input type="text" rel="{{{columnName}}}" autocomplete="off" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}}>
+			<input type="text" rel="{{{columnName}}}" class="{{#config.isView}}hidden{{/config.isView}}" autocomplete="off" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}}>
+			{{#config.isView}}
+			<div class="abstract_input_view" rel="{{{columnName}}}_view"></div>
+			{{/config.isView}}
 		</div>
 		{{#SVG}}
 			{{#isSVG}}

@@ -10,7 +10,7 @@ class DynamicModel(Record):
 	modelName = StringColumn()
 	label = StringColumn(
 		input=TextInput(
-			label="label",
+			label="Label",
 			order="1",
 			isTable=True,
 			isSearch=True,

@@ -1,31 +1,19 @@
 from gaimon.core.AsyncApplication import AsyncApplication
+from gaimon.core.LogFlusher import LogFlusher
 from gaimon.util.ProcessUtil import readConfig
-import os, gaimon.model, sys
+
+import os
 
 class GaimonApplication (AsyncApplication) :
 	def __init__(self, config:dict, namespace:str) :
-		self.controllerPath = 'gaimon.controller'
+		self.routeExtensionMap = {}
 		AsyncApplication.__init__(self, config, namespace, False)
 		self.rootPath = os.path.dirname(__file__)
-		self.modelModule = "gaimon.model"
-
-	def loadController(self):
-		super().loadController()
-		directory = f"{self.rootPath}/controller/static"
-		modulePath = "gaimon.controller.static"
-		static = self.browseController(directory, modulePath)
-		self.browsePermission(directory, modulePath)
-		self.browsePreProcessor(directory, modulePath)
-		self.browsePostProcessor(directory, modulePath)
-		self.browseWebSocket(directory, modulePath)
-		self.map(static)
-		self.controller.extend(static)
-
-	async def load(self) :
-		await super().load()
+		self.config['extension'].insert(0, 'gaimon')
+		
 
 def readGaimonConfig(namespace:str) :
-	return readConfig(
+	config = readConfig(
 		['Gaimon.json'],
 		{
 			'DB': 'Database.json',
@@ -33,6 +21,11 @@ def readGaimonConfig(namespace:str) :
 			'notification' : 'Notification.json',
 			'businessLog' : 'BusinessLog.json',
 			'monitor' : 'ServiceMonitor.json',
+			'additionExtension' : 'Extension.json',
 		},
 		namespace
 	)
+	extension = config.get('additionExtension', None)
+	if extension is not None :
+		config['extension'].extend(extension)
+	return config

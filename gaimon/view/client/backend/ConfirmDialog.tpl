@@ -9,7 +9,11 @@
 			<div class="flex-column-center" localize>Confirm</div>
 		</div>
 		<div class="form width-100-percent" style="box-shadow:unset;">
-			<div class="body" localize>{{{text}}}</div>
+			<div class="body" localize>{{#title}}{{title}}{{/title}}{{^title}}{{text}}{{/title}}</div>
+			{{#isForm}}
+			<div class="abstract_form_input"  rel="form"></div>
+			<div class="abstract_form_input" rel="additionalForm"></div>
+			{{/isForm}}
 		</div>
 		<div class="operation" rel="operation">
 			<div class="width-100-percent flex-end gap-15px">

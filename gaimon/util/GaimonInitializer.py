@@ -59,6 +59,7 @@ class GaimonInitializer:
 			self.wheelPath
 		]
 		parameter.extend([f'{self.wheelPath}/{i}' for i in os.listdir(self.wheelPath)])
+		print(parameter)
 		pip.main(parameter)
 
 	def setResourcePath(self):
@@ -128,8 +129,12 @@ class GaimonInitializer:
 			else:
 				parameter['DB_VENDOR'] = str(vendor)
 		except:
-			print("*** Warning : Vedor cannot be parsed, will be set to MariaDB.")
+			print("*** Warning : Vendor cannot be parsed, will be set to MariaDB.")
 			parameter['DB_VENDOR'] = "2"
 		if parameter['DB_VENDOR'] == "4":
 			parameter['DB_DOMAIN'] = input("DB domain : ")
 		return parameter
+
+if __name__ == '__main__' :
+	initializer = GaimonInitializer(namespace='production', wheelPath='/usr/lib/python3/dist-packages/')
+	initializer.installWheel()

@@ -1,18 +1,99 @@
+from thaiartisan.thaiartisan.model.ThaiArtisanEBook import ThaiArtisanEBook
 from gaimon.util.DateTimeUtil import dateIDToDateTime, dateTimeToDateID
+from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from datetime import datetime
 from typing import Dict, List, Any, Tuple
 import matplotlib.pyplot as plot
 
-import json, zlib, os, traceback
+import json, zlib, os, traceback, requests
 
 # DateID -> List of Dict of Log
 LogMap = Dict[int, List[Dict[str, Any]]]
 
 
+ROW = """<tr>
+	<td style="text-align:right;">{title} ({count})</td>
+	<td><div style="background-color:blue; width:{width}px;height:15px;"></div></td>
+</tr>
+
+"""
+
 class LogAnalyzer:
 	def __init__(self, config):
 		self.config = config
 		self.resourcePath = config['resourcePath']
+	
+	def getBookID(self, url:str, trigger:str) :
+		if trigger in  url :
+			p0 = url.find(trigger)+len(trigger)
+			tail = url[p0:]
+			if '&' in tail or '?' in tail :
+				p1 = tail.find('&')
+				p2 = tail.find('?')
+				p3 = p1 if (p1 >= 0 and p1 < p2) or p2 < 0 else p2
+				if p3 < 0 :
+					return None
+				try :
+					id = int(tail[:p3])
+				except :
+					id = None
+			else :
+				id = int(tail)
+			return id
+		else :
+			return None
+
+	def getBookRead(
+			self,
+			startDate: datetime,
+			endDate: datetime,
+		) :
+		start = dateTimeToDateID(startDate)
+		end = dateTimeToDateID(endDate)
+		bookCount = {}
+		for dateID in range(start, end + 1):
+			accessDate = dateIDToDateTime(dateID)
+			logMap = self.readLog(accessDate, accessDate)
+			logList = logMap.get(dateID, None)
+			for i in logList :
+				url:str = i['url']
+				id = self.getBookID(url, 'ebook/view/')
+				if id is None : id = self.getBookID(url, '?page=library&id=')
+				if id is None : continue
+				if id not in bookCount : bookCount[id] = 1
+				else : bookCount[id] += 1
+		response = requests.get('https://thaiartisan.org/thaiartisan/thaiartisan/ebook/simple/get')
+		bookData = response.json()
+		bookMap = {i['id']:i['name'] for i in bookData['result']}
+		bookCountItem = sorted([(k, v) for k, v in bookCount.items()], key=lambda x : x[1], reverse=True)
+		for id, n in bookCountItem :
+			bookName = bookMap.get(id, None)
+			print('-', bookName, ':', n)
+
+	def getTopMenu(
+		self,
+		startDate: datetime,
+		endDate: datetime,
+		menuMap: Dict[str, str],
+	):
+		start = dateTimeToDateID(startDate)
+		end = dateTimeToDateID(endDate)
+		visitMap = {}
+		for dateID in range(start, end + 1):
+			accessDate = dateIDToDateTime(dateID)
+			logMap = self.readLog(accessDate, accessDate)
+			logList = logMap.get(dateID, None)
+			for log in logList:
+				pageName:str = log['url']
+				for pattern, name in menuMap.items() :
+					if pattern not in pageName : continue
+					if name not in visitMap: visitMap[name] = 1
+					else : visitMap[name] +=1
+					break
+		mostVisit = sorted([(k, v) for k, v in visitMap.items()], key=lambda x: x[1], reverse=True)
+		factor = 500/mostVisit[0][1]
+		for pageName, count in mostVisit:
+			print(ROW.format(title=pageName, count=count, width=int(count*factor)))
 
 	def getTopVisit(
 		self,
@@ -21,11 +102,12 @@ class LogAnalyzer:
 		n: int = 10,
 		route=None
 	):
-		logMap = self.readLog(startDate, endDate)
 		start = dateTimeToDateID(startDate)
 		end = dateTimeToDateID(endDate)
 		visitMap = {}
 		for dateID in range(start, end + 1):
+			accessDate = dateIDToDateTime(dateID)
+			logMap = self.readLog(accessDate, accessDate)
 			logList = logMap.get(dateID, None)
 			for log in logList:
 				if route is not None and log['route'] != route: continue
@@ -42,15 +124,18 @@ class LogAnalyzer:
 					visitMap[url]['count'] += 1
 
 		mostVisit = sorted([(k,v) for k, v in visitMap.items()], key=lambda x: x[1]['count'], reverse=True)
+		factor = 500/mostVisit[0][1]
 		for url, data in mostVisit[:n]:
-			print(f"{data['title']} : {data['count']}")
+			# print(f"{data['title']} : {data['count']}")
+			print(ROW.format(title=data['title'], count=data['count'], width=int(data['count']*factor)))
 
 	def showVisit(self, startDate: datetime, endDate: datetime, isGraphic: bool = False):
-		logMap = self.readLog(startDate, endDate)
 		start = dateTimeToDateID(startDate)
 		end = dateTimeToDateID(endDate)
 		visitMap = []
 		for dateID in range(start, end + 1):
+			accessDate = dateIDToDateTime(dateID)
+			logMap = self.readLog(accessDate, accessDate)
 			logList = logMap.get(dateID, None)
 			if logList is None: continue
 			remoteMap = {}
@@ -84,8 +169,8 @@ class LogAnalyzer:
 		averaged = [a for d, n, a in visitMap]
 		n = len(date)
 		figure = plot.figure(figsize=(10, 6))
-		plot.bar([i + 0.2 for i in range(n)], count, width=0.3, label="visit")
-		# plot.bar([i+0.5 for i in range(n)], averaged, width=0.3, label="average page count per visit")
+		plot.bar([i + 0.3 for i in range(n)], count, width=0.3, label="visit")
+		# plot.bar([i+0.3 for i in range(n)], averaged, width=0.3, label="average page count per visit")
 		plot.xticks([i + 0.35 for i in range(n)], date)
 		plot.xlabel('date')
 		plot.ylabel('visitor number')

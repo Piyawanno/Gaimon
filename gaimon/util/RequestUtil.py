@@ -3,6 +3,8 @@ from xerial.Column import Column
 from xerial.StringColumn import StringColumn
 from xerial.FractionColumn import FractionColumn
 from xerial.IntegerColumn import IntegerColumn
+from xerial.JSONColumn import JSONColumn
+from xerial.CurrencyColumn import CurrencyColumn
 from xerial.input.ReferenceSelectInput import ReferenceSelectInput
 from xerial.input.EnumSelectInput import EnumSelectInput
 from xerial.Record import Record
@@ -73,9 +75,9 @@ def processEachClause(request, modelClass) -> Tuple[List[str], List[Any]] :
 		if state.meta is None: continue
 		if state.value is None: continue
 		if isinstance(state.value, str) and len(state.value) == 0: continue
-
 		if isinstance(state.meta, StringColumn): processStringClause(state)
 		elif isinstance(state.meta, FractionColumn): processFractionClause(state)
+		elif isinstance(state.meta, JSONColumn) or isinstance(state.meta, CurrencyColumn): continue
 		elif state.isReference(): processReferenceClause(state)
 		else: processGenericClause(state)
 	return clause, parameter
@@ -104,6 +106,34 @@ def createSelectHandler(modelClass: type):
 		)
 		return [i.toDict() for i in fetched]
 	return handleSelect
+
+def createSelectByIDHandler(modelClass: type):
+	async def handleSelectByID(session: AsyncDBSessionBase, ID: int):
+		fetched = await session.selectByID(modelClass, ID, isRelated=False, hasChildren=True)
+		if hasattr(modelClass, 'isDrop') and fetched.isDrop: return None
+		return fetched
+	return handleSelectByID
+
+def createSelectByAttributeHandler(modelClass: type):
+	async def handleSelectByAttribute(session: AsyncDBSessionBase, data: dict):
+		data = copy.copy(data)
+		item = data.get('data', data)
+		item['isDrop'] = 0
+		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
+		limit = 1
+		offset = 0
+		fetched = await session.select(
+			modelClass,
+			clause, 
+			parameter=parameter, 
+			limit=limit, 
+			offset=offset, 
+			isRelated=False, 
+			hasChildren=True
+		)
+		if len(fetched) == 0: return None
+		return fetched[0]
+	return handleSelectByAttribute
 
 
 def createCountHandler(modelClass: type):
@@ -198,13 +228,39 @@ def createUpdateHandler(modelClass: type):
 	async def handleUpdate(session: AsyncDBSessionBase, data: dict) -> Record:
 		id = data.get('id', None)
 		if id is None : return None
-		record = await session.selectByID(modelClass, data['id'])
+		record = await session.selectByID(modelClass, data['id'], hasChildren=True)
 		if record is not None :
+			await updateChildren(session, record, data)
 			record.fromDict(data)
 			await session.update(record)
 			return record
 		else:
 			return None
+
+	async def updateChildren(session: AsyncDBSessionBase, record: Record, data:dict):
+		for i in record.__class__.children:
+			await updateEachChildren(session, record, data, i.name)
+
+	async def updateEachChildren(session: AsyncDBSessionBase, record: Record, data:dict, attribute: str):
+		childData = data.get(attribute, [])
+		if len(childData) == 0: return
+		del data[attribute]
+		childMap = {int(i['id']): i for i in childData if 'id' in i}
+		childData = [i for i in childData if not 'id' in i]
+		childRecordList:List[Record] = getattr(record, attribute, [])
+		if childRecordList is None: childRecordList = []
+		for childRecord in childRecordList:
+			item = childMap.get(childRecord.id, None)
+			if item is None: 
+				await session.drop(childRecord)
+				continue
+			childRecord.fromDict(item)
+			await session.update(childRecord)
+			del childMap[childRecord.id]
+
+		childData.extend([childMap[i] for i in childMap])
+		data[attribute] = childData
+
 	return handleUpdate
 
 def createIngestHandlerWithDynamicModel(modelClass: type, getDynamicModel: Awaitable):
@@ -288,6 +344,7 @@ def createFileStore(application, path:str, isShare:bool=False) :
 	static:StaticFileHandler = application.static
 	store = static.storeStaticShare if isShare else static.storeStaticFile
 	async def storeFile(request:Request, key:str) :
+		# if getattr(request, 'files', None) is None: return [['', '']]
 		requestFile:RequestParameters = request.files.get(key, None)
 		if key not in request.files: return []
 		requestFile = request.files[key]

@@ -19,6 +19,10 @@ const AbstractPage = function(main, parent) {
 	object.permissions = [];
 	object.tabs = [];
 	object.tabMapper = {};
+	object.otherState = {};
+	object.dynamicState = {};
+	object.viewStepMap = {}
+	object.viewStepSubMap = {};
 
 	object.table = new AbstractTable(this);
 	object.form = new AbstractForm(this);
@@ -41,7 +45,9 @@ const AbstractPage = function(main, parent) {
 		object.parent = parent;
 		object.parentPageID = parent.pageID;
 	}
-	if (main != undefined) object.main.pageIDDict[object.pageID] = object;
+	if (main != undefined) {
+		object.main.pageIDDict[object.pageID] = object;
+	}
 
 	for (let i in AbstractPage.prototype) {
 		object.__proto__[i] = AbstractPage.prototype[i];
@@ -53,6 +59,12 @@ const AbstractPage = function(main, parent) {
 
 	this.preload = async function() {
 		if (object.restURL != undefined && object.restProtocol == undefined) object.restProtocol = new AbstractProtocol(main, object.restURL);
+	}
+
+	this.initModel = function() {
+		if (object.model) {
+			object.main.pageModelDict[object.model] = object;
+		}
 	}
 
 	this.loadPermissions = function(extension) {
@@ -68,6 +80,7 @@ const AbstractPage = function(main, parent) {
 				
 			}
 		}
+		object.initModel();
 	}
 
 	this.setParent = function(parent) {
@@ -82,6 +95,12 @@ const AbstractPage = function(main, parent) {
 		}
 	}
 
+	this.onPrepareState = async function() {
+		await object.prepare();
+		await object.initStep();
+		await object.getAllState();
+	}
+
 	this.register = async function() {
 	}
 
@@ -90,6 +109,8 @@ const AbstractPage = function(main, parent) {
 
 	this.prepare = async function() {
 	}
+
+	
 
 	this.getMenu = async function(isSubMenu, label, icon, hasAdd = false) {
 		let object = this;
@@ -100,7 +121,29 @@ const AbstractPage = function(main, parent) {
 	this.renderState = async function(state) {
 		await object.preload();
 		if (object.restProtocol == undefined) return;
-		if (state.state == 'form') await object.renderForm(object.model, {isSetState: false, data: state.data, isView: state.isView});
+		if (state.state == 'form') await object.renderView(object.model, {isSetState: false, data: state.data, isView: state.isView}, 'Form');
+	}
+
+	this.registerState = async function(name, callback) {
+		object.otherState[name] = callback;
+	}
+
+	this.renderOtherState = async function(state) {
+		if (object.otherState[state.state]) {
+			await object.otherState[state.state](object.model, {isSetState: false, data: state.data, isView: state.isView}, 'Form')
+			return;
+		}
+		await object.renderDynamicState(state);
+	}
+
+	this.renderDynamicState = async function(state) {
+		if (object.dynamicState[state.state]) {
+			let config = object.dynamicState[state.state];
+			if (main.pageIDDict[config.pageID] == undefined) return;
+			if (main.pageIDDict[config.pageID][config.render] == undefined) return;
+			await main.pageIDDict[config.pageID][config.render](object.model, {isSetState: false, data: state.data, isView: state.isView}, 'Form')
+			return;
+		}
 	}
 
 	this.setPageState = async function(config) {
@@ -112,8 +155,55 @@ const AbstractPage = function(main, parent) {
 	this.changeState = async function(data, url, page = undefined) {
 		let object = this;
 		if (page != undefined) object = page;
+		data.isLegacy = false;
 		await PUSH_STATE(object, data, url);
 	}
+
+	this.changeFormState = async function(data, url, page = undefined) {
+		let object = this;
+		if (page != undefined) object = page;
+		data.isLegacy = true;
+		await PUSH_STATE(object, data, url);
+	}
+
+	this.getPageStateURL = async function(config) {
+		if (config == undefined) config = {}
+		if (config.isInit == undefined) config.isInit = true;
+		return await GET_STATE_URL(object, config);
+	}
+
+	this.initStep = async function() {
+		
+	}
+
+	this.registerStep = async function(group, step) {
+		if (main.viewStepMap == undefined) main.viewStepMap = {};
+		if (main.viewStepSubMap == undefined) main.viewStepSubMap = {};
+		if (main.viewStepMap[group] == undefined) {
+			main.viewStepMap[group] = []
+			main.viewStepSubMap[group] = {}
+		}
+		let uniqueID = `${step.pageID}_${step.render}`
+		if (main.viewStepSubMap[group][uniqueID] == undefined) {
+			main.viewStepMap[group].push(step);
+			main.viewStepSubMap[group][uniqueID] = step;
+			main.viewStepMap[group].sort((a, b) => a.order - b.order);
+		}
+	}
+
+	this.getAllState = async function() {
+		if (Object.keys(object.viewStepMap).length > 0) {
+			for (let i in object.viewStepMap) {
+				let steps = object.viewStepMap[i];
+				for(let step of steps){
+					step.state = `${object.pageID}_step_${step.pageID}_form`;
+					object.dynamicState[step.state] = step;
+				}
+			}
+		}
+	}
+
+	
 
 	this.highlightMenu = async function(menu, isSubMenu, hasSubMenu) {
 		if (!hasSubMenu) {
@@ -134,6 +224,12 @@ const AbstractPage = function(main, parent) {
 	this.appendButton = async function(config){
 		let button = await object.getButton(config);
 		object.home.dom.button.append(button);
+		return button;
+	}
+
+	this.appendAdditionalButton = async function(config){
+		let button = await object.getButton(config);
+		object.home.dom.additionalButton.append(button);
 		return button;
 	}
 
@@ -249,11 +345,18 @@ const AbstractPage = function(main, parent) {
 	}
 
 	this.initTabMenuEvent = async function(tab, page) {
+		// console.log(tab, page);
+		let url = await page.getPageStateURL({isRenderFromTab: true, tabPageID: object.pageID});
+		let link = tab.getElementsByTagName('a')[0];
+		link.href = url;
+		link.onclick = async function(e) {
+			e.preventDefault();
+		}
 		tab.onclick = async function() {
 			let isChangeState = true;
 			if (tab.classList.contains('highlightTab')) isChangeState = false;
 			SHOW_LOADING_DIALOG(async function() {
-				await page.prepare();
+				await page.onPrepareState();
 				await page.render({isRenderFromTab: true, tabPageID: object.pageID});
 				if (isChangeState) await page.setPageState({isRenderFromTab: true, tabPageID: object.pageID});
 			});

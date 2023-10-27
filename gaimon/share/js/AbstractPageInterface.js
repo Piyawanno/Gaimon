@@ -56,7 +56,7 @@ AbstractPage.prototype.create = async function(scriptName, main, parent) {
 
 AbstractPage.prototype.init = async function() {
 	let object = this;
-	await object.prepare();
+	await object.onPrepareState();
 	await object.render();
 }
 
@@ -163,8 +163,22 @@ AbstractPage.prototype.search = async function(form) {
 	return form.getData();
 }
 
-AbstractPage.prototype.submit = async function(form) {
-	return form.getData();
+AbstractPage.prototype.submit = async function(view) {
+	let result = view.getData();
+	if (view.dom.form && view.dom.form.tables) {
+		for (let table of view.dom.form.tables) {
+			if (table.records == undefined) break;
+			if (!Array.isArray(table.records)) break;
+			result.data[table.inputName] = []
+			for (let record of table.records) {
+				let recordResult = record.getData();
+				result.isPass = result.isPass & recordResult.isPass
+				result.data[table.inputName].push(recordResult.data);
+			}
+		}
+	}
+	if (result.data.records) result.data.records = undefined;
+	return result;
 }
 
 AbstractPage.prototype.cancel = async function() {
@@ -187,6 +201,10 @@ AbstractPage.prototype.initViewEvent = async function(view, config, viewType) {
 	return await this.view.initViewEvent(view, config, viewType);
 }
 
+AbstractPage.prototype.getViewFromExternal = async function(modelName, config, viewType = 'Form') {
+	return await this.view.getView(modelName, config, viewType);
+}
+
 AbstractPage.prototype.getView = async function(modelName, config, viewType) {
 	return await this.view.getView(modelName, config, viewType);
 }
@@ -202,7 +220,34 @@ AbstractPage.prototype.renderByView = async function(externalView, config, viewT
 	return view;
 }
 
-AbstractPage.prototype.renderView = async function(modelName, config, viewType) {
+AbstractPage.prototype.renderViewFromExternal = async function(modelName, config, viewType = 'Dialog') {
+	await this.onPrepareState();
+	if (this.config == undefined) this.config = {};
+	if (this.config.isFetchByID == undefined) this.config.isFetchByID = true;
+	if (this.restProtocol != undefined) {
+		if (config.data == undefined) return;
+		let attributes = ['id', 'code'];
+		let isFound = false;
+		for (let attribute of attributes) {
+			if (config.data[attribute] != undefined) {
+				let data = config.data[attribute];
+				config.data = {};
+				config.data[attribute] = data;
+				isFound = true;
+				break;
+			}
+		}
+		if (!isFound) return;
+		config.data = await this.restProtocol.getByReference(config.data);
+	}
+	let view = await this.renderView(modelName, config, viewType);
+	if (viewType == 'Dialog') {
+		view.dom.dialog_container.classList.add('xlarge');
+	}
+	return view;
+}
+
+AbstractPage.prototype.renderView = async function(modelName, config, viewType = 'Form') {
 	return await this.view.renderView(modelName, config, viewType);
 }
 
@@ -238,8 +283,8 @@ AbstractPage.prototype.renderForm = async function(modelName, config) {
 	return await this.view.renderView(modelName, config, 'Form');
 }
 
-AbstractPage.prototype.getBlankForm = async function(modelName, config) {
-	return await this.view.getBlankView(modelName, config, 'Form');
+AbstractPage.prototype.getBlankForm = async function(config) {
+	return await this.view.getBlankView(config, 'Form');
 }
 
 AbstractPage.prototype.renderBlankForm = async function(modelName, config) {

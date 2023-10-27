@@ -23,6 +23,7 @@ const BackendMain = function() {
 	object.scriptNameExtensionMapper = {};
 
 	object.pageIDDict = {};
+	object.pageModelDict = {};
 	object.tabExtension = {};
 
 	object.page = {};
@@ -79,6 +80,7 @@ const BackendMain = function() {
 		for(let process of BACKEND_POSTPROCESS){
 			process(object);
 		}
+
 		let language = localStorage.getItem('LANGUAGE');
 		if (language != undefined && language != 'en') {
 			object.personalBar.setLanguage(language);
@@ -262,6 +264,7 @@ const BackendMain = function() {
 					let extension = item.extension;
 					let scriptName = item.ID;
 					let page = await AbstractPage.prototype.create(scriptName, this, parent);
+					object.extendPage(page);
 					page.extension = extension;
 					page.loadPermissions(extension);
 					if (page.checkIsEnable != undefined && !page.checkIsEnable()) page.isHidden = true;
@@ -426,5 +429,14 @@ const BackendMain = function() {
 	this.appendNotificationEventType = async function(eventType, callback) {
 		if (GLOBAL.NOTIFICATION_EVENT_TYPE == undefined) GLOBAL.NOTIFICATION_EVENT_TYPE = {};
 		GLOBAL.NOTIFICATION_EVENT_TYPE[eventType] = callback;
+	}
+
+	this.extendPage = function(page){
+		if(!(page.constructor.name in PAGE_EXTENSION)) return;
+		let extensionList = PAGE_EXTENSION[page.constructor.name];
+		for(let i of extensionList){
+			let extension = eval(`new ${i}(object)`);
+			extension.extend(page);
+		}
 	}
 }

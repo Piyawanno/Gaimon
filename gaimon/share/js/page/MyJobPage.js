@@ -30,7 +30,7 @@ const MyJobPage = function(main, parent) {
 
 	this.renderState = async function(state) {
 		if (state.state == 'search') await object.renderSearchForm(object.model, {isSetState: false});
-		if (state.state == 'form') await object.renderForm(object.model, {isSetState: false, data: state.data, isView: state.isView});
+		if (state.state == 'form') await object.rendeView(object.model, {isSetState: false, data: state.data, isView: state.isView});
 	}
 
 	this.renderLocalize = async function() {

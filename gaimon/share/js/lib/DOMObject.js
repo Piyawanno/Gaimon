@@ -185,7 +185,11 @@ let DOMObject = function(template, data, isHTML) {
 			return tag.innerHTML;
 		} else if (tag.tagName == 'LABEL') {
 			return tag.innerHTML;
+		} else if (tag.tagName == 'SPAN') {
+			return tag.innerHTML;
 		} else if (tag.tagName == 'A') {
+			return tag.innerHTML;
+		} else if (tag.tagName == 'P') {
 			return tag.innerHTML;
 		} else if (tag.tagName == 'TEXTAREA') {
 			return tag.placeholder;
@@ -371,35 +375,40 @@ let DOMObject = function(template, data, isHTML) {
 		object.initTagEvent(atrribute, tag);
 		if (tag.tagName == 'INPUT' || tag.tagName == 'SELECT' || tag.tagName == 'TEXTAREA') object.__input__[atrribute] = tag;
 		if (object.data == null || object.data == undefined || Object.keys(object.data).length == 0) return;
-		let data = object.data;
-		if (typeof(atrribute) == 'object') {
-			for (let i=0; i < atrribute.length; i++) {
-				if (data[atrribute[i]] == undefined) return;
-				if (i == atrribute.length-1) {
-					atrribute = atrribute[i];
-					break;
-				} else data = data[atrribute[i]];
-			}
-		}
-		if (data[atrribute] == undefined) return;
-		if (data._value == undefined) data._value = {};
-		data._value[atrribute] = data[atrribute];
-		if (data._tags == undefined) data._tags = {};
-		if (data._tags[atrribute] == undefined) data._tags[atrribute] = []
-		if (!data._tags[atrribute].includes(tag)) data._tags[atrribute].push(tag);
-		
-		Object.defineProperty(data, atrribute, {
-			get: function(){
-				return this._value[atrribute];
-			},
-			set: function(value){
-				this._value[atrribute] = value;
-				object.setValueFromTag(data._tags[atrribute], this._value[atrribute]);
-			}
-		});
 
-		tag.onchange = function(event) {
-			// console.log(this, data[atrribute]);
+		// TODO handler change value
+		if (false) {
+			let data = object.data;
+			if (typeof(atrribute) == 'object') {
+				for (let i=0; i < atrribute.length; i++) {
+					if (data[atrribute[i]] == undefined) return;
+					if (i == atrribute.length-1) {
+						atrribute = atrribute[i];
+						break;
+					} else data = data[atrribute[i]];
+				}
+			}
+			
+			if (data[atrribute] == undefined) return;
+			if (data._value == undefined) data._value = {};
+			data._value[atrribute] = data[atrribute];
+			if (data._tags == undefined) data._tags = {};
+			if (data._tags[atrribute] == undefined) data._tags[atrribute] = []
+			if (!data._tags[atrribute].includes(tag)) data._tags[atrribute].push(tag);
+			
+			Object.defineProperty(data, atrribute, {
+				get: function(){
+					return this._value[atrribute];
+				},
+				set: function(value){
+					this._value[atrribute] = value;
+					object.setValueFromTag(data._tags[atrribute], this._value[atrribute]);
+				}
+			});
+
+			tag.onchange = function(event) {
+				// console.log(this, data[atrribute]);
+			}
 		}
 	}
 
@@ -613,7 +622,7 @@ let DOMObject = function(template, data, isHTML) {
 			}
 			data[i] = object.getValueFromTag(object.dom[i]);
 		}
-		file = object.getFileMatrixValue(file);
+		file = object.getFileMatrixValue(file, data);
 		return {isPass, data, file}
 	}
 	
@@ -809,14 +818,19 @@ let DOMObject = function(template, data, isHTML) {
 		return data;
 	}
 
-	this.getFileMatrixValue = function(file){
+	this.getFileMatrixValue = function(file, data){
 		for(let name in object.__filematrix_input__){
+			if (data[name] == undefined) data[name] = [];
+			if (data[`${name}removed`] == undefined) data[`${name}removed`] = [];
 			let tag = object.__filematrix_input__[name];
 			for(let i in tag.tag){
 				if(tag.tag[i][name] == undefined) continue;
 				if(Array.isArray(tag.tag[i][name])){
 					for(let j in tag.tag[i][name]){
-						if(tag.tag[i][name][j].offsetParent == null) continue;
+						if(tag.tag[i][name][j].offsetParent == null) {
+							data[`${name}removed`].push(tag.tag[i][name][j].value);
+							continue;
+						}
 						if(tag.tag[i][name][j].files == undefined) {
 							file.append(name, tag.tag[i][name][j].index);
 							continue;
@@ -834,6 +848,9 @@ let DOMObject = function(template, data, isHTML) {
 					file.append(name, tag.tag[i][name].files[0]);
 				}
 			}
+		}
+		for(let name in object.__filematrix_input__){
+			if (data[name].length == 0) delete data[name]
 		}
 		return file;
 	}
@@ -1213,13 +1230,13 @@ let DOMObject = function(template, data, isHTML) {
 		if (tag.onchange != undefined) tag.onchange();
 	}
 
-	this.fetchValueAutocomplete = async function(input, value, data) {
+	this.fetchValueAutocomplete = async function(input, value, data, tagView, key) {
 		if (GLOBAL.AUTOCOMPLETE_CACHE == undefined) GLOBAL.AUTOCOMPLETE_CACHE = {};
 		this.cached = GLOBAL.AUTOCOMPLETE_CACHE;
 		if (typeof(input.autocompleteObject.data) == 'string') {
 			if (GET == undefined) return;
 			if (value == undefined) return;
-			if(`${value}` == '') return;
+			if (value.length == 0) return;
 			// let response = await GET(`${input.autocompleteObject.data}/${value}`, undefined, 'json', true);
 			let now = Date.now();
 			let url = `${input.autocompleteObject.data}/by/reference`;
@@ -1240,6 +1257,7 @@ let DOMObject = function(template, data, isHTML) {
 					this.cached[url][value] = {response: response, time: Date.now()};
 				}
 				input.value = response.label;
+				if (tagView) tagView.innerHTML = response.label;
 				if (response.results) input.autocompleteObject.tag.currentValue = response.results;
 				else if (response.result) input.autocompleteObject.tag.currentValue = response.result;
 				if (input.autocompleteObject.callback != undefined) {
@@ -1311,6 +1329,22 @@ let DOMObject = function(template, data, isHTML) {
 						{{/isView}}
 					</tr>`
 		}
+		function recursiveSetData(tag, data) {
+			if (data == undefined || tag == undefined) return;
+			if (Object.keys(tag).length > 0) {
+				for (let name of Object.keys(tag)) {
+					recursiveSetData(tag[name], data[name])
+				}
+			}
+			if (typeof(data) == 'object' && data != null) {
+				object.setTagValue(tag, data.id);
+			} else {
+				object.setTagValue(tag, data);
+			}
+			if (tag.prerequisite != undefined && tag.prerequisite && tag.onchange != undefined) {
+				callPrerequisite(tag, data);
+			}
+		}
 		for (let i in data) {
 			if (object.__timeSpan_input__[i] != undefined) {
 				let tag = object.__timeSpan_input__[i];
@@ -1331,8 +1365,6 @@ let DOMObject = function(template, data, isHTML) {
 				let decimal = data[i].split('.')[1] != undefined ? data[i].split('.')[1] : '0';
 				for (let i in tag.tag) {
 					tag.tag[i].value = fraction;
-					// if (tag.tag[i].isInteger) tag.tag[i].value = integer;
-					// else if (tag.tag[i].isDecimal) tag.tag[i].value = decimal;
 				}
 			} else if (object.__currency_input__[i] != undefined) {
 				if (data[i] == undefined) continue;
@@ -1342,8 +1374,6 @@ let DOMObject = function(template, data, isHTML) {
 				let decimal = currency.split('.')[1] != undefined ? currency.split('.')[1] : '0';
 				for (let i in tag.tag) {
 					tag.tag[i].value = currency;
-					// if (tag.tag[i].isInteger) tag.tag[i].value = integer;
-					// else if (tag.tag[i].isDecimal) tag.tag[i].value = decimal;
 				}
 			} else if (object.__position_input__[i] != undefined) {
 				let tag = object.__position_input__[i];
@@ -1357,7 +1387,7 @@ let DOMObject = function(template, data, isHTML) {
 					}
 				}
 			} else if (object.__autocomplete__[i] != undefined) {
-				object.fetchValueAutocomplete(object.__autocomplete__[i], data[i], data);
+				object.fetchValueAutocomplete(object.__autocomplete__[i], data[i], data, dom[`${i}_view`], i);
 			} else if (object.__filematrix_input__[i] != undefined) {
 				let tbody = object.__filematrix_input__[i].tag[0];
 				tbody.html('');
@@ -1380,10 +1410,8 @@ let DOMObject = function(template, data, isHTML) {
 					if(tag.dom.view){
 						tag.dom.view.onclick = async function() {
 							let url = tbody.getAttribute('url');
-							console.log(url);
 							if (url == undefined) return;
 							if (url.length == 0) return;
-							console.log(`${url}${data.id}/${tag.dom[column].index}`);
 							let blob = await GET(`${url}${data.id}/${tag.dom[column].index}`, undefined, 'blob');
 							await OPEN_FILE(blob);
 						}
@@ -1397,25 +1425,15 @@ let DOMObject = function(template, data, isHTML) {
 					if (isView) tag.dom[i].readonly();
 					else tag.dom[i].disable();
 					initFileMatrixEvent(tbody, tag, data, i)
-					// if(tag.dom.delete){
-					// 	tag.dom.delete.onclick = async function() {
-					// 		tag.html.remove();
-					// 	}
-					// }
-					// if(tag.dom.view){
-					// 	tag.dom.view.onclick = async function() {
-					// 		let url = tbody.getAttribute('url');
-					// 		if (url == undefined) return
-					// 		let blob = await GET(`${url}${data[i].id}${tag.dom[i].index}`, undefined, 'blob');
-					// 		// await OPEN_FILE(blob);
-					// 	}
-					// }
 					tbody.append(tag);
 					index = index + 1;
 				}
 			} else if (dom[i] != undefined) {
 				if(unset != undefined){
 					if(unset.indexOf(i) != -1) continue;
+				}
+				if (Object.keys(dom[i]).length > 0) {
+					recursiveSetData(dom[i], data[i]);
 				}
 				if(dom[i].type == 'file'){
 					if(data[i] == null || data[i] == '') continue;
@@ -1426,8 +1444,13 @@ let DOMObject = function(template, data, isHTML) {
 					dom[`${i}_croppedImage`].src = dom[`${i}_croppedImage`].src+'/'+data.id+`?${Date.now()}`;
 					dom[`${i}_preview`].classList.remove('disabled');
 				}
-				else if(typeof(data[i]) == 'object' && data[i] != null) object.setTagValue(dom[i], data[i].id);
-				else object.setTagValue(dom[i], data[i]);
+				else if(typeof(data[i]) == 'object' && data[i] != null) {
+					object.setTagValue(dom[i], data[i].id);
+					if (dom[`${i}_view`]) object.setTagValue(dom[`${i}_view`], data[i].id);
+				} else {
+					object.setTagValue(dom[i], data[i]);
+					if (dom[`${i}_view`]) object.setTagValue(dom[`${i}_view`], data[i]);
+				}
 				if (dom[i].prerequisite != undefined && dom[i].prerequisite && dom[i].onchange != undefined) {
 					callPrerequisite(dom[i], data);
 				}

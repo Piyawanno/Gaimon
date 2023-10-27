@@ -6,19 +6,22 @@ from gaimon.core.CommonDecorator import CommonDecoratorRule
 from gaimon.core.PermissionDecorator import PermissionDecorator
 from gaimon.core.PreProcessor import PreProcessDecorator
 from gaimon.core.PostProcessor import PostProcessDecorator
+from gaimon.core.ValidationDecorator import ValidationDecorator
+from gaimon.core.ReplaceDecorator import ReplaceRule
 from gaimon.core.Route import Route
 from gaimon.util.PathUtil import conform
 from xerial.DBSessionPool import DBSessionPool
 from xerial.Record import Record
 
 from multiprocessing import cpu_count
-from typing import List, Any
+from typing import List, Any, Dict
 
 import importlib, traceback, os, logging, sys, time
 
 __MAX_POOL_SIZE__ = 2 * cpu_count()
 
 Record.enableDefaultBackup()
+RuleMap = Dict[str, List[CommonDecoratorRule]]
 
 
 def createDecoratorBrowser(self, ruleMap, decoratorClass) :
@@ -45,9 +48,15 @@ def createDecoratorBrowser(self, ruleMap, decoratorClass) :
 
 	def extendDecorator(rule:CommonDecoratorRule) :
 		for i in rule.ruleList :
-			ruleList = ruleMap.get(i, [])
-			if len(ruleList) == 0 :  ruleMap[i] = ruleList
-			ruleList.append(rule)
+			if isinstance(i, list) :
+				for j in i :
+					ruleList = ruleMap.get(j, [])
+					if len(ruleList) == 0 :  ruleMap[j] = ruleList
+					ruleList.append(rule)
+			else :
+				ruleList = ruleMap.get(i, [])
+				if len(ruleList) == 0 :  ruleMap[i] = ruleList
+				ruleList.append(rule)
 	
 	return browseDecorator
 
@@ -80,20 +89,24 @@ class Application:
 		self.rootPath = os.path.dirname(__file__)
 		self.homeMethod = None
 		self.redis = redis.Redis()
-		self.modelModule = None
 		self.extension = ExtensionLoader(self)
+		if not hasattr(self, 'routeExtensionMap'): self.routeExtensionMap = {}
 		self.userConfig = {}
 		self.mappedRoute = set()
 		self.pageTabExtension:TabExtension = {}
+		self.replaceMap: Dict[str, ReplaceRule] = {}
+		self.middlewareMap: Dict[str, PermissionChecker] = {}
 	
 	def initialDecorator(self) :
-		self.permissionMap = {}
-		self.preProcessorMap = {}
-		self.postProcessorMap = {}
+		self.permissionMap: RuleMap = {}
+		self.preProcessorMap: RuleMap = {}
+		self.postProcessorMap: RuleMap = {}
+		self.validationMap: RuleMap = {}
 
 		self.browsePermission = createDecoratorBrowser(self, self.permissionMap, PermissionDecorator)
 		self.browsePreProcessor = createDecoratorBrowser(self, self.preProcessorMap, PreProcessDecorator)
 		self.browsePostProcessor = createDecoratorBrowser(self, self.postProcessorMap, PostProcessDecorator)
+		self.browseValidator = createDecoratorBrowser(self, self.validationMap, ValidationDecorator)
 
 	def setNamespace(self, namespace: str):
 		from gaimon.util.GaimonInitializer import conform
@@ -117,10 +130,6 @@ class Application:
 		self.connectionCount = 0
 		self.initORM()
 		self.authen = Authentication(self.session, self.redis)
-		self.controller = self.browseController(
-			"%s/controller/" % (self.rootPath),
-			self.controllerPath
-		)
 		self.map(self.controller)
 
 	def initORM(self):
@@ -128,11 +137,6 @@ class Application:
 		print(">>> Connecting Database")
 		self.sessionPool.createConnection()
 		self.session = self.sessionPool.getSession()
-		if self.modelModule is not None:
-			DBSessionPool.browseModel(
-				self.session,
-				importlib.import_module(self.modelModule)
-			)
 		self.session.createTable()
 		self.model = self.session.model.copy()
 		self.sessionPool.model = self.model.copy()

@@ -16,13 +16,14 @@ from gaimon.core.WebSocketManagement import WebSocketManagement
 from gaimon.core.WebSocketHandler import WebSocketHandler
 from gaimon.core.StaticFileHandler import StaticFileHandler
 from gaimon.core.CommonDecorator import CommonDecoratorRule
+from gaimon.core.ReplaceDecorator import ReplaceRule
 from gaimon.service.monitor.MonitorClient import MonitorClient
 
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from xerial.Record import Record
 
 from multiprocessing import cpu_count
-from typing import List, Union
+from typing import List, Union, Dict, Callable
 from sanic import Sanic
 from sanic_session import Session, AIORedisSessionInterface
 from packaging.version import Version
@@ -39,7 +40,8 @@ if sys.platform == 'win32':
 else:
 	__CONFIG_ROOT__ = '/etc/gaimon'
 
-
+def processRouteEmpty(route:Route) :
+	return route
 class AsyncApplication(Application):
 	def __init__(self, config: dict, namespace: str, isEnableShare=True):
 		from gaimon.core.Extension import TabExtension
@@ -96,6 +98,9 @@ class AsyncApplication(Application):
 		self.taskList: List[asyncio.Task] = []
 		self.static = StaticFileHandler(self)
 		self.pageTabExtension:TabExtension = {}
+		self.replaceMap: Dict[str, ReplaceRule] = {}
+		self.middlewareMap: Dict[str, PermissionChecker] = {}
+		if not hasattr(self, 'middlewareClass') : self.middlewareClass = PermissionChecker
 		self.initialDecorator()
 
 	def __del__(self):
@@ -122,12 +127,7 @@ class AsyncApplication(Application):
 	def loadController(self):
 		self.controllerPool = {}
 		self.controllerClass = {}
-		path = "%s/controller/" % (self.rootPath)
-		self.controller = self.browseController(path, self.controllerPath)
-		self.browseWebSocket(path, self.controllerPath)
-		self.browsePermission(path, self.controllerPath)
-		self.browsePreProcessor(path, self.controllerPath)
-		self.browsePostProcessor(path, self.controllerPath)
+		self.controller = []
 		for i in self.config['extension']:
 			self.extension.loadController(i)
 			self.extension.loadWebSocketHandler(i)
@@ -234,7 +234,6 @@ class AsyncApplication(Application):
 		self.websocket.startLoop()
 
 	async def initORM(self):
-		await AsyncDBSessionPool.browseModel(self.session, gaimon.model)
 		self.dynamicHandler = DynamicModelHandler(self)
 		self.model = self.session.model.copy()
 		self.sessionPool.model = self.model.copy()
@@ -262,7 +261,7 @@ class AsyncApplication(Application):
 
 	def createPage(self) -> HTMLPage:
 		return HTMLPage(
-			self.rootURL,
+			self.rootURL, 
 			self.websocketURL,
 			self.resourcePath,
 			self.theme,
@@ -279,7 +278,7 @@ class AsyncApplication(Application):
 		client = AsyncServiceClient(config[splitted[2]])
 		return client
 
-	def map(self, controllerList):
+	def map(self, controllerList, processRoute:Callable=processRouteEmpty):
 		for controller in controllerList:
 			isMapped = getattr(controller.__class__, '__is_mapped__', False)
 			if  isMapped :
@@ -289,8 +288,11 @@ class AsyncApplication(Application):
 				controller.__class__.extensionPath = 'gaimon'
 			for attributeName in dir(controller):
 				attribute = getattr(controller, attributeName)
+				if self.checkReplace(attribute): continue
 				if not hasattr(attribute, '__ROUTE__'): continue
+
 				route: Route = attribute.__ROUTE__
+				route = processRoute(route)
 				if route.rule in self.mappedRoute:
 					logging.warning(
 						f"*** Route {route.rule}@{controller.__class__.__name__} is already mapped."
@@ -307,10 +309,36 @@ class AsyncApplication(Application):
 				else:
 					self.routeRegular(controller, attributeName, route)
 			controller.__class__.__is_mapped__ = True
+		self.replaceRoute()
+
+	def replaceRoute(self) :
+		for key, rule in self.replaceMap.items() :
+			middleware = self.middlewareMap.get(key, None)
+			if middleware is None : continue
+			route = middleware.callee.__ROUTE__
+			middleware.callee = rule.callee
+			rule.callable.__ROUTE__ = route
+			middleware.role = rule.role
+			middleware.permission = rule.permission
+			route.role = rule.role
+			route.permission = rule.permission
+			middleware.controllerName = rule.callee.__self__.__class__.__name__
+
+	def checkReplace(self, attribute) :
+		if not hasattr(attribute, '__RULE__') : return False
+		if not isinstance(attribute.__RULE__, ReplaceRule) : return False
+		replace = attribute.__RULE__
+		replace.callee = attribute
+		for i in replace.ruleList :
+			current = self.replaceMap.get(i, None)
+			if current is None or current.order < replace.order :
+				self.replaceMap[i] = replace
+		return True
 
 	def routeSocket(self, controller, attributeName: str, route: Route):
 		attribute = getattr(controller, attributeName)
-		permissionChecker = PermissionChecker(
+		self.routeExtensionMap[route.rule] = controller.extension
+		permissionChecker = self.middlewareClass(
 			self,
 			attribute,
 			route.role,
@@ -328,6 +356,7 @@ class AsyncApplication(Application):
 
 	def routeRegular(self, controller, attributeName: str, route: Route):
 		attribute = getattr(controller, attributeName)
+		self.routeExtensionMap[route.rule] = controller.extension
 		mainMethod = route.method
 		if not isinstance(route.method, list):
 			route.method = [route.method]
@@ -344,33 +373,36 @@ class AsyncApplication(Application):
 		if route.role == {'user'}:
 			role = {'user'}
 		route.role = role
-		permissionChecker = PermissionChecker(
+		middleware = self.middlewareClass(
 			self,
 			attribute,
 			route.role,
 			route.permission
 		)
-		permissionChecker.route = route.rule
-		self.setDecorator(permissionChecker)
+		middleware.route = route.rule
+		self.setDecorator(middleware)
 		if route.rule == self.config['home'] and mainMethod == 'GET':
-			self.homeMethod = permissionChecker.run
-		if len(
-			self.config['home']
-		) and route.rule == self.config['home'] + '/service.js' and mainMethod == 'GET':
-			self.serviceWorkerMethod = permissionChecker.run
+			self.homeMethod = middleware.run
+		isHome = len(self.config['home'])
+		isService = route.rule == self.config['home'] + '/service.js'
+		isGET = mainMethod == 'GET'
+		if isHome and isService and isGET :
+			self.serviceWorkerMethod = middleware.run
 		name = f'{controller.__class__.__name__}.{attributeName}'
+		self.middlewareMap[route.rule] = middleware
 		self.application.route(
 			route.rule,
 			route.method,
 			name=name,
 			**route.option
-		)(permissionChecker.run)
+		)(middleware.run)
 
 	def setDecorator(self, permissionChecker:PermissionChecker) :
 		route = permissionChecker.route
 		permissionChecker.additionPermission = self.getDecoratorList(route, self.permissionMap)
 		permissionChecker.preProcessor = self.getDecoratorList(route, self.preProcessorMap)
 		permissionChecker.postProcessor = self.getDecoratorList(route, self.postProcessorMap)
+		permissionChecker.validator = self.getDecoratorList(route, self.validationMap)
 	
 	def getDecoratorList(self, route, ruleMap) -> List[CommonDecoratorRule]:
 		permissionList: List[CommonDecoratorRule] = ruleMap.get(route, None)
@@ -403,7 +435,8 @@ class AsyncApplication(Application):
 			)
 			return None
 		else:
-			self.logFlusher: LogFlusher = LogFlusher(self.config, self)
+			logFlusherClass = getattr(self, 'logFlusherClass', LogFlusher)
+			self.logFlusher = logFlusherClass(self.config, self)
 			logConfig = LOGGING_CONFIG.copy()
 			path = f'{__CONFIG_ROOT__}/Log.json'
 			if os.path.isfile(path):
