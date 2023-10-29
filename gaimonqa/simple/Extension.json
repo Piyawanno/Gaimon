@@ -1,0 +1,24 @@
+{
+	"ID" : "simple",
+	"name" : "Simple",
+	"version" : "1.0",
+	"require" : [],
+	"role" : [],
+	"backend" : {
+		"script" : [
+			"Simple.js"
+		],
+		"css" : [
+		],
+		"menu" : [
+			{
+				"group": {
+					"label": "Simple",
+					"icon": "simple.Default",
+					"order": "1.0"
+				},
+				"child": []
+			}
+		]
+	}
+}
