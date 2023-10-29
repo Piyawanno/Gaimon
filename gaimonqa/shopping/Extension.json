@@ -1,0 +1,24 @@
+{
+	"ID" : "shopping",
+	"name" : "Shopping",
+	"version" : "1.0",
+	"require" : [],
+	"role" : [],
+	"backend" : {
+		"script" : [
+			"Shopping.js"
+		],
+		"css" : [
+		],
+		"menu" : [
+			{
+				"group": {
+					"label": "Shopping",
+					"icon": "shopping.Default",
+					"order": "1.0"
+				},
+				"child": []
+			}
+		]
+	}
+}
