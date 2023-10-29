@@ -1,0 +1,24 @@
+{
+	"ID" : "library",
+	"name" : "Library",
+	"version" : "1.0",
+	"require" : [],
+	"role" : [],
+	"backend" : {
+		"script" : [
+			"Library.js"
+		],
+		"css" : [
+		],
+		"menu" : [
+			{
+				"group": {
+					"label": "Library",
+					"icon": "library.Default",
+					"order": "1.0"
+				},
+				"child": []
+			}
+		]
+	}
+}
