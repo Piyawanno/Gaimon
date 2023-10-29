@@ -1,0 +1,24 @@
+{
+	"ID" : "jira",
+	"name" : "Jira",
+	"version" : "1.0",
+	"require" : [],
+	"role" : [],
+	"backend" : {
+		"script" : [
+			"Jira.js"
+		],
+		"css" : [
+		],
+		"menu" : [
+			{
+				"group": {
+					"label": "Jira",
+					"icon": "jira.Default",
+					"order": "1.0"
+				},
+				"child": []
+			}
+		]
+	}
+}
