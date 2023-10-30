@@ -316,7 +316,7 @@ const BackendMain = function() {
 				await object.initDesktop();
 			}
 			for (let i in object.resizeFunction) {
-				object.resizeFunction[i](event);
+				await object.resizeFunction[i](event);
 			}
 		}
 	}

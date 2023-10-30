@@ -200,6 +200,7 @@ class BackendController:
 						ID = item['group']['ID']
 					except :
 						print(item)
+						continue
 					self.page.jsVar['JS_EXTENSION'][extension][ID] = f"{ID}.js"
 					if not 'child' in item: continue
 					if not item['group']['ID'] in extensionMenu:

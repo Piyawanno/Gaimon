@@ -27,3 +27,7 @@ async function GET_TEMPLATE(name, isExtension) {
 async function START_APP() {
     window.location.reload();
 }
+
+function BACK(){
+	history.back();
+}

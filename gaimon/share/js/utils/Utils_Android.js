@@ -228,3 +228,7 @@ async function SEND_OPERATION(operation, data) {
 		}));
 	});
 }
+
+function BACK(){
+	history.back();
+}

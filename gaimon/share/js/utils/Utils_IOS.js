@@ -259,3 +259,7 @@ async function REDIRECT(operation, data) {
 		}
 	});
 }
+
+function BACK(){
+	history.back();
+}

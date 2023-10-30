@@ -933,3 +933,7 @@ String.prototype.hexDecode = function(){
 
     return back;
 }
+
+function BACK(){
+	history.back();
+}

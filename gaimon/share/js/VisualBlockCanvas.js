@@ -21,7 +21,9 @@ const VisualBlockCanvas = function() {
 		object.canvas.onresize = object.update;
 		content.append(object.canvas);
 		object.context = object.canvas.html.getContext('2d');
-		main.appendResizeEvent('visualblock', object.update);
+
+		await main.appendResizeEvent('visualblock', object.update);
+		await main.onresize()
 	};
 
 	this.draw = async function(source, destination) {

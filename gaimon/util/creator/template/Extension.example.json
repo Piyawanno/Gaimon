@@ -13,6 +13,7 @@
 		"menu" : [
 			{{
 				"group": {{
+					"ID": "{name}",
 					"label": "{name}",
 					"icon": "{ID}.Default",
 					"order": "1.0"

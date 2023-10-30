@@ -316,3 +316,7 @@ function autocompleteServer(tag, searchFunction, limit, callback) {
       closeAllLists(e.target);
   });
 }
+
+function BACK(){
+	history.back();
+}
