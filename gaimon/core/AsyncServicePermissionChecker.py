@@ -23,10 +23,12 @@ class AsyncServicePermissionChecker(ServicePermissionChecker):
 				return await self.runREST(request, callee, *argument, **option)
 		except CancelledError as error:
 			logging.error(f"Operation Canceled {callee.__ROUTE__.rule}")
+			await self.service.releaseHandler(handler)
 			return SanicException("Internal Error", status_code=500)
 		except:
 			print(traceback.format_exc())
 			print("*** Error by Checking Permission/Connecting DB")
+			await self.service.releaseHandler(handler)
 			return SanicException("Internal Error", status_code=500)
 
 	async def runRaw(self, request, callee, *argument, **option):
