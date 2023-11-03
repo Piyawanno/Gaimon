@@ -1,0 +1,11 @@
+userID,username,passwordHash,salt
+1,User1,PasswordHash1,Salt1
+2,User2,PasswordHash2,Salt2
+3,User3,PasswordHash3,Salt3
+4,User4,PasswordHash4,Salt4
+5,User5,PasswordHash5,Salt5
+6,User6,PasswordHash6,Salt6
+7,User7,PasswordHash7,Salt7
+8,User8,PasswordHash8,Salt8
+9,User9,PasswordHash9,Salt9
+10,User10,PasswordHash10,Salt10
