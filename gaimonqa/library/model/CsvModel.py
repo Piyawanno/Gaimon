@@ -5,7 +5,7 @@ from xerial.DBSessionPool import DBSessionPool
 from xerial.Record import Record
 
 
-class CsvUtil:
+class CsvModel:
     _path: str = ""
     _model: Record
     _column: list = []
@@ -61,18 +61,18 @@ if __name__ == '__main__':
     pool.createConnection()
     session = pool.getSession()
 
-    book = CsvUtil('../csv/Book', Book(), session)
+    book = CsvModel('../csv/Book', Book(), session)
     book.read()
     book.connect()
     book.dump()
 
-    librarian = CsvUtil('../csv/Librarian', Librarian(), session)
+    librarian = CsvModel('../csv/Librarian', Librarian(), session)
     librarian.read()
     librarian.print_dict()
     librarian.connect()
     librarian.dump()
 
-    library = CsvUtil('../csv/Library', Library(), session)
+    library = CsvModel('../csv/Library', Library(), session)
     library.read()
     library.print_dict()
     library.connect()
