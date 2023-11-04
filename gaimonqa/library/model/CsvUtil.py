@@ -48,8 +48,11 @@ class CsvUtil:
 
 
 if __name__ == '__main__':
-    from gaimonqa.library.model import Book, Librarian, Library
     import json
+    
+    from Book import Book
+    from Librarian import Librarian
+    from Library import Library
 
     with open('/etc/xerial/Xerial.json') as fd:
         config = json.load(fd)
@@ -58,18 +61,18 @@ if __name__ == '__main__':
     pool.createConnection()
     session = pool.getSession()
 
-    book = CsvUtil('./Book', Book, session)
+    book = CsvUtil('../csv/Book', Book(), session)
     book.read()
     book.connect()
     book.dump()
 
-    librarian = CsvUtil('./Librarian', Librarian, session)
+    librarian = CsvUtil('../csv/Librarian', Librarian(), session)
     librarian.read()
     librarian.print_dict()
     librarian.connect()
     librarian.dump()
 
-    library = CsvUtil('./Library', Library, session)
+    library = CsvUtil('../csv/Library', Library(), session)
     library.read()
     library.print_dict()
     library.connect()
