@@ -8,3 +8,4 @@ class Library (Record):
     location = StringColumn()
     librarian = IntegerColumn(foreignKey="Librarian.id")
     book = Children("Book.id")
+    # book = IntegerColumn(foreignKey="Book.id")
