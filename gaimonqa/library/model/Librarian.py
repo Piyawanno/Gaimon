@@ -5,4 +5,4 @@ from xerial.IntegerColumn import IntegerColumn
 class Librarian (Record):
     name = StringColumn()
     email = StringColumn()
-    library = IntegerColumn(foreignKey="Library.id")
+    # library = IntegerColumn(foreignKey="Library.id")

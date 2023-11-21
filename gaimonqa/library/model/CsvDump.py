@@ -28,22 +28,10 @@ class CsvModel:
                 else:
                     self._dictList.append(dict(zip(self._column, row)))
 
-    def print_dict(self) -> None:
-        print(self._dictList)
-
-    def getDictList(self, read: bool = False) -> list:
-        if read:
-            self.read()
-        return self._dictList
-
-    def connect(self) -> None:
-        print(self._model)
+    def register(self) -> None:
         self._session.appendModel(self._model)
-        self._session.checkModelLinking()
-        self._session.createTable()
 
     def dump(self) -> None:
-        self.connect()
         self._session.insertMultiple([self._model().fromDict(i) for i in self._dictList])
 
 
@@ -64,17 +52,19 @@ if __name__ == '__main__':
 
     book = CsvModel('../csv/Book', Book, session)
     book.read()
-    book.connect()
-    book.dump()
+    book.register()
 
     librarian = CsvModel('../csv/Librarian', Librarian, session)
     librarian.read()
-    librarian.print_dict()
-    librarian.connect()
-    librarian.dump()
+    librarian.register()
 
     library = CsvModel('../csv/Library', Library, session)
     library.read()
-    library.print_dict()
-    library.connect()
+    library.register()
+    
+    session.createTable()
+    session.checkModelLinking()
+    
+    book.dump()
+    librarian.dump()
     library.dump()
