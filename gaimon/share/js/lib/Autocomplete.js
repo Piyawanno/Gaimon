@@ -35,13 +35,18 @@ let Autocomplete = function() {
 		object.callback = callback;
 	}
 
+	this.getRenderedTemplate = function(value) {
+		console.log(value);
+		return AbstractInputUtil.prototype.getRenderedTemplate(value, object.template);
+	}
+
 	this.renderFoundValue = function(data, key, value, callback) {
 		let isArray = Array.isArray(data);
 		let isObject = typeof(value) == 'object';
 		let tag = document.createElement("DIV");
 		tag.setAttribute("class", "item");
 		if (object.template.length > 0) {
-			tag.innerHTML = Mustache.render(object.template, value);
+			tag.innerHTML = object.getRenderedTemplate(value);
 		} else {
 			tag.innerHTML = value;
 		}

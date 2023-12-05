@@ -3,7 +3,7 @@ const MyJobPage = function(main, parent) {
 
 	let object = this;
 
-	this.title = "My job";
+	this.title = "My Job";
 	this.model = "PersonalSchedule";
 	this.tab = 'schedule';
 	this.pageNumber = 1;

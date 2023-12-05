@@ -1,0 +1,90 @@
+.advanceSwitch .knobs, .advanceSwitch .layer {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+}
+
+.advanceSwitch .checkbox {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+	z-index: 3;
+}
+
+.advanceSwitch .knobs {
+	z-index: 2;
+}
+
+.advanceSwitch .layer {
+	width: 100%;
+	background-color: #ebf7fc;
+	transition: 0.3s ease all;
+	z-index: 1;
+}
+
+.advanceSwitch.button {
+	position: relative;
+	top: 50%;
+	width: 100px;
+	height: 36px;
+	margin: -20px auto 0 auto;
+	overflow: hidden;
+}
+
+.advanceSwitch.button.b2 {
+	border-radius: 2px;
+}
+
+.advanceSwitch .knobs:before,
+.advanceSwitch .knobs:after,
+.advanceSwitch .knobs span {
+	position: absolute;
+    top: 4px;
+    width: 38px;
+    height: 10px;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1;
+    padding: 9px 4px;
+    border-radius: 2px;
+    transition: 0.3s ease all;
+}
+
+.advanceSwitch .knobs:before,
+.advanceSwitch .knobs:after {
+	color: #4e4e4e;
+	z-index: 1;
+}
+
+.advanceSwitch .knobs:before {
+	content: "Normal";
+    left: 4px;
+}
+
+.advanceSwitch .knobs:after {
+	content: "Advance";
+    right: 5px;
+}
+
+.advanceSwitch .knobs span {
+	width: 39px;
+    left: 50px;
+    background: #c9c9c9;
+    z-index: 2;
+}
+
+.advanceSwitch .checkbox:checked + .knobs span {
+	left: 4px;
+	background: #00796b;
+}
+
+.advanceSwitch .checkbox:checked ~ .layer {
+  	background-color: #fcebeb;
+}

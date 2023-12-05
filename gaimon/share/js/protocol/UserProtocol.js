@@ -144,5 +144,13 @@ const UserProtocol = function(main) {
 		if (response == undefined) return result;
 		if (response.isSuccess) return response.result;
 		return result;
-	}	
+	}
+
+	this.isEmailExist = async function(email){
+		let result = [];
+		let response = await POST(`user/email/isexist`, {email});
+		if (response == undefined) return result;
+		if (response.isSuccess) return response.result;
+		return result;
+	}
 }

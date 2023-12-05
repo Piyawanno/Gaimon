@@ -1,4 +1,6 @@
 from gaimon.model.DynamicForm import DynamicForm
+from gaimon.model.Day import Day
+from gaimon.model.Month import Month
 from gaimon.core.HTMLPage import COMPRESSOR
 from gaimon.core.StaticCompressor import StaticCompressor, StaticType
 from gaimon.core.Route import GET, POST
@@ -10,7 +12,7 @@ from xerial.DateColumn import DATE_FORMAT
 from xerial.DateTimeColumn import DATETIME_FORMAT
 from packaging.version import Version
 from typing import Dict, List
-from sanic import response
+from sanic import response, Request
 from datetime import datetime, date
 
 import os, json, markdown, importlib, mimetypes, pystache, copy
@@ -20,6 +22,8 @@ class UtilityController:
 	def __init__(self, application):
 		from gaimon.core.AsyncApplication import AsyncApplication
 		self.application: AsyncApplication = application
+		self.extension = self.application.getExtensionInfo()
+		self.entity: str = None
 		self.resourcePath = self.application.resourcePath
 		self.mustache = {}
 		self.icon = {}
@@ -30,6 +34,10 @@ class UtilityController:
 		self.picture = {}
 		with open("%s/country.json" % (self.resourcePath), encoding="utf-8") as fd:
 			self.countries = json.loads(fd.read())
+		with open("%s/language.json" % (self.resourcePath), encoding="utf-8") as fd:
+			self.language = json.loads(fd.read())
+		with open("%s/country-by-currency-code.json" % (self.resourcePath), encoding="utf-8") as fd:
+			self.currency = json.loads(fd.read())
 	
 	@POST("/log/register", role=['guest'], isLogData=True)
 	async def recordLog(self, request) :
@@ -38,6 +46,14 @@ class UtilityController:
 	@GET("/country/get/all", role=['guest'], hasDBSession=False)
 	async def getAllCountry(self, request):
 		return RESTResponse({'isSuccess': True, 'result': self.countries})
+
+	@GET("/language/get/all", role=['guest'], hasDBSession=False)
+	async def getAllLanguage(self, request):
+		return RESTResponse({'isSuccess': True, 'result': self.language})
+
+	@GET("/currency/get/all", role=['guest'], hasDBSession=False)
+	async def getAllCurrency(self, request):
+		return RESTResponse({'isSuccess': True, 'result': self.currency})
 
 	@GET("/tab/extension", role=['guest'])
 	async def getJSPageTabExtension(self, request):
@@ -75,6 +91,7 @@ class UtilityController:
 			'children': [i.toMetaDict() for i in modelClass.children],
 			'input': input,
 			'avatar': getattr(modelClass, '__avatar__', 'share/icon/logo_padding.png'),
+			'isDefaultAvatar': getattr(modelClass, '__avatar__', None) is None,
 			'mergedInput': mergedInput,
 			'attachedGroup': modelClass.attachedGroup,
 		}
@@ -231,12 +248,13 @@ class UtilityController:
 		return result
 
 	@GET("/locale/<language>/<oldLanguage>", role=['guest'], hasDBSession=False)
-	async def getLocale(self, request, language, oldLanguage):
+	async def getLocale(self, request: Request, language, oldLanguage):
 		path = f'{importlib.import_module("gaimon").__path__[-1]}/locale/'
-		data = await self.readLocale(language, path)
+		uid = request.ctx.session['uid']
+		data = await self.readLocale(language, path, uid)
 		return RESTResponse({'isSuccess': True, 'results': data}, ensure_ascii=False)
 
-	async def readLocale(self, language, path):
+	async def readLocale(self, language: str, path: str, uid: int):
 		if language in self.locale: return self.locale[language]
 		for root, directories, files in os.walk(path):
 			for i in files:
@@ -244,15 +262,16 @@ class UtilityController:
 					content = fd.read()
 					if not i.split('.')[0].split('-')[1] in self.locale: self.locale[i.split('.')[0].split('-')[1]] = {}
 					self.locale[i.split('.')[0].split('-')[1]] = json.loads(content)
-		await self.readAllExtensionLocale(language)
+		await self.readAllExtensionLocale(language, uid)
 		if language in self.locale:
 			return self.locale[language]
 		else:
 			return {}
 
-	async def readAllExtensionLocale(self, language):
+	async def readAllExtensionLocale(self, language: str, uid: int):
 		locale = {}
-		for key in self.application.extension.extension:
+		extensionList = await self.extension.getExtension(self.entity)
+		for key in extensionList :
 			locale.update(await self.readExtensionLocale(language, key))
 		return locale
 
@@ -381,7 +400,7 @@ class UtilityController:
 		return self.icon[ID]
 
 	@GET("/document/<locale>/<documentPath>", role=['guest'], hasDBSession=False)
-	async def getDocument(self, request, locale, documentPath):
+	async def getDocument(self, request: Request, locale: str, documentPath: str):
 		if '..' in documentPath : return response.text("Invalid document path", 501)
 		if '..' in locale : return response.text("Invalid document path", 501)
 		key = f"{locale}.{documentPath}"
@@ -389,7 +408,9 @@ class UtilityController:
 		# if document is not None: return response.text(document)
 		splitted = documentPath.split(".")
 		module = '.'.join(splitted[:-1])
-		if not self.application.extension.tree.isImported(module) :
+		uid = request.ctx.session['uid']
+		tree = await self.extension.getTree(self.entity)
+		if not tree.isImported(module) :
 			return response.text("Invalid document path", 501)
 		path = importlib.import_module(module).__path__[-1]
 		path = f'{path}/document/{locale}/{splitted[-1]}.md'
@@ -404,14 +425,16 @@ class UtilityController:
 		return response.text(document)
 
 	@GET('/document/pictures/<locale>/<module>/<picturePath>', role=['guest'], hasDBSession=False)
-	async def getPicture(self, request, module, locale, picturePath):
+	async def getPicture(self, request: Request, module: str, locale: str, picturePath: str):
 		if '..' in module : return response.text("Invalid document path", 501)
 		if '..' in locale : return response.text("Invalid document path", 501)
 		key = f"{module}.{locale}.{picturePath}"
 		raw = self.picture.get(key, None)
 		fileType = mimetypes.guess_type(picturePath)
 		if raw is not None : return response.raw(raw, content_type=fileType)
-		if not self.application.extension.tree.isImported(module) :
+		uid = request.ctx.session['uid']
+		tree = await self.extension.getTree(self.entity)
+		if not tree.isImported(module) :
 			return response.text("Invalid document path", 501)
 		path = importlib.import_module(module).__path__[-1]
 		path = f'{path}/document/{locale}/pictures/{picturePath}'
@@ -425,3 +448,25 @@ class UtilityController:
 	@GET('/gaimon/get/extension', role=['guest'], hasDBSession=False)
 	async def getExtension(self, request):
 		return Success(self.application.config["extension"])
+
+	@GET("/get/day/enum", role=['guest'])
+	async def getDayEnum(self, request):
+		return response.json(
+			{
+				'isSuccess' : True,
+				'result' : {
+					'enum': {i:Day.__members__[i].value for i in Day.__members__},
+					'label': Day.label,
+				}	
+			}
+		)
+
+	@GET("/get/month/enum", role=['guest'])
+	async def getMonthEnum(self, request):
+		return response.json(
+			{
+				'isSuccess' : True,
+				'enum': {i:Month.__members__[i].value for i in Month.__members__},
+				'label': Month.label,
+			}
+		)

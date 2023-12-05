@@ -61,6 +61,13 @@ const BackendMain = function() {
 			let url = `${window.location.search}${window.location.pathname}`;
 			url.encodeHex();
 		}
+		let isAllow = await object.checkPagePermission();
+		console.log('isAllow', isAllow);
+		if (!isAllow) {
+			// document.body
+			document.body.innerHTML = "You don't have an permission.";
+			return;
+		}
 		GLOBAL.USER = result.results;
 		await object.prepareExtension();
 		await INIT_STATE();
@@ -87,6 +94,14 @@ const BackendMain = function() {
 		}
 	}
 
+	this.checkPagePermission = async function() {
+		let response = await POST('authentication/checkPermission', {});
+		if (response.isSuccess) {
+			return response.result;
+		}
+		return false;
+	}
+
 	this.render = async function() {
 		object.home = new DOMObject(TEMPLATE.Main, {rootURL});
 		object.body = document.querySelector('body');
@@ -97,8 +112,9 @@ const BackendMain = function() {
 		await object.personalBar.renderPersonalBar();
 		if (DEFAULT_MENU.length != 0) {
 			let query = new URLSearchParams(window.location.search);
-			let pageName = query.get('page');
-			if (pageName == null) object.menuDict[DEFAULT_MENU].menu.dom.menu.click()	
+			let pageName = query.get('pageID');
+			let pageID = query.get('p');
+			if (pageName == null && pageID == null) object.menuDict[DEFAULT_MENU].menu.dom.menu.click()	
 		}
 	}
 
@@ -294,6 +310,7 @@ const BackendMain = function() {
 	this.appendTabFromPage = async function(page) {
 		if (page.parentTabConfig == undefined) return;
 		for (let item of page.parentTabConfig) {
+			// console.log(item);
 			if (object.tabExtension[item.parent] == undefined) object.tabExtension[item.parent] = []
 			item['ID'] = page.pageID
 			object.tabExtension[item.parent].push(item);

@@ -106,13 +106,13 @@ const AbstractTableView = function(page) {
 			if (item.typeName == "ReferenceSelect" || item.typeName == "AutoComplete") {
 				if (item.tableURL != undefined && data[item.columnName] != null) {
 					if (tasks[item.tableURL] == undefined) tasks[item.tableURL] = [];
-					tasks[item.tableURL].push({column: item.columnName, value: data[item.columnName]})
+					tasks[item.tableURL].push({column: item.columnName, value: data[item.columnName], foreignModelName: item.foreignModelName})
 				}
 			} else if (item.typeName == "PrerequisiteReferenceSelect") {
 				let prerequisite = item.prerequisite.split('.')[1];
 				if (item.tableURL != undefined && data[item.columnName] != null) {
 					if (prerequisiteTasks[item.tableURL] == undefined) prerequisiteTasks[item.tableURL] = [];
-					prerequisiteTasks[item.tableURL].push({column: item.columnName, value: [data[prerequisite], data[item.columnName]]})
+					prerequisiteTasks[item.tableURL].push({column: item.columnName, value: [data[prerequisite], data[item.columnName]], foreignModelName: item.foreignModelName})
 				}
 			} else if (item.typeName == "Status") {
 				
@@ -123,7 +123,6 @@ const AbstractTableView = function(page) {
 					referenceValue = data[item.linkColumn];
 				}
 				columnLinkMap[item.columnName] = {column: item, value: referenceValue};
-				// value = `<a rel="${item.columnName}_link">${value}</a>`;
 			} else {
 				item.isLink = false;
 			}
@@ -419,6 +418,13 @@ const AbstractTableView = function(page) {
 		for(let i in config.operation){
 			let operation = new DOMObject(TEMPLATE.TableOperationHead, config.operation[i]);
 			thead.html.append(operation);
+			
+			if (config.operation[i].ID) {
+				for (let i in operation.dom) {
+					thead.dom[i] = operation.dom[i];
+				}
+			}
+			
 		}
 		// NOTE
 		// Colspan with operation length
@@ -450,7 +456,22 @@ const AbstractTableView = function(page) {
 			let result = response.result;
 			for (let item of tasks[url].item) {
 				if (result[item.value] != undefined) {
-					item.target.innerHTML = result[item.value].label;
+					let value = result[item.value].label;
+					if (tasks[url].foreignModelName) {
+						let column = await AbstractInputUtil.prototype.getBaseInputData(tasks[url].foreignModelName);
+						if (!column.isDefaultAvatar) {
+							let data = {}
+							if (typeof column.avatar == 'string') {
+								data["id"] = "";
+								data.__avatar__ = {column: "id", url: column.avatar};
+							} else {
+								data[column.avatar.column] = item.value;
+								data.__avatar__ = column.avatar;
+							}
+							value = AbstractInputUtil.prototype.getRenderedTemplate(data, result[item.value].label);
+						}
+					}
+					item.target.innerHTML = value;
 				}
 			}
 		}
@@ -485,7 +506,7 @@ const AbstractTableView = function(page) {
 				if (item == null || item == undefined) continue; 
 				let record = await table.createRecord(item);
 				for (let url in record.tasks) {
-					if (tableTasks[url] == undefined) tableTasks[url] = {item: [], id: {}};
+					if (tableTasks[url] == undefined) tableTasks[url] = {item: [], id: {}, foreignModelName: record.tasks[url][0].foreignModelName};
 					for (let task of record.tasks[url]) {
 						let parameter = JSON.parse(JSON.stringify(task));
 						parameter.target = record.dom[parameter.column];
@@ -494,7 +515,7 @@ const AbstractTableView = function(page) {
 					}
 				}
 				for (let url in record.prerequisiteTasks) {
-					if (prerequisiteTableTasks[url] == undefined) prerequisiteTableTasks[url] = {item: [], id: {}};
+					if (prerequisiteTableTasks[url] == undefined) prerequisiteTableTasks[url] = {item: [], id: {}, foreignModelName: record.prerequisiteTasks[url][0].foreignModelName};
 					for (let task of record.prerequisiteTasks[url]) {
 						let parameter = JSON.parse(JSON.stringify(task));
 						parameter.target = record.dom[parameter.column];

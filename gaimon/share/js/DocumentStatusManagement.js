@@ -24,7 +24,7 @@ const DocumentStatusManagement = function(main){
 		// }];
 		let operation = [];
 		if(config.hasAction == undefined) config.hasAction = true;
-		if(config.hasAction) operation.push({label: 'Operation', ID: 'action', icon: 'DocumentStatus'});
+		// if(config.hasAction) operation.push({label: 'Operation', ID: 'action', icon: 'DocumentStatus'});
 		if(config.hasPrint) operation.push({label: 'Print', ID: 'print', icon: 'Printer'});
 		return operation;
 	}
@@ -33,10 +33,10 @@ const DocumentStatusManagement = function(main){
 		let role = GLOBAL.USER.role;
 		for(let i in table.records){
 			let record = table.records[i];
-			if(table.isQuotation != undefined) record.isQuotation = true;
+			// if(table.isQuotation != undefined) record.isQuotation = true;
 			await object.setStatus(record);
 			if(record.record.documentStatus == DocumentStatus.DRAFT){
-				await object.initDraftEvent(record, page);
+				// await object.initDraftEvent(record, page);
 			}else if(record.record.documentStatus == DocumentStatus.INTERNAL_IN_CONSIDERATION){
 				await object.initInternalInConsiderationEvent(record, page);
 			}else if(record.record.documentStatus == DocumentStatus.INTERNAL_APPROVED){
@@ -79,6 +79,7 @@ const DocumentStatusManagement = function(main){
 	}
 
 	this.appendDecisionButton = async function(form, page, isForm = true){
+		console.log(form);
 		let documentStatus = form.rawData.documentStatus;
 		if(isForm){
 			await object.appendApproveButton(form, page, isForm);
@@ -95,10 +96,10 @@ const DocumentStatusManagement = function(main){
 				await object.appendCancelButton(form, page, isForm);
 				// await object.appendHoldButton(form, page, isForm);
 				await object.appenCloseButton(form, page, isForm);
-				await object.appendPartiallyApproveButton(form, page, isForm);
+				// await object.appendPartiallyApproveButton(form, page, isForm);
 				await object.appendNotApproveButton(form, page, isForm);
 				await object.appendApproveButton(form, page, isForm);
-				if(form.isQuotation != undefined)await object.appendSaleOrderApproveButton(form, page, isForm);
+				if (page.model == 'Quotation') await object.appendSaleOrderApproveButton(form, page, isForm);
 				await object.appendLabel(form, 'Customer :');
 			}
 		}
@@ -137,7 +138,8 @@ const DocumentStatusManagement = function(main){
 				form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
 			}
 			if(documentStatus == undefined) form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
-			page.submit(form, isForm);
+			if(form.onSubmit != undefined) form.onSubmit(form);
+			else page.submit(form, isForm);
 		}
 	}
 
@@ -311,13 +313,13 @@ const DocumentStatusManagement = function(main){
 
 	this.initInternalApproveEvent = async function(record, page){
 		let domObject = new DOMObject((await CREATE_SVG_ICON('DocumentSender')).icon);
-		record.dom.action.html('');
-		record.dom.action.append(domObject);
-		if(record.dom.action != undefined){
-			record.dom.action.onclick = async function(){
-				page.updateDocumentStatus(record.record.id, DocumentStatus.CUSTOMER_IN_CONSIDERATION);
-			}
-		}
+		// record.dom.action.html('');
+		// record.dom.action.append(domObject);
+		// if(record.dom.action != undefined){
+		// 	record.dom.action.onclick = async function(){
+		// 		page.updateDocumentStatus(record.record, DocumentStatus.CUSTOMER_IN_CONSIDERATION);
+		// 	}
+		// }
 		if(record.dom.print != undefined){
 			record.dom.print.onclick = async function(){
 				page.print({data: record.record});

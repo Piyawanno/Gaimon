@@ -39,7 +39,7 @@ async function GET(url, callback, type, isSkip, useOffline) {
 		signal: controller.signal  
 	}).catch(async (error) => {
 		if (isSkip) {
-			callback();
+			if (callback != undefined) callback();
 			return;
 		}
 		console.error(error);
@@ -49,7 +49,7 @@ async function GET(url, callback, type, isSkip, useOffline) {
 		let result = response;
 		if (type == 'json') result = await response.json();
 		if (type == 'blob') result = await response.blob();
-		if (callback) callback(result);
+		if (callback != undefined)  callback(result);
 		return result;
 	}
 }

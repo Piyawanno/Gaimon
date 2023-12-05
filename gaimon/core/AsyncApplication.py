@@ -1,6 +1,7 @@
 from gaimon.core.Authentication import Authentication
 from gaimon.core.Application import Application
 from gaimon.core.ExtensionLoader import ExtensionLoader
+from gaimon.core.CommonExtensionInfoHandler import CommonExtensionInfoHandler
 from gaimon.core.HTMLPage import HTMLPage
 from gaimon.core.PermissionChecker import PermissionChecker
 from gaimon.core.DynamicModelHandler import DynamicModelHandler
@@ -17,7 +18,10 @@ from gaimon.core.WebSocketHandler import WebSocketHandler
 from gaimon.core.StaticFileHandler import StaticFileHandler
 from gaimon.core.CommonDecorator import CommonDecoratorRule
 from gaimon.core.ReplaceDecorator import ReplaceRule
+from gaimon.util.PathUtil import copy
 from gaimon.service.monitor.MonitorClient import MonitorClient
+from gaimon.core.UserHandler import UserHandler
+from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from xerial.Record import Record
@@ -97,6 +101,7 @@ class AsyncApplication(Application):
 		self.websocket = WebSocketManagement(self)
 		self.taskList: List[asyncio.Task] = []
 		self.static = StaticFileHandler(self)
+		self.userHandler = UserHandler(self)
 		self.pageTabExtension:TabExtension = {}
 		self.replaceMap: Dict[str, ReplaceRule] = {}
 		self.middlewareMap: Dict[str, PermissionChecker] = {}
@@ -117,6 +122,9 @@ class AsyncApplication(Application):
 
 	async def getUserConfig(self, uid: int):
 		return self.userConfig.get(uid, {})
+
+	def getExtensionInfo(self) -> CommonExtensionInfoHandler :
+		return self.extension
 
 	def createNotificationClient(self) -> AsyncServiceClient:
 		return AsyncServiceClient(self.config['notification'])
@@ -237,7 +245,7 @@ class AsyncApplication(Application):
 		self.dynamicHandler = DynamicModelHandler(self)
 		self.model = self.session.model.copy()
 		self.sessionPool.model = self.model.copy()
-		await self.checkModelModification()
+		await self.checkModelModification(self.session)
 		await self.session.createTable()
 		await self.dynamicHandler.checkModel(True)
 		self.session.checkModelLinking()
@@ -255,9 +263,9 @@ class AsyncApplication(Application):
 			modelVersion = {}
 		self.modelVersion = modelVersion
 
-	async def checkModelModification(self):
+	async def checkModelModification(self, session: AsyncDBSessionBase):
 		path = f'{self.resourcePath}/ModelVersion.json'
-		await self.session.checkModification(path)
+		await session.checkModification(path)
 
 	def createPage(self) -> HTMLPage:
 		return HTMLPage(
@@ -381,7 +389,7 @@ class AsyncApplication(Application):
 		)
 		middleware.route = route.rule
 		self.setDecorator(middleware)
-		if route.rule == self.config['home'] and mainMethod == 'GET':
+		if (route.rule == self.config['home'] or route.rule.replace('/<entity>', '') == self.config['home']) and mainMethod == 'GET':
 			self.homeMethod = middleware.run
 		isHome = len(self.config['home'])
 		isService = route.rule == self.config['home'] + '/service.js'
@@ -467,6 +475,23 @@ class AsyncApplication(Application):
 		sequence = await self.redis.lpop(key)
 		if sequence is not None:
 			self.applicationID = int(sequence)
+	
+	def checkData(self) :
+		rootPath = os.path.dirname(os.path.dirname(__file__))
+		resourcePath = self.config['resourcePath']
+		dataMap = [
+			('data/language.json', 'language.json'),
+			('data/country-by-currency-code.json', 'country-by-currency-code.json'),
+		]
+
+		for source, destination in dataMap :
+			sourcePath = f'{rootPath}/{source}'
+			destinationPath = f'{resourcePath}/{destination}'
+			exist = not os.path.isfile(sourcePath)
+			sourceTime = os.stat(sourcePath).st_mtime
+			destinationTIme = os.stat(destinationPath).st_mtime
+			if exist or sourceTime > destinationTIme :
+				copy(sourcePath, destinationPath)
 
 	def prepare(self):
 		config = self.config
@@ -475,6 +500,7 @@ class AsyncApplication(Application):
 		else:
 			self.processNumber = config.get("processNumber", -1)
 			if self.processNumber < 0 : self.processNumber = cpu_count()
+		self.checkData()
 		self.loadController()
 		self.application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
 

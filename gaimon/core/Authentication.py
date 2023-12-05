@@ -31,11 +31,20 @@ class Authentication:
 		if not raw is None and not isForce: return json.loads(raw)
 		userList: List[User] = await session.select(User, f'WHERE id={userID}', limit=1)
 		if len(userList) == 0: return None
-		user = userList[0]
+		return await self.checkUserInformationByUser(session, userList[0], isForce)
+	
+	async def checkUserInformationByUser(
+		self,
+		session: AsyncDBSessionBase,
+		user: User,
+		isForce: bool = False
+	):
+		raw = await self.redis.hget(self.AUTHENTICATION_REDIS_KEY, user.id)
+		if not raw is None and not isForce: return json.loads(raw)
 		result = user.toDict()
 		result['uid'] = user.id
 		result['role'] = await self.checkRole(session, user)
-		await self.redis.hset(self.AUTHENTICATION_REDIS_KEY, userID, json.dumps(result))
+		await self.redis.hset(self.AUTHENTICATION_REDIS_KEY, user.id, json.dumps(result))
 		return result
 
 	async def setUserInformationByToken(self, token, data, expireTime=None):
@@ -85,6 +94,24 @@ class Authentication:
 		if token is None: return
 		await self.redis.hdel(self.TOKEN_REDIS_KEY, token)
 		await self.redis.hdel(self.TOKEN_TIME_REDIS_KEY, token)
+
+	async def saveSessionByUser(self, session: AsyncDBSessionBase, user: User):
+		now = datetime.now(timezone.utc)
+		data = {}
+		data['id'] = user.id
+		data["iat"] = now
+		data["exp"] = now + timedelta(days=7)
+		token = self.encodeJWT(data)
+		if type(token) == bytes: token = token.decode()
+		payload = await self.decodeJWT(token)
+		if payload is None: return None
+		result = await self.checkUserInformationByUser(session, user, True)
+		await self.setUserInformationByToken(
+			token,
+			result,
+			datetime.timestamp(data["exp"])
+		)
+		return token
 
 	async def saveSession(self, session: AsyncDBSessionBase, data: dict):
 		now = datetime.now(timezone.utc)

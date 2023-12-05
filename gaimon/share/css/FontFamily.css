@@ -390,3 +390,47 @@
 	font-weight: bold;
 	font-style: italic;
 }
+
+@font-face {
+	font-family: 'Newake';
+	src: url('../font/Newake-Font-Demo.otf');
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: URL('../font/Poppins-Regular.ttf');
+	font-weight: normal;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: URL('../font/Poppins-Light.ttf');
+	font-weight: 200;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: URL('../font/Poppins-LightItalic.ttf');
+	font-weight: 200;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: URL('../font/Poppins-Bold.ttf');
+	font-weight: bold;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: URL('../font/Poppins-Italic.ttf');
+	font-weight: normal;
+	font-style: italic;
+}
+
+@font-face {
+    font-family: 'Poppins';
+    src: URL('../font/Poppins-BoldItalic.ttf');
+	font-weight: bold;
+	font-style: italic;
+}

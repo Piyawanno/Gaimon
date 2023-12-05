@@ -60,6 +60,7 @@ class AsyncServicePermissionChecker(ServicePermissionChecker):
 				await self.service.releaseHandler(callee.__self__)
 				return response.json(result)
 			else:
+				print(payload)
 				parameter = payload.get('parameter', None)
 				await self.service.prepareHandler(callee.__self__, request, parameter, self.hasDBSession)
 				result = await callee(request, *argument, **option, parameter=parameter)

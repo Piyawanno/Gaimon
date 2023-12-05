@@ -107,6 +107,27 @@ def createSelectHandler(modelClass: type):
 		return [i.toDict() for i in fetched]
 	return handleSelect
 
+def createSelectWithPageHandler(modelClass: type):
+	async def handleSelectWithPage(session: AsyncDBSessionBase, data: dict):
+		data = copy.copy(data)
+		item = data.get('data', data)
+		item['isDrop'] = 0
+		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
+		fetched = await session.select(
+			modelClass,
+			f"{clause} ORDER BY ID DESC",
+			isRelated=False,
+			parameter=parameter,
+			limit=limit,
+			offset=offset
+		)
+		count = await session.count(modelClass, clause, parameter=parameter)
+		return {
+			'data': [i.toDict() for i in fetched],
+			'count': calculatePage(count, limit)
+		}
+	return handleSelectWithPage
+
 def createSelectByIDHandler(modelClass: type):
 	async def handleSelectByID(session: AsyncDBSessionBase, ID: int):
 		fetched = await session.selectByID(modelClass, ID, isRelated=False, hasChildren=True)

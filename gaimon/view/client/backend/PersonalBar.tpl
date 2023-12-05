@@ -10,7 +10,7 @@
 		</div>
 	</div> -->
 	<div class="navigator_container flex center">
-		<div class="flex width-100-percent" rel="navigator">
+		<div class="flex width-100-percent gap-10px" rel="navigator">
 			<!-- <div class="item">Quotation</div>
 			<div class="flex-column-center">
 				<svg style="width:13px;height:13px;" viewBox="0 0 24 24">

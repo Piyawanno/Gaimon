@@ -59,20 +59,6 @@ const Authentication = function() {
 	}
 
 	this.render = async function(title) {
-		await LOAD_JS('share/js/lib/asmcrypto/errors.js');
-		await LOAD_JS('share/js/lib/asmcrypto/hash.js');
-		await LOAD_JS('share/js/lib/asmcrypto/utils.js');
-		await LOAD_JS('share/js/lib/asmcrypto/sha512.asm.js');
-		await LOAD_JS('share/js/lib/asmcrypto/sha512.js');
-		await LOAD_JS('share/js/lib/asmcrypto/pbkdf2-hmac-sha512.js');
-		await LOAD_JS('share/js/lib/asmcrypto/pbkdf2-core.js');
-		await LOAD_JS('share/js/lib/asmcrypto/hmac.js');
-		await LOAD_JS('share/js/lib/asmcrypto/hmac-sha512.js');
-		await LOAD_JS('share/js/lib/secure-random.js');
-		await LOAD_JS('share/js/utils/Utils.js');
-		await LOAD_JS('share/js/LoginPage.js');
-		await LOAD_CSS('share/css/Login.css');
-		await LOAD_CSS('share/css/Flex.css');
 		TEMPLATE = await getMustacheTemplate('frontend');
 		TEMPLATE.get = GET_TEMPLATE;
 		LOCALE = await getLocale(LANGUAGE, LANGUAGE);
@@ -86,20 +72,6 @@ const Authentication = function() {
 	}
 
 	this.renderMobileLogin = async function(title) {
-		await LOAD_JS('share/js/lib/asmcrypto/errors.js');
-		await LOAD_JS('share/js/lib/asmcrypto/hash.js');
-		await LOAD_JS('share/js/lib/asmcrypto/utils.js');
-		await LOAD_JS('share/js/lib/asmcrypto/sha512.asm.js');
-		await LOAD_JS('share/js/lib/asmcrypto/sha512.js');
-		await LOAD_JS('share/js/lib/asmcrypto/pbkdf2-hmac-sha512.js');
-		await LOAD_JS('share/js/lib/asmcrypto/pbkdf2-core.js');
-		await LOAD_JS('share/js/lib/asmcrypto/hmac.js');
-		await LOAD_JS('share/js/lib/asmcrypto/hmac-sha512.js');
-		await LOAD_JS('share/js/lib/secure-random.js');
-		await LOAD_JS('share/js/utils/Utils.js');
-		await LOAD_JS('share/js/LoginPage.js');
-		await LOAD_CSS('share/css/Login.css');
-		await LOAD_CSS('share/css/Flex.css');
 		TEMPLATE = await getMustacheTemplate('frontend');
 		LOCALE = await getLocale(LANGUAGE, LANGUAGE);
 		let page = new LoginPage();

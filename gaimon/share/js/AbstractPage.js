@@ -23,6 +23,7 @@ const AbstractPage = function(main, parent) {
 	object.dynamicState = {};
 	object.viewStepMap = {}
 	object.viewStepSubMap = {};
+	object.isModelPage = true;
 
 	object.table = new AbstractTable(this);
 	object.form = new AbstractForm(this);
@@ -63,7 +64,7 @@ const AbstractPage = function(main, parent) {
 
 	this.initModel = function() {
 		if (object.model) {
-			object.main.pageModelDict[object.model] = object;
+			if (object.isModelPage) object.main.pageModelDict[object.model] = object;
 		}
 	}
 
@@ -96,6 +97,7 @@ const AbstractPage = function(main, parent) {
 	}
 
 	this.onPrepareState = async function() {
+		await object.preload();
 		await object.prepare();
 		await object.initStep();
 		await object.getAllState();
@@ -176,6 +178,23 @@ const AbstractPage = function(main, parent) {
 		
 	}
 
+	this.registerTabView = async function(group, step){
+		if (main.viewPageMap == undefined) main.viewPageMap = {};
+		if (main.viewPageSubMap == undefined) main.viewPageSubMap = {};
+		if (main.viewPageMap[group] == undefined) {
+			main.viewPageMap[group] = []
+			main.viewPageSubMap[group] = {}
+		}
+		let uniqueID = `${step.pageID}_${step.render}`
+		if (main.viewPageSubMap[group][uniqueID] == undefined) {
+			main.viewPageMap[group].push(step);
+			main.viewPageSubMap[group][uniqueID] = step;
+			main.viewPageMap[group].sort((a, b) => a.order - b.order);
+		}
+		step.group = group;
+	}
+		
+
 	this.registerStep = async function(group, step) {
 		if (main.viewStepMap == undefined) main.viewStepMap = {};
 		if (main.viewStepSubMap == undefined) main.viewStepSubMap = {};
@@ -189,6 +208,7 @@ const AbstractPage = function(main, parent) {
 			main.viewStepSubMap[group][uniqueID] = step;
 			main.viewStepMap[group].sort((a, b) => a.order - b.order);
 		}
+		step.group = group;
 	}
 
 	this.getAllState = async function() {

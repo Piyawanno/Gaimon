@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 
@@ -105,6 +106,7 @@ class PermissionChecker:
 			return False
 
 	async def run(self, request: Request, *argument, **option):
+		request.headers['entity'] = None
 		if not await self.security.check(request) :
 			return HTTPResponse("Bad request", code=500)
 		domainCheck = self.checkDomain(request)
@@ -162,7 +164,7 @@ class PermissionChecker:
 		state.finalizeResult()
 		return state.result
 
-	async def setController(self, controller):
+	async def setController(self, controller, entity:str = 'main'):
 		application = self.application
 		self.authen = self.application.authen
 		controller.application = application
@@ -174,18 +176,18 @@ class PermissionChecker:
 			controller.authen.session = controller.session
 		else :
 			controller.session = None
-		controller.entity = 'main'
+		controller.entity = entity
 	
 	async def setControllerConfig(self, state:RequestState) :
 		uid = state.request.ctx.session['uid']
 		handler = self.application.configHandler
-		extension = state.controller.extension
-		config = await handler.getConfig(uid, 'main', extension)
+		extension = state.controller.extensionPath
+		config = await handler.getConfig(uid, state.entity, extension)
 		state.controller.userConfig = config[0]
 		state.controller.entityConfig = config[1]
 		state.controller.extensionConfig = config[2]
 
-	async def setSession(self, request: Request):
+	async def setSession(self, request: Request, credential: str = None, entity: str = 'main'):
 		request.ctx.session['uid'] = -1
 		request.ctx.session['role'] = ['guest']
 		request.ctx.session['gid'] = -1
@@ -193,6 +195,8 @@ class PermissionChecker:
 		token = None
 		if request.credentials:
 			token = request.credentials.token
+		elif not credential is None:
+			token = credential
 		else:
 			token = request.args.get('token', None)
 
@@ -279,6 +283,7 @@ class PermissionChecker:
 			if processor.hasDBSession :
 				await self.checkStateSession(state)
 				decorator.session = state.session
+			decorator.theme = state.controller.theme
 			callee = getattr(decorator, processor.callable.__name__)
 			state.result = await callee(
 				state.request, state.result, *state.argument, **state.option

@@ -34,6 +34,7 @@ AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw =
 	if (GLOBAL.INPUT == undefined) GLOBAL.INPUT = {};
 	if (GLOBAL.MERGED_INPUT == undefined) GLOBAL.MERGED_INPUT = {};
 	if (GLOBAL.AVATAR == undefined) GLOBAL.AVATAR = {};
+	if (GLOBAL.IS_DEFAULT_AVATAR == undefined) GLOBAL.IS_DEFAULT_AVATAR = {};
 	if (GLOBAL.INPUT_REFERENCE == undefined) GLOBAL.INPUT_REFERENCE = {};
 	if (GLOBAL.INPUT_CHILDREN == undefined) GLOBAL.INPUT_CHILDREN = {};
 	if (GLOBAL.INPUT_CHILDREN_MAP == undefined) GLOBAL.INPUT_CHILDREN_MAP = {};
@@ -65,7 +66,7 @@ AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw =
 			let childInputs = [];
 			for (let child of response.children) {
 				if (!child.isTableForm) continue;
-				GLOBAL.INPUT_CHILDREN_MAP[modelName][child.modelName] = child.name;
+				GLOBAL.INPUT_CHILDREN_MAP[modelName][child.modelName] = child;
 				childInputs.push(await object.getBaseInputData(child.modelName));
 			}
 			GLOBAL.INPUT_CHILDREN[modelName] = childInputs;
@@ -85,6 +86,7 @@ AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw =
 			GLOBAL.INPUT_REFERENCE[modelName] = reference;
 			GLOBAL.INPUT_GROUP_DICT[modelName] = group;
 			GLOBAL.AVATAR[modelName] = response.avatar;
+			GLOBAL.IS_DEFAULT_AVATAR[modelName] = response.isDefaultAvatar;
 			let groupInputs = [];
 			for (let i in GLOBAL.INPUT_GROUP_ORDER[modelName]) {
 				let groupLabel = GLOBAL.INPUT_GROUP_ORDER[modelName][i];
@@ -102,6 +104,7 @@ AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw =
 			GLOBAL.INPUT_CHILDREN_MAP[modelName] = {};
 			GLOBAL.INPUT_GROUP_DICT[modelName] = {};
 			GLOBAL.AVATAR[modelName] = '/share/icon/image.jpg';
+			GLOBAL.IS_DEFAULT_AVATAR[modelName] = true;
 			let groupInputs = [];
 			for (let i in GLOBAL.INPUT_GROUP_ORDER[modelName]) {
 				let groupLabel = GLOBAL.INPUT_GROUP_ORDER[modelName][i];
@@ -121,10 +124,11 @@ AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw =
 		GLOBAL.INPUT_REFERENCE[modelName] = reference;
 		GLOBAL.INPUT_GROUP_DICT[modelName] = group;
 		GLOBAL.AVATAR[modelName] = response.avatar;
+		GLOBAL.IS_DEFAULT_AVATAR[modelName] = response.isDefaultAvatar;
 		let childInputs = [];
 		for (let child of response.children) {
 			if (!child.isTableForm) continue;
-			GLOBAL.INPUT_CHILDREN_MAP[modelName][child.modelName] = child.name;
+			GLOBAL.INPUT_CHILDREN_MAP[modelName][child.modelName] = child;
 			childInputs.push(await object.getBaseInputData(child.modelName));
 		}
 		GLOBAL.INPUT_CHILDREN[modelName] = childInputs;
@@ -139,6 +143,7 @@ AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw =
 	result.childInputParentMap = GLOBAL.INPUT_CHILDREN_MAP[modelName];
 	result.modelName = modelName;
 	result.avatar = GLOBAL.AVATAR[modelName];
+	result.isDefaultAvatar = GLOBAL.IS_DEFAULT_AVATAR[modelName];
 	return result;
 }
 
@@ -843,6 +848,8 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 		config.data = {};
 		config.isView = true;
 		config.data[columnLinkMap.column.foreignColumn] = value;
+		if (config.data && config.data.id != undefined && config.data.id == -1) return;
+		page.main.pageModelDict[modelName].prepare();
 		page.main.pageModelDict[modelName].renderViewFromExternal(modelName, config, 'Form');
 	} else {
 		let config = {};
@@ -853,6 +860,26 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 		} else {
 			config.data[columnLinkMap.column.columnName] = value;
 		}
+		if (config.data && config.data.id != undefined && config.data.id == -1) return;
+		page.prepare();
 		page.renderViewFromExternal(page.model, config, 'Form')
 	}
+}
+
+AbstractInputUtil.prototype.getRenderedTemplate = function(value, template) {
+	let result;
+	if (value.__avatar__) {
+		let preRendered = Mustache.render(template, value);
+		let data = {
+			data: value,
+			value: preRendered,
+			rootURL: rootURL
+		}
+		data.data.avatarSrc = `${value.__avatar__.url}${value[value.__avatar__.column]}`
+		let avatarTemplate = `<div class="flex gap-10px"><div class="autocomplete_avatar"><img src="{{rootURL}}{{{data.avatarSrc}}}" /></div><div class="flex center">{{{value}}}</div></div>`
+		result = Mustache.render(avatarTemplate, data);
+	} else {
+		result = Mustache.render(template, value);
+	}
+	return result;
 }

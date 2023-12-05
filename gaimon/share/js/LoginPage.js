@@ -96,8 +96,13 @@ const LoginPage = function() {
 		} else {
 			let query = new URLSearchParams(window.location.search);
 			let url = query.get('page');
+			let parameter = query.get('parameter');
+			let result = await GLOBAL.AUTHEN.check();
 			if (url == null) {
 				window.location.reload();
+			}
+			if (parameter && parameter.decodeHex() == 'token') {
+				window.location.replace(`${window.origin}${url.decodeHex()}/${result.token}`);
 			} else {
 				window.location.replace(`${window.origin}${url.decodeHex()}`);
 			}
@@ -116,18 +121,38 @@ const LoginPage = function() {
 		}
 
 		object.home.dom.username.onkeyup = function(event) {
+			const re = /^([a-zA-Z0-9]|[-._](?![-._])){4,20}$/;
+			let result = re.exec(this.value);
+			if (this.value.length == 0) {
+				this.classList.remove('error');
+				return;
+			}
 			if (event.keyCode == 13) {
 				if (object.home.dom.username.value.length > 0) {
 					object.home.dom.password.focus();
 				}
+			} else if (result == null) {
+				this.classList.add('error');
+			} else if (result != null) {
+				this.classList.remove('error');
 			}
 		}
 
 		object.home.dom.password.onkeyup = function(event) {
+			const re = /^([a-zA-Z0-9]|[-._](?![-._])){8,32}$/;
+			let result = re.exec(this.value);
+			if (this.value.length == 0) {
+				this.classList.remove('error');
+				return;
+			}
 			if (event.keyCode == 13) {
 				if (object.home.dom.password.value.length > 0 && object.home.dom.username.value.length > 0) {
 					object.home.dom.login.click();
 				}
+			} else if (result == null) {
+				this.classList.add('error');
+			} else if (result != null) {
+				this.classList.remove('error');
 			}
 		}
 		object.home.dom.login.defaultFunction = object.defaultLogin;

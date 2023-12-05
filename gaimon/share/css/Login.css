@@ -4,7 +4,6 @@ body {
 	height: 100vh;
 	margin: 0;
 	font-family: var(--main-font-family);
-    font-size: 1em;
     user-select: none;
 	background: linear-gradient(150deg, rgba(24,142,154,1) 0%, rgba(25,147,160,1) 30%, rgba(24,142,154,1) 50%, rgba(40,210,227,1) 100%);
 	background-size: 200% 200%;
@@ -34,6 +33,7 @@ div{
     height: 100vh;
     width: 100vw;
     display: flex;
+    font-size: .14em;
     justify-content: center;
 }
 
@@ -128,7 +128,7 @@ div{
     padding: 20px;
 }
 
-input{
+.login-page input, .register-page input{
     font-size: 1em;
     font-family: var(--main-font-family);
     color: #fff;
@@ -139,7 +139,7 @@ input{
     outline: none;
 }
 
-input::placeholder{
+.login-page input::placeholder, .register-page input::placeholder{
     color: #fff;
 }
 

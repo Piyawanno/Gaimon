@@ -10,7 +10,6 @@ class NotificationController:
 	def __init__(self, application):
 		from gaimon.core.AsyncApplication import AsyncApplication
 		self.application: AsyncApplication = application
-		self.extensionLoader = application.extension
 		self.title = self.application.title
 		self.resourcePath = self.application.resourcePath
 		self.renderer = pystache.Renderer()

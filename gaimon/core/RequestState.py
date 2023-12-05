@@ -23,8 +23,9 @@ class RequestState :
 	errorMessage: str
 	uid: int
 	permissions: List[str]
+	entity: str
 
-	def __init__(self, callee, request:Request, argument: List[Any], option: Dict[str, Any]) :
+	def __init__(self, callee, request:Request, argument: List[Any], option: Dict[str, Any], entity: str = 'main') :
 		self.callee = callee
 		self.request = request
 		self.argument = argument
@@ -32,6 +33,7 @@ class RequestState :
 		self.session = None
 		self.result = None
 		self.log = {'entity': 'main'}
+		self.entity = entity
 		self.start = time.time()
 		self.controller = None
 		self.hasSession = False

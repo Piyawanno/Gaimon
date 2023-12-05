@@ -2,14 +2,14 @@ from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from gaimon.core.Extension import Extension
 from gaimon.core.ExtensionTree import ExtensionTree
+from gaimon.core.CommonExtensionInfoHandler import CommonExtensionInfoHandler
 from gaimon.util.PathUtil import conform
 
-from typing import Dict
+from typing import Dict, List, Set
 
 import importlib, os, json, logging, time
 
-
-class ExtensionLoader:
+class ExtensionLoader (CommonExtensionInfoHandler) :
 	def __init__(self, application):
 		from gaimon.core.Application import Application
 		self.application: Application = application
@@ -17,19 +17,46 @@ class ExtensionLoader:
 		self.configPath = self.application.configPath
 		self.isCopy = self.application.config.get('isCopyExtension', False)
 		self.extensionRole = set()
-		self.role = {}
+		self.role: Dict[str, List[str]] = {}
 		self.extension: Dict[str, Extension] = {}
 		self.script = {}
 		self.css = {}
 		self.menu = {}
 		self.scriptName = {}
-		self.pageExtension = {}
+		self.pageExtension: Dict[str, Set[str]] = {}
 		self.startSubroutine = []
 		self.configuration = {}
 		self.loadedController = set()
 		self.tree = ExtensionTree()
 		self.tree.append('gaimon')
+	
+	async def getCSS(self, entity: str) -> Dict:
+		return self.css
 
+	async def getJS(self, entity: str) -> Dict:
+		return self.script
+	
+	async def getPageName(self, entity: str) -> Dict:
+		return self.scriptName
+	
+	async def getMenu(self, entity: str) -> Dict:
+		return self.menu
+
+	async def getExtension(self, entity: str) -> Dict[str, Extension] :
+		return self.extension
+
+	async def getExtensionTree(self, entity: str) -> ExtensionTree :
+		return self.tree
+
+	async def getRole(self, entity: str) -> Dict[str, List[str]]:
+		return self.role
+
+	async def getExtensionRole(self, entity: str) -> set:
+		return self.extensionRole
+	
+	async def getPageExtension(self, entity: str) -> Dict[str, Set[str]]:
+		return self.pageExtension
+	
 	def checkPath(self):
 		path = [
 			f'{self.resourcePath}/share/',
@@ -42,8 +69,6 @@ class ExtensionLoader:
 			if not os.path.isdir(i):
 				os.makedirs(i)
 
-	def getExtensionRole(self) -> set:
-		return self.extensionRole
 
 	async def load(self, extensionPath: str, session: AsyncDBSessionBase) -> Extension:
 		if extensionPath in self.extension: return
@@ -81,12 +106,14 @@ class ExtensionLoader:
 				return fd.read() == "1"
 		return False
 
-	def createExtension(self, extensionPath: str, configuration: dict) -> Extension:
-		name = configuration['name']
+	def createExtension(self, extensionPath: str, baseConfig: dict) -> Extension:
+		name = baseConfig['name']
 		path = f'{extensionPath}.{name}Extension'
 		module = importlib.import_module(path)
 		extensionClass = getattr(module, f'{name}Extension')
-		return extensionClass(self.resourcePath, self.configPath)
+		extension: Extension = extensionClass(self.resourcePath, self.configPath)
+		extension.baseConfig = baseConfig
+		return extension
 
 	def storeInitialize(self, extensionPath: str):
 		splitted = extensionPath.split(".")
@@ -109,7 +136,7 @@ class ExtensionLoader:
 			await AsyncDBSessionPool.browseModel(session, model)
 			if isCreateTable: await session.createTable()
 
-	def loadController(self, extensionPath: str):
+	def loadController(self, extensionPath: str, result: list = None):
 		if extensionPath in self.loadedController: return
 		configuration = self.loadBaseConfiguration(extensionPath)
 		for i in configuration["require"]:
@@ -129,7 +156,8 @@ class ExtensionLoader:
 			app.browsePermission(directory, modulePath)
 			app.browsePreProcessor(directory, modulePath)
 			app.browsePostProcessor(directory, modulePath)
-			self.application.controller.extend(controllerList)
+			if result is None: self.application.controller.extend(controllerList)
+			else: result.extend(controllerList)
 		self.loadedController.add(extensionPath)
 
 	def loadWebSocketHandler(self, extensionPath: str):

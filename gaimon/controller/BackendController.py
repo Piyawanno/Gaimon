@@ -4,6 +4,7 @@ from gaimon.core.PermissionChecker import PermissionChecker
 from gaimon.model.User import User
 from gaimon.model.UserGroup import UserGroup
 from gaimon.model.PermissionType import PermissionType
+from gaimon.core.HTMLPage import HTMLPage
 from xerial.ColumnType import ColumnType
 from xerial.input.InputType import InputType
 
@@ -102,9 +103,9 @@ class BackendController:
 	def __init__(self, application):
 		from gaimon.core.AsyncApplication import AsyncApplication
 		self.application: AsyncApplication = application
-		self.extensionLoader = self.application.extension
+		self.extension = self.application.getExtensionInfo()
+		self.entity: str = None
 		self.title = self.application.title
-		self.page = self.application.createPage()
 		self.resourcePath = application.resourcePath
 		self.renderer = pystache.Renderer()
 		try:
@@ -114,7 +115,7 @@ class BackendController:
 			pass
 		setattr(self.application, 'loginURL', self.application.rootURL + 'backend')
 
-	@GET("/", role=['guest'])
+	@GET("/", role=['guest'], isHome=True)
 	async def index(self, request, *argument, **option):
 		if self.application.homeMethod is None:
 			raise response.text('NOT FOUND', status=404)
@@ -122,7 +123,7 @@ class BackendController:
 		home = self.application.config['home']
 		encoded = home.encode().hex()
 		return await self.application.homeMethod(request, *argument, **option)
-
+	
 	@GET("/service.js", role=['guest'])
 	async def getServiceWorker(self, request, *argument, **option):
 		if self.application.serviceWorkerMethod is None:
@@ -131,69 +132,73 @@ class BackendController:
 
 	@GET("/backend", role=['guest'])
 	async def renderIndex(self, request):
-		cached = __CACHED_PAGE__.get('backend', None)
+		entity = request.headers['entity']
+		key = f"backend_{entity}"
+		cached = __CACHED_PAGE__.get(key, None)
 		if cached is not None: return response.html(cached)
-		self.page.setRequest(request)
-		self.page.reset()
-		self.page.title = self.title + " - BACKEND"
-		self.setJS()
-		self.setCSS()
-		await self.setMenu()
-		await self.setJSVar()
+		page = self.application.createPage()
+		page.setRequest(request)
+		page.reset()
+		page.title = self.title + " - BACKEND"
+		await self.setJS(page)
+		await self.setCSS(page)
+		await self.setMenu(page)
+		await self.setJSVar(page)
 		template = self.theme.getTemplate('Backend.tpl')
-		self.page.body = self.renderer.render(template, {'rootURI': self.page.rootURL}, )
-		rendered = self.page.render(ID='backend')
-		__CACHED_PAGE__['backend'] = rendered
+		page.body = self.renderer.render(template, {'rootURI': page.rootURL}, )
+		rendered = page.render(ID='backend')
+		__CACHED_PAGE__[key] = rendered
 		return response.html(rendered)
+		
 
-	def setJS(self):
-		self.page.enableAllAddOns()
-		self.page.js.extend(__BACKEND_JS__)
-		extension = self.application.extension
-		if not 'TITLE' in self.page.jsVar:
-			self.page.jsVar['TITLE'] = self.title
-		if not 'JS_EXTENSION' in self.page.jsVar:
-			self.page.jsVar['JS_EXTENSION'] = {}
-		self.page.extensionJS.update(extension.script)
+	async def setJS(self, page: HTMLPage):
+		page.enableAllAddOns()
+		page.js.extend(__BACKEND_JS__)
+		if not 'TITLE' in page.jsVar:
+			page.jsVar['TITLE'] = self.title
+		if not 'JS_EXTENSION' in page.jsVar:
+			page.jsVar['JS_EXTENSION'] = {}
+		page.extensionJS.update(await self.extension.getJS(self.entity))
 		
-		if not 'PAGE_EXTENSION' in self.page.jsVar:
-			self.page.jsVar['PAGE_EXTENSION'] = {}
+		if not 'PAGE_EXTENSION' in page.jsVar:
+			page.jsVar['PAGE_EXTENSION'] = {}
 		
-		pageExtension = self.page.jsVar['PAGE_EXTENSION']
-		for name, extensionSet in extension.pageExtension.items():
+		pageExtension = page.jsVar['PAGE_EXTENSION']
+		pageExtensionConfig = await self.extension.getPageExtension(self.entity)
+		for name, extensionSet in pageExtensionConfig.items():
 			if name in pageExtension :
 				pageExtension[name].union(extensionSet)
 			else :
 				pageExtension[name] = extensionSet
-		self.page.jsVar['PAGE_EXTENSION'] = {k:list(v) for k,v in pageExtension.items()}
+		page.jsVar['PAGE_EXTENSION'] = {k:list(v) for k,v in pageExtension.items()}
 
-	def setCSS(self):
-		self.page.extendCSS(__BACKEND_CSS__)
-		self.page.extendIncompressibleCSS(__INCOMPRESSIBLE_CSS__)
-		for extension in self.application.extension.css:
-			self.page.extensionCSS[extension] = self.application.extension.css[extension]
+	async def setCSS(self, page: HTMLPage):
+		page.extendCSS(__BACKEND_CSS__)
+		page.extendIncompressibleCSS(__INCOMPRESSIBLE_CSS__)
+		extensionCSS = await self.extension.getCSS(self.entity)
+		page.extensionCSS.update(extensionCSS)
 
-	async def setMenu(self):
-		self.setExtensionMenu()
+	async def setMenu(self, page):
+		await self.setExtensionMenu(page)
 		menu = self.application.config.get('menu', {})
 		disable = menu.get('disable', [])
 		entity = await self.application.configHandler.getEntityConfig(self.entity)
 		if entity is not None :
 			entityMenu = entity.get('menu', {})
 			disable.extend(entityMenu.get('disable', []))
-		self.page.jsVar['DISABLE_MENU'] = {i: i for i in disable}
-		self.page.jsVar['DEFAULT_MENU'] = menu.get('default', "")
+		page.jsVar['DISABLE_MENU'] = {i: i for i in disable}
+		page.jsVar['DEFAULT_MENU'] = menu.get('default', "")
 
-	def setExtensionMenu(self):
-		if not 'MENU' in self.page.jsVar: self.page.jsVar['MENU'] = {}
+	async def setExtensionMenu(self, page: HTMLPage):
+		if not 'MENU' in page.jsVar: page.jsVar['MENU'] = {}
 		extensionMenu: Dict[str, List] = {}
 		extensionMenuConfig: Dict[str, Dict] = {}
-		for extension in self.application.extension.menu:
-			self.page.jsVar['MENU'][extension] = self.application.extension.menu[extension
-																					]
-			if not extension in self.page.jsVar['JS_EXTENSION']:
-				self.page.jsVar['JS_EXTENSION'][extension] = {}
-			for item in self.application.extension.menu[extension]:
+		menuConfig = await self.extension.getMenu(self.entity)
+		for extension, menuList in menuConfig.items() :
+			page.jsVar['MENU'][extension] = menuList
+			if not extension in page.jsVar['JS_EXTENSION']:
+				page.jsVar['JS_EXTENSION'][extension] = {}
+			for item in menuList :
 				if 'group' in item:
 					item['group']['extension'] = extension
 					try :
@@ -201,68 +206,67 @@ class BackendController:
 					except :
 						print(item)
 						continue
-					self.page.jsVar['JS_EXTENSION'][extension][ID] = f"{ID}.js"
+					page.jsVar['JS_EXTENSION'][extension][ID] = f"{ID}.js"
 					if not 'child' in item: continue
 					if not item['group']['ID'] in extensionMenu:
 						extensionMenu[item['group']['ID']] = []
 						extensionMenuConfig[item['group']['ID']] = item['group']
 					groupID = item['group']['ID']
 					# if groupID != 'General':
-					# 	self.page.extendJS([f"{groupID}.js"], extension)
+					# 	page.extendJS([f"{groupID}.js"], extension)
 					for subMenu in item['child']:
 						subMenu['extension'] = extension
-						self.page.jsVar['JS_EXTENSION'][extension][
+						page.jsVar['JS_EXTENSION'][extension][
 							subMenu['ID']] = "%s.js" % (subMenu['ID'])
-						# self.page.extendJS(["%s.js" % (subMenu['ID'])], extension)
+						# page.extendJS(["%s.js" % (subMenu['ID'])], extension)
 					extensionMenu[item['group']['ID']].extend(item['child'])
 				else:
 					item['extension'] = extension
 					item['hasChild'] = False
-					self.page.jsVar['JS_EXTENSION'][extension][item['ID']
+					page.jsVar['JS_EXTENSION'][extension][item['ID']
 																] = "%s.js" % (item['ID'])
 					extensionMenu[item['ID']] = [item]
 					extensionMenuConfig[item['ID']] = item
-		self.page.jsVar['EXTENSION_MENU'] = {
+		page.jsVar['EXTENSION_MENU'] = {
 			i: self.sortExtensionMenu(extensionMenu[i]) for i in extensionMenu
 		}
-		self.page.jsVar['EXTENSION_MENU_CONFIG'] = self.sortExtensionMenu([
+		page.jsVar['EXTENSION_MENU_CONFIG'] = self.sortExtensionMenu([
 			extensionMenuConfig[i] for i in extensionMenuConfig
 		])
 
-		if not 'EXTENSION' in self.page.jsVar: self.page.jsVar['EXTENSION'] = {}
-		for extension in self.application.extension.scriptName:
-			self.page.jsVar['EXTENSION'][
-				extension] = self.application.extension.scriptName[extension]
+		if not 'EXTENSION' in page.jsVar: page.jsVar['EXTENSION'] = {}
+		pageName = await self.extension.getPageName(self.entity)
+		page.jsVar['EXTENSION'].update(pageName)
 
-	async def setJSVar(self):
-		self.page.jsVar['PermissionType'] = {
+	async def setJSVar(self, page):
+		page.jsVar['PermissionType'] = {
 			i: PermissionType.__members__[i].value for i in PermissionType.__members__
 		}
-		self.page.jsVar['PermissionTypeMap'] = {
-			self.page.jsVar['PermissionType'][i]: i
-			for i in self.page.jsVar['PermissionType']
+		page.jsVar['PermissionTypeMap'] = {
+			page.jsVar['PermissionType'][i]: i
+			for i in page.jsVar['PermissionType']
 		}
-		self.page.jsVar['ColumnType'] = {
+		page.jsVar['ColumnType'] = {
 			key: value.value for key,
 			value in ColumnType.__members__.items()
 		}
-		self.page.jsVar['ColumnTypeMap'] = {
-			self.page.jsVar['ColumnType'][i]: i for i in self.page.jsVar['ColumnType']
+		page.jsVar['ColumnTypeMap'] = {
+			page.jsVar['ColumnType'][i]: i for i in page.jsVar['ColumnType']
 		}
-		self.page.jsVar['InputType'] = {
+		page.jsVar['InputType'] = {
 			key: value.value for key,
 			value in InputType.__members__.items()
 		}
-		self.page.jsVar['InputTypeMap'] = {
-			self.page.jsVar['InputType'][i]: i for i in self.page.jsVar['InputType']
+		page.jsVar['InputTypeMap'] = {
+			page.jsVar['InputType'][i]: i for i in page.jsVar['InputType']
 		}
-		self.page.jsVar['ColumnTypeStringMap'] = {}
-		self.page.jsVar["isWebSocket"] = self.application.isWebSocket
+		page.jsVar['ColumnTypeStringMap'] = {}
+		page.jsVar["isWebSocket"] = self.application.isWebSocket
 		for key, value in ColumnType.mapped.items():
-			self.page.jsVar['ColumnTypeStringMap'][value.__name__] = key
+			page.jsVar['ColumnTypeStringMap'][value.__name__] = key
 
 		config = await self.application.configHandler.getEntityConfig(self.entity)
-		self.page.jsVar["EntityConfig"] = config
+		page.jsVar["EntityConfig"] = config
 
 	def sortExtensionMenu(self, extensionMenuConfig: List):
 		for item in extensionMenuConfig:
@@ -277,17 +281,18 @@ class BackendController:
 		results = [{
 			'label': extension,
 			'value': extension
-		} for extension in self.application.extension.script]
+		} for extension in await self.extension.getJS(self.entity)]
 		return RESTResponse({'isSuccess': True, 'results': results}, ensure_ascii=False)
 
 	@GET("/backend/role/by/extension/get/<extension>", role=['guest'])
 	async def getRoleByExtension(self, request, extension):
-		if not extension in self.application.extension.role:
+		roleMap = await self.extension.getRole(self.entity)
+		if not extension in roleMap :
 			return RESTResponse({
 				'isSuccess': False,
 				'message': 'Extension is not exist.'
 			})
-		role = self.application.extension.role[extension]
+		role = roleMap[extension]
 		results = [{'label': item, 'value': item} for item in role]
 		return RESTResponse({'isSuccess': True, 'results': results}, ensure_ascii=False)
 
@@ -320,26 +325,29 @@ class BackendController:
 				rawUser['userType'] = userTypeList[0].toDict()
 			else:
 				rawUser['userType'] = {}
-		user['userType']['role'] = self.getUserRole(request)
+		user['userType']['role'] = await self.getUserRole(request)
 		return RESTResponse({'isSuccess': True, 'result': user}, ensure_ascii=False)
 
 	@GET("/backend/login", role=['guest'], hasDBSession=False)
 	async def login(self, request):
 		request.ctx.session['uid'] = -1
 		request.ctx.session['role'] = ['guest']
-		cached = __CACHED_PAGE__.get('login', None)
+		entity = request.headers['entity']
+		key = f"login_{entity}"
+		cached = __CACHED_PAGE__.get(key, None)
 		if cached is not None: return response.html(cached)
 		await self.initRoot()
-		self.page.setRequest(request)
-		self.page.reset()
-		self.page.title = "Gaimon - LOGIN"
-		self.page.enableCrypto()
-		self.page.js.append('utils/Utils.js')
-		self.page.js.append('backend/BackendLogin.js')
-		self.page.css.append('backend/BackendLogin.css')
+		page = self.application.createPage()
+		page.setRequest(request)
+		page.reset()
+		page.title = "Gaimon - LOGIN"
+		page.enableCrypto()
+		page.js.append('utils/Utils.js')
+		page.js.append('backend/BackendLogin.js')
+		page.css.append('backend/BackendLogin.css')
 		template = self.theme.getTemplate('Login.tpl')
 		data = {
-			'rootURL': self.page.rootURL,
+			'rootURL': page.rootURL,
 			'title': self.title,
 			'icon': '',
 			'fullTitle': ''
@@ -352,9 +360,9 @@ class BackendController:
 			data['fullTitle'] = self.fullTitle
 		except:
 			data['fullTitle'] = self.title
-		self.page.body = self.renderer.render(template, data)
-		rendered = self.page.render(ID="backend.login")
-		__CACHED_PAGE__['login'] = rendered
+		page.body = self.renderer.render(template, data)
+		rendered = page.render(ID="backend.login")
+		__CACHED_PAGE__[key] = rendered
 		return response.html(rendered)
 
 	@GET("/backend/logout", role=['guest'], hasDBSession=False)
@@ -399,23 +407,25 @@ class BackendController:
 			"message": "User %s cannot be found." % (username)
 		})
 
-	def loadModule(self, request):
-		for role in self.getUserRole(request).keys():
+	async def loadModule(self, request, page):
+		userRole = await self.getUserRole(request).keys()
+		for role in userRole :
 			path = f"{self.resourcePath}share/js/backend/Backend{role}.js"
 			if os.path.isfile(path):
 				file = f'backend/Backend{role}.js'
-				if (file not in self.page.js): self.page.js.append(file)
+				if (file not in page.js): page.js.append(file)
 			path = f"{self.resourcePath}share/cs/backend/Backend{role}.css"
 			if os.path.isfile(path):
 				file = f'backend/Backend{role}.css'
-				if (file not in self.page.css): self.page.css.append(file)
+				if (file not in page.css): page.css.append(file)
 
-	def getUserRole(self, request):
+	async def getUserRole(self, request):
 		result = {}
 		if 'role' not in request.ctx.session:
 			return result
 		if 'root' in request.ctx.session['role']:
-			for k in self.extensionLoader.getExtensionRole():
+			extensionRole = await self.extension.getExtensionRole(self.entity)
+			for k in extensionRole :
 				result[k] = ['Create', 'Read', 'Update', 'Delete']
 			return result
 		for role in request.ctx.session['role']:

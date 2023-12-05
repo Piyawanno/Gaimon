@@ -469,6 +469,10 @@ let DOMObject = function(template, data, isHTML) {
 							isValid = object.validatePassword(object.requireTag[`${i.split('_')[1]}`].tag.value, object.requireTag[i].tag.value);
 							isPass = (isPass & isValid) || isVerify;
 							if(isValid) object.requireTag[`${i.split('_')[1]}`].tag.classList.remove('error');
+						}else{
+							isValid = object.validatePassword(object.requireTag[i].tag.value);
+							isPass = (isPass & isValid) || isVerify;
+							if(isValid) object.requireTag[i].tag.classList.remove('error');
 						}
 					} else {
 						data[i] = object.requireTag[i].tag.value;
@@ -541,7 +545,7 @@ let DOMObject = function(template, data, isHTML) {
 				}
 			} else if (object.requireTag[i].type == 'date') {
 				if (object.requireTag[i].tag.value.length == 0) {
-					isPass = false;
+					isPass = false || isVerify;
 					object.requireTag[i].tag.classList.add('error');
 				} else {
 					let value = object.requireTag[i].tag.value;
@@ -675,6 +679,10 @@ let DOMObject = function(template, data, isHTML) {
 								isValid = object.validatePassword(input[`${i.split('_')[1]}`].tag.value, input[i].tag.value);
 								isPass = isPass & isValid
 								if(isValid) input[`${i.split('_')[1]}`].tag.classList.remove('error');
+							}else{
+								isValid = object.validatePassword(input[i].tag.value);
+								isPass = (isPass & isValid) || isVerify;
+								if(isValid) input[i].tag.classList.remove('error');
 							}
 						} else {
 							data[i] = input[i].tag.value;
@@ -1202,7 +1210,7 @@ let DOMObject = function(template, data, isHTML) {
 				tag.value = value;
 			}
 		} else if (tag.tagName == "OPTION") {
-			tag.innerText = value;
+			// tag.innerText = value; // BUG JSONColumn SelectInput
 		} else if (tag.tagName == "TEXTAREA") {
 			tag.value = value;
 		} else if (tag.tagName == "LABEL") {
@@ -1257,7 +1265,7 @@ let DOMObject = function(template, data, isHTML) {
 					this.cached[url][value] = {response: response, time: Date.now()};
 				}
 				input.value = response.label;
-				if (tagView) tagView.innerHTML = response.label;
+				if (tagView) tagView.innerHTML = input.autocompleteObject.getRenderedTemplate(response.result);
 				if (response.results) input.autocompleteObject.tag.currentValue = response.results;
 				else if (response.result) input.autocompleteObject.tag.currentValue = response.result;
 				if (input.autocompleteObject.callback != undefined) {
@@ -1510,8 +1518,10 @@ let DOMObject = function(template, data, isHTML) {
 		return re.test(email);
 	}
 
-	this.validatePassword = function(password, confirmPassword){
-		if(password.length < 8 && confirmPassword.length < 8) return false;
+	this.validatePassword = function(password, confirmPassword = undefined){
+		if(password.length < 8 && confirmPassword == undefined) return false;
+		else if(password.length >= 8 && confirmPassword == undefined) return true;
+		else if(password.length < 8 && confirmPassword.length < 8) return false;
 		return password === confirmPassword;
 	}
 }

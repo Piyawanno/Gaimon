@@ -372,3 +372,7 @@ AbstractPage.prototype.appendDialogTable = async function(dialog, tabValue, tabl
 AbstractPage.prototype.setActiveDialogTab = async function(modelName, config) {
 	return await this.dialog.setActiveDialogTab(modelName, config)
 }
+
+AbstractPage.prototype.validate = async function(view, data) {
+	return true
+}

@@ -67,7 +67,23 @@ async function REDIRECT(url) {
 			reject(error);
 		}
 	});
-}
+};
+
+async function SEND_OPERATION(operation, data) {
+	if(window.CALLBACK == undefined) window.CALLBACK = {}
+	return new Promise(function(resolve, reject) {
+		const key = randomString(10);
+		window.CALLBACK[key] = async function(result) {
+			resolve(result);
+		};
+		try {
+			const dict = {key, content:{operation, data}};
+			webkit.messageHandlers.operation.postMessage(JSON.stringify(dict));
+		} catch(error) {
+			reject(error);
+		}
+	});
+};
 
 async function GET_PICTURE_FROM_CAMERA() {
 	
@@ -248,18 +264,7 @@ async function parseFromNative(json) {
 	return result;
 };
 
-async function REDIRECT(operation, data) {
-	if(window.CALLBACK == undefined) window.CALLBACK = {};
-	return new Promise(function(resolve, reject) {
-		try {
-			webkit.messageHandlers.operation.postMessage(JSON.stringify({operation, data}));
-			resolve();
-		} catch(error) {
-			reject(error);
-		}
-	});
-}
-
-function BACK(){
-	history.back();
+function BACK(callback){
+	if(callback != undefined) callback();
+	else history.back();
 }

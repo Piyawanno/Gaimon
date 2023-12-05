@@ -60,10 +60,12 @@ def decorateMethod(method: str, rule, **option):
 		isBusinessLog = logModelName is not None
 		hasDBSession = option.get('hasDBSession', True)
 		isLogData = option.get('isLogData', False)
-		isRaw = option.get('isRaw', True)
+		isRaw = option.get('isRaw', False)
+		isHome = option.get('isHome', False)
 		if 'hasDBSession' in option: del option['hasDBSession']
 		if 'isRaw' in option: del option['isRaw']
 		if 'isLogData' in option: del option['isLogData']
+		if 'isHome' in option: del option['isHome']
 		if isBusinessLog: del option['logModel']
 		callable.__ROUTE__ = Route(
 			method,
@@ -77,6 +79,8 @@ def decorateMethod(method: str, rule, **option):
 			isLogData,
 			isRaw,
 		)
+		callable.__RAW__ = isRaw
+		callable.__ROUTE__.__IS_HOME__ = isHome
 		return callable
 
 	return decorate

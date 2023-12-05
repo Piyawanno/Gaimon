@@ -221,5 +221,12 @@
 	"Start Time" : "Start Time",
 	"End Time" : "End Time",
 	"Finished" : "Finished",
-	"Assign Success" : "Assign Success"
+	"Assign Success" : "Assign Success",
+	"My Job" : "My Job",
+	"In Process" : "In Process",
+	"End Date" : "End Date",
+	"Flow" : "Flow",
+	"Title" : "Title",
+	"Event" : "Event",
+	"Operator" : "Operator"
 }

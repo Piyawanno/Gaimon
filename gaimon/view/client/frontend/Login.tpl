@@ -2,8 +2,8 @@
 	<div class="login-card">
 		<div class="login-topic flex-column gap-10px" style="padding:20px 0;">
 			{{#icon}}
-			<div class="flex center" rel="imageContainer" style="min-width:350px;min-height:100px;max-width:350px;max-height:120px;margin:auto;">
-				<img rel="image" src="{{rootURL}}{{icon}}" style="max-width:100px;">
+			<div class="flex center" rel="imageContainer" style="min-width:350px;min-height:200px;max-width:350px;max-height:290px;margin:auto;">
+				<img rel="image" src="{{rootURL}}{{icon}}" style="max-width:290px;max-height:290px;">
 			</div>
 			{{/icon}}
 			<!-- <div class="center" style="font-size:1.75rem;">{{title}}</div> -->
@@ -31,12 +31,6 @@
 					<div style="width:calc(100% - 34px);display:flex;"><input class="login-input-text" type="password" placeholder="Password" rel="password" autocomplete="off" localize></div>
 				</div>
 				<div class="warning-label hidden" rel="message"></div>
-				<div class="login-input-flex">
-					<div class="login-checkbox-block">
-						<input type="checkbox" rel="showPassword"><label localize rel="showPasswordLabel">Show Password</label>
-					</div>
-					<!-- <div class="login-forgot-password" rel="forgotPassword" localize>Forgot Password</div> -->
-				</div>
 			</div>
 			<div class="login-button" rel="login" localize>Log In</div>
 			<!-- <div class="login-register" rel="register" localize>Sign Up</div> -->

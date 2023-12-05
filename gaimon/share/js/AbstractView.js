@@ -29,6 +29,16 @@ const AbstractView = function(page) {
 		return view;
 	}
 
+	this.initInputView = async function(tag, item, config, columnLinkMap) {
+		if (tag != undefined && config.isView && columnLinkMap[item.columnName]) {
+			if (tag.dom[`${item.columnName}_view`] == undefined) return;
+			tag.dom[`${item.columnName}_view`].classList.add('hotLink');
+			tag.dom[`${item.columnName}_view`].onclick = async function() {
+				AbstractInputUtil.prototype.triggerLinkEvent(object.page, columnLinkMap[item.columnName]);
+			}
+		}
+	}
+
 	this.getView = async function(modelName, config, viewType) {
 		if (config == undefined) config = {};
 		if (config.title == undefined) {
@@ -75,14 +85,7 @@ const AbstractView = function(page) {
 					for (let subItem of item.input) {
 						if (!isSearchForm || (isSearchForm && subItem.isSearch)) {
 							let tag = await object.appendInput(view, subItem, config, group.dom.group, isSearchForm);
-							if (tag != undefined && config.isView && columnLinkMap[subItem.columnName]) {
-								if (tag.dom[`${subItem.columnName}_view`] != undefined) {
-									tag.dom[`${subItem.columnName}_view`].classList.add('hotLink');
-									tag.dom[`${subItem.columnName}_view`].onclick = async function() {
-										AbstractInputUtil.prototype.triggerLinkEvent(object.page, columnLinkMap[subItem.columnName]);
-									}
-								}
-							}
+							await object.initInputView(tag, subItem, config, columnLinkMap);
 							count += 1;
 						}
 					}
@@ -90,12 +93,7 @@ const AbstractView = function(page) {
 				} else {
 					if (!isSearchForm || (isSearchForm && item.isSearch)) {
 						let tag = await object.appendInput(view, item, config, view.dom.form, isSearchForm);
-						if (config.isView && columnLinkMap[item.columnName]) {
-							tag.dom[`${item.columnName}_view`].classList.add('hotLink');
-							tag.dom[`${item.columnName}_view`].onclick = async function() {
-								AbstractInputUtil.prototype.triggerLinkEvent(object.page, columnLinkMap[subItem.columnName]);
-							}
-						}
+						await object.initInputView(tag, item, config, columnLinkMap);
 					}
 				}
 			}
@@ -124,15 +122,18 @@ const AbstractView = function(page) {
 		view.dom.form.tables = [];
 		if(!input.childInput) input.childInput = [];
 		for (let child of input.childInput) {
-			let table = await object.page.tableView.getView(child.modelName, undefined, 'TableForm');
+			let tableConfig = {};
+			tableConfig.isView = config.isView;
+			let table = await object.page.tableView.getView(child.modelName, tableConfig, 'TableForm');
 			table.modelName = child.modelName;
-			table.inputName = input.childInputParentMap[child.modelName];
+			table.inputName = input.childInputParentMap[child.modelName].name;
+			table.childDetail = input.childInputParentMap[child.modelName];
 			view.dom.childTable[child.modelName] = table;
 			view.dom.form.tables.push(table);
-			view.dom.additionalForm.append(table);
+			if (view.dom.additionalForm) view.dom.additionalForm.append(table);
 			if (config.data) {
-				if (config.data[input.childInputParentMap[child.modelName]]) {
-					await table.createMultipleRecord(config.data[input.childInputParentMap[child.modelName]]);
+				if (config.data[table.inputName]) {
+					await table.createMultipleRecord(config.data[table.inputName]);
 				}
 			}
 			
@@ -280,7 +281,6 @@ const AbstractView = function(page) {
 		view.modelName = modelName;
 		destination.html('');
 		destination.append(view);
-		// if (viewType == 'SearchForm') destination.toggle();
 		if (object.steps.length > 0) {
 			await object.renderStepTab(view, config);
 		}
@@ -321,6 +321,27 @@ const AbstractView = function(page) {
 		}
 	}
 
+	this.appendPagesView = async function(stepName) {
+		object.steps = [];
+		object.stepMap = {};
+		if (main.viewPageMap[stepName]) {
+			for (let step of main.viewPageMap[stepName]) {
+				if (step.isVisible == undefined) { 
+					step.isVisible = async function() {
+						return true
+					};
+				}
+				if (step.isEnable == undefined) { 
+					step.isEnable = async function() {
+						return true
+					};
+				}
+				object.stepMap[step.pageID] = step;
+				object.steps.push(step);
+			}
+		}
+	}
+
 	// this.appendSteps = async function(stepName) {
 	// 	object.steps = [];
 	// 	object.stepMap = {};
@@ -331,6 +352,31 @@ const AbstractView = function(page) {
 	// 		}
 	// 	}
 	// }
+
+	this.callPageView = async function(){
+
+	}
+
+	this.nextStep = async function(group, currentStep, data){
+		if(main.viewStepMap[group] == undefined) return;
+		for(let i in main.viewStepMap[group]){
+			let step = main.viewStepMap[group][i];
+			if(step.pageID == currentStep){
+				let nextStep = main.viewStepMap[group][parseInt(i)+1];
+				let config = {
+					isSetState: false,
+					isView: false,
+					selectedStep: nextStep.pageID,
+					state: undefined,
+					data : data
+				};
+				console.log(config);
+				console.log(nextStep.page);
+				await nextStep.page.prepare();
+				await nextStep.callback(nextStep.page.model, config, 'Form');	
+			}
+		}
+	}
 
 	this.renderStepTab = async function(view, config = {}) {
 		object.stepTabs = [];
@@ -353,6 +399,9 @@ const AbstractView = function(page) {
 					stepConfig.isSetState = false;
 					stepConfig.state = step.state;
 					stepConfig.selectedStep = step.pageID;
+					stepConfig.nextStep = async function(data){
+						object.nextStep(step.group, step.pageID, data)
+					}
 					SHOW_LOADING_DIALOG(async function(){
 						await step.page.onPrepareState();
 						await step.callback('', stepConfig, 'Form');
@@ -506,7 +555,12 @@ const AbstractView = function(page) {
 					for (let record of table.records) {
 						let recordResult = record.getData();
 						result.isPass = result.isPass & recordResult.isPass
-						if (record.id) recordResult.data.id = record.id;
+						if (record.id) {
+							recordResult.data.id = record.id;
+						}
+						if (table.childDetail) {
+							recordResult.data[table.childDetail.parentColumn] = view.id;
+						}
 						result.data[table.inputName].push(recordResult.data);
 					}
 				}
@@ -517,16 +571,20 @@ const AbstractView = function(page) {
 					
 					if (view.id != undefined) result.data.id = view.id;
 					let data = result.data;
-					if (!result.file.isEmpty()) {
-						data = result.file;
-						data.append('data', JSON.stringify(result.data));
+					let isValid = await object.page.validate(view, data);
+					if (isValid) {
+						if (!result.file.isEmpty()) {
+							data = result.file;
+							data.append('data', JSON.stringify(result.data));
+						}
+						if (view.id != undefined) {
+							await object.page.restProtocol.update(data);
+						} else {
+							await object.page.restProtocol.insert(data);
+						}
+						view.close();
 					}
-					if (view.id != undefined) {
-						await object.page.restProtocol.update(data);
-					} else {
-						await object.page.restProtocol.insert(data);
-					}
-					view.close();
+					
 				} else {
 					object.page.submit(view);
 				}

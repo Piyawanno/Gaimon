@@ -49,6 +49,7 @@ class HTMLPage:
 		self.header = []
 		self.js = [
 			'utils/Protocol.js',
+			'utils/Utils.js',
 			'lib/mustache.min.js',
 			'lib/DOMObject.js'
 		]
@@ -214,11 +215,18 @@ class HTMLPage:
 		self.js.append('Authentication.js')
 		self.js.append('protocol/UserProtocol.js')
 
+	def enableLogIn(self):
+		self.enableCrypto()
+		self.js.append('LoginPage.js')
+		self.css.append('Login.css')
+		self.css.append('Flex.css')
+
 	def enableGoogleAnalytics(self, code):
 		if code is None or len(code) == 0: return
 		self.googleAnalyticsCode = code
 
 	def render(self, ID: str = None):
+		self.enableLogIn()
 		if self.isCompress and ID is not None:
 			return self.renderCompress(ID)
 		else:

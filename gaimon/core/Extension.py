@@ -19,8 +19,9 @@ class Extension:
 	path: str
 	extensionPath: str
 	configHandler: ExtensionConfigHandler
+	baseConfig: dict
 
-	def __init__(self, resourcePath: str, configPath: str):
+	def __init__(self, resourcePath: str, configPath: str, baseConfig: dict={}):
 		self.resourcePath = resourcePath
 		self.configPath = configPath
 		self.configHandler = ExtensionConfigHandler(

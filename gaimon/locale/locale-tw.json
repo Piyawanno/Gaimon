@@ -51,7 +51,7 @@
 	"Delete" : "删除",
 	"Delivery Note" : "交貨單",
 	"Deposit" : "存款",
-	"Description": "Description",
+	"Description": "描述",
 	"Detail" : "資料",
 	"Discount [%]" : "折扣 [%]",
 	"Discount" : "减價",
@@ -135,7 +135,7 @@
 	"Price Including VAT" : "含增值稅價格",
 	"Price per Unit" : "單位價格",
 	"Price" : "價格",
-	"Print" : "Print",
+	"Print" : "列印",
 	"Procure" : "獲得",
 	"Product" : "產品",
 	"Production Stock" : "生產庫存",
@@ -185,7 +185,7 @@
 	"Today" : "今天",
 	"Total Price" : "總價 (or 總金額)",
 	"Transaction" : "交易",
-	"Transportation" : "運輸",
+	"Transportation" : "運輸狀況",
 	"Type" : "類型",
 	"Unit Type Name" : "組織類型名稱",
 	"Unit" : "組織",
@@ -206,5 +206,6 @@
 	"Withdraw" : "取出",
 	"Write" : "編寫",
 	"Yearly" : "每年",
-	"Precision" : "精確"
+	"Precision" : "精確",
+	"End Date" : "End Date"
 }

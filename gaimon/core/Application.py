@@ -14,7 +14,7 @@ from xerial.DBSessionPool import DBSessionPool
 from xerial.Record import Record
 
 from multiprocessing import cpu_count
-from typing import List, Any, Dict
+from typing import Callable, List, Any, Dict
 
 import importlib, traceback, os, logging, sys, time
 
@@ -23,8 +23,10 @@ __MAX_POOL_SIZE__ = 2 * cpu_count()
 Record.enableDefaultBackup()
 RuleMap = Dict[str, List[CommonDecoratorRule]]
 
+def processRuleEmpty(rule:CommonDecoratorRule) :
+	return rule
 
-def createDecoratorBrowser(self, ruleMap, decoratorClass) :
+def createDecoratorBrowser(self, ruleMap, decoratorClass, processRule:Callable=processRuleEmpty) :
 	def browseDecorator(directory, modulePath) :
 		decoratorList = []
 		for name in self.browseModule(directory):
@@ -42,6 +44,7 @@ def createDecoratorBrowser(self, ruleMap, decoratorClass) :
 				attribute = getattr(decorator, attributeName)
 				rule:CommonDecoratorRule = getattr(attribute, '__RULE__', None)
 				if rule is None : continue
+				rule.ruleList = [processRule(i) for i in rule.ruleList]
 				rule.setDecoratorClass(decorator.__class__)
 				extendDecorator(rule)
 		return decoratorList

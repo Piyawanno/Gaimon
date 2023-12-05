@@ -213,8 +213,6 @@ function getOfflineItems() {
 }
 
 async function SEND_OPERATION(operation, data) {
-	console.log(operation);
-	console.log(data);
 	if (window.CALLBACK == undefined) window.CALLBACK = {}
 	let key = randomString(10);
 	return new Promise(function(resolve, reject) {
@@ -229,6 +227,7 @@ async function SEND_OPERATION(operation, data) {
 	});
 }
 
-function BACK(){
-	history.back();
+function BACK(callback){
+	if(callback != undefined) callback();
+	else history.back();
 }

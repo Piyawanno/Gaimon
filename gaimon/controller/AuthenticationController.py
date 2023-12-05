@@ -86,7 +86,7 @@ class AuthenticationController:
 		username = request.json['username']
 		userList = await self.session.select(
 			User,
-			"WHERE username=? AND isActive=1",
+			"WHERE username=? ORDER BY id DESC",
 			parameter=[username],
 			limit=1
 		)
@@ -275,12 +275,16 @@ class AuthenticationController:
 		await self.session.update(user)
 		await self.application.redis.hdel(self.RESET_PASSWORD_KEY, key)
 		return RESTResponse({"isSuccess": True})
+	
+	@POST("/authentication/checkPermission", role=['user'])
+	async def checkPermission(self, request):
+		return response.json({"isSuccess": True, 'result': True})
 
 	@POST("/authentication/login/checkPermission", role=['guest'])
-	async def checkPermission(self, request):
+	async def checkLogInPermission(self, request):
 		data = request.json
 		username = data['username']
-		clause = "WHERE username=? AND isActive = 1"
+		clause = "WHERE username=? ORDER BY id DESC"
 		parameter = [username]
 		userList = await self.session.select(User, clause, parameter=parameter, limit=1)
 		if len(userList):
@@ -312,6 +316,7 @@ class AuthenticationController:
 				"message": "Password time expired."
 			})
 		elif user.checkPassword(hashed, salt, encodedTime):
+			if not user.isActive: return RESTResponse({"isSuccess": False, 'isActive': False, 'id': user.id, "message": "User has not activated."})
 			token = await self.authen.saveSession(self.session, {'id': user.id})
 			await self.setUserSession(request, user)
 			return RESTResponse({"isSuccess": True, 'token': token})

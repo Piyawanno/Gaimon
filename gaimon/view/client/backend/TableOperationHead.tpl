@@ -1,1 +1,1 @@
-<th class="text-align-center {{{cssClass}}}" style="{{{cssStyle}}}width:0;" colspan="{{{colspan}}}" localize>{{{label}}}</th>
+<th {{#ID}} rel="{{{ID}}}_operation_th" {{/ID}} {{^ID}} {{/ID}} class="text-align-center {{{cssClass}}}" style="{{{cssStyle}}}width:0;" colspan="{{{colspan}}}" localize>{{{label}}}</th>

@@ -138,7 +138,7 @@
 	"Procure" : "จัดชื้อ-จัดหา",
 	"Product" : "สินค้า",
 	"Production Stock" : "สต็อกการผลิต",
-	"Production" : "ฝ่ายผลิต",
+	"Production" : "การผลิต",
 	"Purchasing Officer" : "พนักงานจัดซื้อ",
 	"QRCode" : "คิวอาร์โค้ด",
 	"Quantity" : "จำนวน",
@@ -220,5 +220,12 @@
 	"Start Time" : "เริ่มเวลา",
 	"End Time" : "สิ้นสุดเวลา",
 	"Finished" : "เสร็จเรียบร้อย",
-	"Assign Success" : "มอบหมายงานสำเร็จ"
+	"Assign Success" : "มอบหมายงานสำเร็จ",
+	"My Job" : "งานของฉัน",
+	"In Process" : "อยู่ในขั้นตอน",
+	"End Date" : "วันที่สิ้นสุด",
+	"Flow" : "กระบวนการทำงาน",
+	"Title" : "ชื่อเรื่อง",
+	"Event" : "เหตุการณ์",
+	"Operator" : "ผู้ดำเนินการ"
 }

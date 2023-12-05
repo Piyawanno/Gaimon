@@ -1,7 +1,6 @@
-import logging
-import traceback
 from gaimon.core.AsyncServiceClient import AsyncServiceClient
 from gaimon.core.Route import GET, POST, ROLE
+from gaimon.core.UserHandler import UserHandler
 from gaimon.core.RESTResponse import(
 	RESTResponse  as REST,
 	SuccessRESTResponse as Success,
@@ -12,17 +11,13 @@ from gaimon.model.UserGroup import UserGroup
 from gaimon.model.UserGroupPermission import UserGroupPermission, __GAIMON_ROLE__
 from gaimon.model.PermissionType import PermissionType as PT
 from xerial.AsyncDBSessionBase import AsyncDBSessionBase
-from sanic import response
+from sanic import response, Request
 from typing import List
-import math, os, string, random, json, mimetypes
 from gaimon.util.RequestUtil import (
-	processRequestQuery,
-	createInsertHandler,
-	createUpdateHandler,
-	createSelectHandler,
-	createDropHandler,
 	createFileStore
 )
+
+import logging, traceback, os, string, random, json, mimetypes
 
 @ROLE('gaimon.User')
 class UserController:
@@ -30,11 +25,14 @@ class UserController:
 		from gaimon.core.AsyncApplication import AsyncApplication
 		self.application: AsyncApplication = application
 		self.session: AsyncDBSessionBase = None
+		self.extension = self.application.getExtensionInfo()
+		self.entity: str = None
 		self.resourcePath = self.application.resourcePath
 		self.avatar = {}
 		self.storeAvatarFile = createFileStore(self.application, 'user/avatar/')
 		self.path = "/user/avatar/"
 		self.notification = None
+		self.userHandler:UserHandler = self.application.userHandler
 
 	async def checkNotificationClient(self):
 		if self.notification is not None: return
@@ -43,20 +41,20 @@ class UserController:
 		)
   
 	@POST("/user/get/by/id", permission=[PT.READ])
-	async def getUserByID(self, request):
-		user: User = await self.session.selectByID(User, int(request.json['id']))
+	async def getUserByID(self, request: Request):
+		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), request.headers['entity'])
 		if user is None : return Error('User cannot be found.')
 		else : return Success(user.toTransportDict())
 
 	@POST("/user/global/get/by/id", role=['guest'])
-	async def getUserGlobalByID(self, request):
-		user: User = await self.session.selectByID(User, request.json['id'])
+	async def getUserGlobalByID(self, request: Request):
+		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), request.headers['entity'])
 		if user is None : return Error('User cannot be found.')
 		else : return Success({'firstName' : user.firstName, 'lastName' : user.lastName})
 		
 	@GET('/user/global/avatar/get/<id>', role=['guest'])
 	async def getAvatarGlobal(self, request, id):
-		user: User = await self.session.selectByID(User, id)
+		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), request.headers['entity'])
 		if user is None : return Error('User cannot be found.')
 		picturePath = user.avatar
 		picture = self.avatar.get(picturePath, None)
@@ -74,37 +72,19 @@ class UserController:
 		return response.raw(self.avatar[picturePath], content_type=fileType)
 
 	@POST("/user/get/all", permission=[PT.READ])
-	async def getAllUser(self, request):
-		clause, parameter, limit, offset = processRequestQuery(request.json, User)
-		users: List[User] = await self.session.select(
-			User,
-			clause,
-			parameter=parameter,
-			limit=limit,
-			offset=offset
-		)
-		count = await self.session.count(User, clause, parameter=parameter)
-		return Success({
-			'data': [i.toTransportDict() for i in users],
-			'count': math.ceil(count / limit)
-		})
+	async def getAllUser(self, request: Request):
+		result = await self.userHandler.getUserByConditionWithPage(self.session, request.json, request.headers['entity'])
+		result['data'] = [i.toTransportDict() for i in result['data']]
+		return Success(result)
 	
 	@POST('/user/option/get/autocomplete', permission=[PT.READ])
-	async def getOptionByAutoComplete(self, request):
-		wildCard = request.json['name']+'%'
-		items = await self.session.select(
-			User,
-			"WHERE (username LIKE ? OR displayName LIKE ? OR firstName LIKE ? OR lastName LIKE ?) AND isDrop = 0",
-			parameter=[wildCard, wildCard, wildCard, wildCard],
-			limit=int(request.json['limit'])
-		)
-		return REST({'isSuccess': True, 'result': [i.toDict() for i in items]})
+	async def getOptionByAutoComplete(self, request: Request):
+		users:List[User] = await self.userHandler.getUserByWildcard(self.session, request.json, request.headers['entity'])
+		return Success([i.toDict() for i in users])
 	
 	@POST('/user/option/get/autocomplete/by/reference', role=['user'])
-	async def getAutoCompleteByID(self, request):
-		print('asdasdsad', request.json['reference'])
-		record = await self.session.selectByID(User, request.json['reference'])
-		print('record', record)
+	async def getAutoCompleteByID(self, request: Request):
+		record = await self.userHandler.getUserByID(self.session, int(request.json['reference']), request.headers['entity'])
 		if record is None :
 			return REST({'isSuccess': True, 'label': '', 'result': {}})
 		else :
@@ -115,224 +95,38 @@ class UserController:
 			})
 
 	@GET("/user/option/get", permission=[PT.READ])
-	async def getUserOption(self, request):
-		users = await self.session.select(User, 'WHERE isDrop=0')
-		return REST({
-			'isSuccess': True,
-			'results': [i.toOption() for i in users]
-		})
-
-	async def updateUser(self, data: dict) -> User:
-		user = User()
-		parameter = [int(data['id'])]
-		users = await self.session.select(
-			User,
-			'WHERE id=?',
-			parameter=parameter,
-			limit=1
-		)
-		if len(users) != 0: user = users[0]
-		user.username = data['username']
-		user.email = data['email']
-		user.firstName = data['firstName']
-		user.lastName = data['lastName']
-		user.displayName = data['displayName']
-		if 'avatar' in data: user.avatar = data['avatar']
-		try :
-			if 'gid' in data: user.gid = int(data['gid'])
-		except ValueError:
-			user.gid = -1
-		if len(data['passwordHash']
-				) and data['passwordHash'] == data['confirm_passwordHash']:
-			salt = User.getSalt()
-			user.salt = salt.hex()
-			user.passwordHash = User.hashPassword(data['passwordHash'].encode(), salt)
-		return user
-
-	async def createUser(self, data: dict) -> User:
-		user = User()
-		user.username = data['username']
-		user.email = data['email']
-		user.firstName = data['firstName']
-		user.lastName = data['lastName']
-		user.displayName = data['displayName']
-		user.isActive = True
-		if 'avatar' in data: user.avatar = data['avatar']
-		user.gid = -1
-		if 'gid' in data: user.gid = int(data['gid'])
-		if len(data['passwordHash']
-				) and data['passwordHash'] == data['confirm_passwordHash']:
-			salt = User.getSalt()
-			user.salt = salt.hex()
-			user.passwordHash = User.hashPassword(data['passwordHash'].encode(), salt)
-		return user
+	async def getUserOption(self, request: Request):
+		users:List[User] = await self.userHandler.getAllUser(self.session, request.headers['entity'])
+		return Success([i.toOption() for i in users])
 
 	@POST("/user/drop", permission=[PT.DROP])
-	async def dropUser(self, request):
-		data = request.json
-		if not 'id' in data:
-			return REST({'isSuccess': False, 'message': "ID is not exist."})
-		parameter = [int(data['id'])]
-		models = await self.session.select(
-			User,
-			'WHERE id=?',
-			parameter=parameter,
-			limit=1
-		)
-		if len(models) == 0:
-			return REST({'isSuccess': False, 'message': "ID is not exist."})
-		model: User = models[0]
-		model.isDrop = 1
-		await self.session.update(model)
-		return REST({'isSuccess': True})
-
-	@GET("/user/group/option/get", permission=[PT.READ])
-	async def getUserGroupOption(self, request):
-		groups = await self.session.select(UserGroup, 'WHERE isDrop=0 ORDER BY id DESC')
-		return REST({
-			'isSuccess': True,
-			'results': [i.toOption() for i in groups]
-		})
-
-	@POST("/user/group/get/all", permission=[PT.READ])
-	async def getAllUserGroup(self, request):
-		pageNumber = int(request.json['pageNumber'])
-		limit = int(request.json['limit'])
-		if limit > 200: limit = 200
-		offset = (pageNumber - 1) * limit
-		groups = await self.session.select(
-			UserGroup,
-			'WHERE isDrop=0 ORDER BY id DESC',
-			limit=limit,
-			offset=offset
-		)
-		count = await self.session.count(UserGroup, 'WHERE isDrop=0')
-		count = math.ceil(count / limit)
-		groupsIDList = ', '.join([str(i.id) for i in groups])
-		permissions = {}
-		if len(groupsIDList):
-			models = await self.session.select(
-				UserGroupPermission,
-				'WHERE gid IN (%s)' % groupsIDList
-			)
-			for i in models:
-				if not i.gid in permissions: permissions[i.gid] = []
-				permissions[i.gid].append(i.toDict())
-		results = []
-		for i in groups:
-			result = i.toDict()
-			result['permissions'] = []
-			if i.id in permissions: result['permissions'] = permissions[i.id]
-			results.append(result)
-		return REST({
-			'isSuccess': True,
-			'results': {
-				'data': results,
-				'count': count
-			}
-		})
-
-	@POST("/user/group/add", permission=[PT.WRITE, PT.UPDATE])
-	async def addUserGroup(self, request):
-		data = request.json
-		model = None
-		if not 'id' in data:
-			model = UserGroup()
-			model.fromDict(data)
-			print("data", data)
-			await self.session.insert(model)
-		else:
-			parameter = [int(data['id'])]
-			models = await self.session.select(
-				UserGroup,
-				'WHERE id=?',
-				parameter=parameter,
-				limit=1
-			)
-			if len(models): model: UserGroup = models[0]
-			model.fromDict(data)
-			await self.session.update(model)
-		parameter = [model.id]
-		permissions = await self.session.select(
-			UserGroupPermission,
-			'WHERE gid=?',
-			parameter=parameter
-		)
-		[await self.session.drop(i) for i in permissions]
-		if not 'records' in data: return REST({'isSuccess': True})
-		permissions = []
-		for item in data['records']:
-			permission = UserGroupPermission()
-			permission.fromDict(item)
-			print("permission", permission)
-			permission.gid = model.id
-			print(permission.toDict())
-			permissions.append(permission)
-		await self.session.insertMultiple(permissions)
-		await self.authen.getRoleByGroupID(self.session, model.id, isForce=True)
-		return REST({'isSuccess': True})
-
-	@POST("/user/group/drop", permission=[PT.DROP])
-	async def dropUserGroup(self, request):
-		data = request.json
-		if not 'id' in data:
-			return REST({'isSuccess': False, 'message': "ID is not exist."})
-		parameter = [int(data['id'])]
-		models = await self.session.select(
-			UserGroup,
-			'WHERE id=?',
-			parameter=parameter,
-			limit=1
-		)
-		if len(models) == 0:
-			return REST({'isSuccess': False, 'message': "ID is not exist."})
-		model: UserGroup = models[0]
-		model.isDrop = 1
-		await self.session.update(model)
+	async def dropUser(self, request: Request):
+		await self.userHandler.dropUser(self.session, request.json)
 		return REST({'isSuccess': True})
 
 	@GET('/user/permission/module/get', permission=[PT.READ])
-	async def getPermissionModule(self, request):
-		results = self.application.extension.role
+	async def getPermissionModule(self, request: Request):
+		results = await self.extension.getRole(self.entity)
 		results['gaimon'] = __GAIMON_ROLE__
 		return REST({'isSuccess': True, 'results': results})
 
 	@POST('/user/autoComplete/get', permission=[PT.READ])
-	async def getUser(self, request):
-		name = f"%{request.json['name']}%"
-		clause = [f" firstName LIKE ?", f" OR lastName LIKE ?", ]
-		parameter = [name, name]
-		items = await self.session.select(
-			User,
-			"WHERE " + (" ".join(clause)),
-			parameter=parameter,
-			limit=int(request.json['limit'])
-		)
-		return REST({
-			'isSuccess': True,
-			'results': [i.toDict() for i in items]
-		})
+	async def getUser(self, request: Request):
+		users:List[User] = await self.userHandler.getUserByWildcard(self.session, request.json, request.headers['entity'])
+		return Success([i.toDict() for i in users])
 
 	@POST('/user/autoComplete/get/by/reference', permission=[PT.READ])
-	async def getAutoCompleteUserByID(self, request):
-		reference = request.json['reference']
+	async def getAutoCompleteUserByID(self, request: Request):
+		user: User = await self.userHandler.getUserByID(self.session, int(request.json['reference']), request.headers['entity'])
 		fullName = ''
-		results = {}
-		parameter = [int(reference)]
-		user = await self.session.select(
-			User,
-			f"WHERE id=?",
-			parameter=parameter,
-			limit=1
-		)
-		if len(user):
-			user = user[0]
-			results = user.toDict()
+		result = {}
+		if not user is None:
+			result = user.toDict()
 			fullName = user.firstName + ' ' + user.lastName
 		return REST({
 			'isSuccess': True,
 			'label': fullName,
-			'results': results
+			'result': result
 		})
 
 	async def saveAttachedFile(self, file, pathFile):
@@ -347,15 +141,9 @@ class UserController:
 
 	@GET('/user/avatar/get/<id>', role=['guest'])
 	async def getAvatar(self, request, id):
-		parameter = [int(id)]
-		model = await self.session.select(
-			User,
-			f"WHERE id=?",
-			parameter=parameter,
-			limit=1
-		)
-		if len(model) == 0: return response.text("Picture cannot be found.", status=404)
-		picturePath = model[0].avatar
+		user:User = await self.userHandler.getUserByID(self.session, int(id), request.headers['entity'])
+		if user is None: return response.text("Picture cannot be found.", status=404)
+		picturePath = user.avatar
 		if picturePath is None:
 			return response.text("Picture cannot be found.", status=404)
 		picture = self.avatar.get(picturePath, None)
@@ -371,125 +159,37 @@ class UserController:
 		return response.raw(self.avatar[picturePath], content_type=fileType)
 
 	@POST("/user/avatar/update", permission=[PT.WRITE, PT.UPDATE])
-	async def updateAvatar(self, request):
+	async def updateAvatar(self, request: Request):
 		data = json.loads(request.form['data'][0])
-		parameter = [int(data['id'])]
-		user = await self.session.select(
-			User,
-			f"WHERE id=? AND isDrop=0",
-			parameter=parameter,
-			limit=1
-		)
-		if len(user) == 0:
-			return REST({'isSuccess': False, 'message': 'Data is not exist.'})
-		user = user[0]
+		user:User = await self.userHandler.getUserByID(self.session, int(data['id']), request.headers['entity'])
+		if user is None: return Error('Data does not exist.')
 		if 'avatar' in request.files:
 			data['avatar'] = await self.saveAttachedFile(
 				request.files['avatar'],
 				self.path
 			)
 		user.avatar = data['avatar']
-		await self.session.update(user)
-		return REST({'isSuccess': True})
+		await self.userHandler.updateUser(self.session, user.toDict())
+		return Success()
 
 	@POST("/user/password/update", permission=[PT.WRITE, PT.UPDATE])
-	async def updatePassword(self, request):
+	async def updatePassword(self, request: Request):
 		data = request.json['data']
-		parameter = [int(data['id'])]
-		user = await self.session.select(
-			User,
-			f"WHERE id=? AND isDrop=0",
-			parameter=parameter,
-			limit=1
-		)
-		if len(user) == 0:
-			return REST({'isSuccess': False, 'message': 'Data is not exist.'})
-		user = user[0]
-		if len(data['passwordHash']
-				) and data['passwordHash'] == data['confirm_passwordHash']:
+		user:User = await self.userHandler.getUserByID(self.session, int(data['id']), request.headers['entity'])
+		if user is None: return Error('Data does not exist.')
+		if len(data['passwordHash']) and data['passwordHash'] == data['confirm_passwordHash']:
 			salt = User.getSalt()
 			user.salt = salt.hex()
 			user.passwordHash = User.hashPassword(data['passwordHash'].encode(), salt)
-		await self.session.update(user)
-		return REST({'isSuccess': True})
-
-	@POST("/user/group/insert", permission=[PT.WRITE, PT.UPDATE])
-	async def insertUserGroup(self, request):
-		data = request.json['data']
-		model = None
-		model = UserGroup()
-		model.fromDict(data)
-		await self.session.insert(model)
-		parameter = [int(model.id)]
-		permissions = await self.session.select(
-			UserGroupPermission,
-			'WHERE gid=?',
-			parameter=parameter
-		)
-		[await self.session.drop(i) for i in permissions]
-		if not 'records' in data: return REST({'isSuccess': True})
-		permissions = []
-		for item in data['records']:
-			permission = UserGroupPermission()
-			permission.fromDict(item)
-			permission.gid = model.id
-			permissions.append(permission)
-		await self.session.insertMultiple(permissions)
-		await self.authen.getRoleByGroupID(self.session, model.id, isForce=True)
-		try:
-			await self.checkNotificationClient()
-			await self.notification.call('/trigger/user', {})
-		except Exception as error:
-			logging.error(traceback.format_exc())
-		return REST({'isSuccess': True})
-
-	@POST("/user/group/update", permission=[PT.WRITE, PT.UPDATE])
-	async def updateUserGroup(self, request):
-		data = request.json['data']
-		model = None
-		parameter = [int(data['id'])]
-		models = await self.session.select(
-			UserGroup,
-			'WHERE id=?',
-			parameter=parameter,
-			limit=1
-		)
-		if len(models): model: UserGroup = models[0]
-		model.fromDict(data)
-		await self.session.update(model)
-		parameter = [int(model.id)]
-		permissions = await self.session.select(
-			UserGroupPermission,
-			'WHERE gid=?',
-			parameter=parameter
-		)
-		[await self.session.drop(i) for i in permissions]
-		if not 'records' in data: return REST({'isSuccess': True})
-		permissions = []
-		for item in data['records']:
-			permission = UserGroupPermission()
-			permission.fromDict(item)
-			permission.gid = model.id
-			permissions.append(permission)
-		await self.session.insertMultiple(permissions)
-		await self.authen.getRoleByGroupID(self.session, model.id, isForce=True)
-		try:
-			await self.checkNotificationClient()
-			await self.notification.call('/trigger/user', {})
-		except Exception as error:
-			logging.error(traceback.format_exc())
+		await self.userHandler.updateUser(self.session, user.toDict())
 		return REST({'isSuccess': True})
 
 	@POST("/user/insert", permission=[PT.WRITE, PT.UPDATE])
-	async def insert(self, request):
+	async def insert(self, request: Request):
 		data = json.loads(request.form['data'][0])
 		if 'avatar' in request.files:
-			data['avatar'] = await self.saveAttachedFile(
-				request.files['avatar'],
-				self.path
-			)
-		user = await self.createUser(data)
-		await self.session.insert(user)
+			data['avatar'] = await self.saveAttachedFile(request.files['avatar'], self.path)
+		user = await self.userHandler.insertUser(self.session, data, request.headers['entity'])
 		try:
 			await self.checkNotificationClient()
 			await self.notification.call('/trigger/user', {})
@@ -500,39 +200,17 @@ class UserController:
 		return Success(userDict)
 
 	@POST("/user/update", permission=[PT.WRITE, PT.UPDATE])
-	async def update(self, request):
+	async def update(self, request: Request):
 		data = json.loads(request.form['data'][0])
 		if 'avatar' in request.files: 
 			avatar = await self.storeAvatarFile(request, 'avatar')
 			data['avatar'] = avatar[0][1] if len(avatar) else ""
 		if data['avatarRemoved']: data['avatar'] = ''
-		user = await self.updateUser(data)
-		await self.session.update(user)
-		try:
-			await self.checkNotificationClient()
-			await self.notification.call('/trigger/user', {})
-		except Exception as error:
-			logging.error(traceback.format_exc())
+		user = await self.userHandler.updateUser(self.session, data, request.headers['entity'])
+		if user is None: return Error("User does not exist.")
 		userDict = user.toTransportDict()
 		userDict['additional'] = data
 		return Success(userDict)
-
-	@POST("/user/role/update", permission=[PT.WRITE, PT.UPDATE])
-	async def updateUserRole(self, request):
-		data = request.json['data']
-		parameter = [int(data['id'])]
-		user = await self.session.select(User, 'WHERE id=?', parameter=parameter, limit=1)
-		if len(user) == 0:
-			return REST({'isSuccess': False, 'message': 'Data is not exist.'})
-		user = user[0]
-		user.gid = data['gid']
-		await self.session.update(user)
-		try:
-			await self.checkNotificationClient()
-			await self.notification.call('/trigger/user', {})
-		except Exception as error:
-			logging.error(traceback.format_exc())
-		return REST({'isSuccess': True})
 
 	@GET('/user/avatar/image/<ID>', permission=[PT.READ], role=['guest'])
 	async def getAvatarImage(self, request, ID):
@@ -540,20 +218,27 @@ class UserController:
 			ID = int(ID)
 		except:
 			return response.text("File cannot be found.", status=404)
-		model:User = await self.session.selectByID(User, ID)
-		if model is None:
-			return response.text("File cannot be found.", status=404)
-		if model.avatar is None or len(model.avatar) == 0:
+		user:User = await self.userHandler.getUserByID(self.session, ID, request.headers['entity'])
+		if user is None: return response.text("File cannot be found.", status=404)
+		if user.avatar is None or len(user.avatar) == 0:
 			return await response.file(f"{self.resourcePath}share/icon/logo_padding.png")		
-		path = f"{self.resourcePath}file/{model.avatar}"
+		path = f"{self.resourcePath}file/{user.avatar}"
 		if not os.path.isfile(path):
 			return await response.file(f"{self.resourcePath}share/icon/logo_padding.png")
 		return await response.file(path)
 
 	@POST("/user/option/getByIDList", permission=[PT.READ])
-	async def getUserOptionByIDList(self, request):
+	async def getUserOptionByIDList(self, request: Request):
 		IDList = [int(i) for i in request.json['IDList']]
-		IDclause = ",".join(len(IDList)*'?')
-		clause = f"WHERE id IN ({IDclause}) AND isDrop=0"
-		models:List[User] = await self.session.select(User, clause, parameter=IDList)
-		return Success({i.id:i.toOption() for i in models})
+		result = await self.userHandler.getUserOptionByIDList(self.session, IDList, request.headers['entity'])
+		return Success(result)
+	
+	@POST("/user/username/isexist", role=["guest"])
+	async def isUsernameExist(self, request: Request):
+		result = await self.userHandler.isUsernameExist(self.session, request.json['username'], request.headers['entity'])
+		return Success(result)
+
+	@POST('/user/email/isexist', role=['guest'])
+	async def isEmailExist(self, request: Request):
+		result = await self.userHandler.isEmailExist(self.session, request.json['email'], request.headers['entity'])
+		return Success(result)
