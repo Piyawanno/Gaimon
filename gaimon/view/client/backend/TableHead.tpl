@@ -5,12 +5,12 @@
 	{{#hasIndex}}
 	<th style="text-align:center;width:0;"></th>
 	{{/hasIndex}}
-    {{#hasAvatar}}
+	{{#hasAvatar}}
 	<th style="width:0;" localize>Avatar</th>
-    {{/hasAvatar}}
+	{{/hasAvatar}}
 	{{#thead}}
 	{{#isTable}}
-	<th rel="{{{columnName}}}_th" class="{{#isNumber}}text-align-right{{/isNumber}} {{#isStatus}}text-align-center{{/isStatus}} {{#isHidden}}hidden{{/isHidden}}" localize>{{{label}}}</th>
+	<th rel="{{{columnName}}}_th" {{#isStatus}}style="width:0;"{{/isStatus}} class="{{#isNumber}}text-align-right{{/isNumber}} {{#isStatus}}text-align-center{{/isStatus}} {{#isHidden}}hidden{{/isHidden}}" localize>{{{label}}}</th>
 	{{/isTable}}
 	{{/thead}}
 </tr>

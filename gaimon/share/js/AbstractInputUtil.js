@@ -44,7 +44,9 @@ AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw =
 	if (GLOBAL.INPUT_PER_LINE == undefined) GLOBAL.INPUT_PER_LINE = {};
 	if (GLOBAL.INPUT[modelName] == undefined) {
 		let response;
-		if (modelName.length != 0) response = await GET(`input/${modelName}`, undefined, 'json', true);
+		if (modelName.length != 0){
+			response = await GET(`input/${modelName}`, undefined, 'json', true);
+		}
 		if (response != undefined && response.isSuccess) {
 			for (let input of response.input) {
 				for (let groupInput of response.inputGroup) {
@@ -144,8 +146,38 @@ AbstractInputUtil.prototype.getBaseInputData = async function(modelName, isRaw =
 	result.modelName = modelName;
 	result.avatar = GLOBAL.AVATAR[modelName];
 	result.isDefaultAvatar = GLOBAL.IS_DEFAULT_AVATAR[modelName];
+	await AbstractInputUtil.prototype.createSideIcon(result.input);
 	return result;
 }
+
+// AbstractInputUtil.prototype.createSideIcon = async function(groupedInput){
+// 	for(let i in groupedInput){
+// 		let group = groupedInput[i];
+// 		for(let j in group.input){
+// 			let input = group.input[j];
+// 			console.log(input.sideIcon);
+// 			if(input.sideIcon != null){
+// 				input.SVG = await CREATE_SVG_ICON(input.sideIcon);
+// 			}
+// 		}
+// 	}
+// }
+
+AbstractInputUtil.prototype.createSideIcon = async function(groupedInput){
+	for(let group of groupedInput){
+		if (group.isGroup) {
+			for (let input of group.input) {
+				if(input.sideIcon != null){
+					input.SVG = await CREATE_SVG_ICON(input.sideIcon);
+				}
+			}
+		}
+		if(group.sideIcon != null){
+			group.SVG = await CREATE_SVG_ICON(group.sideIcon);
+		}
+	}
+}
+
 
 AbstractInputUtil.prototype.getMergedInputData = async function(modelName) {
 	let object = this;
@@ -287,7 +319,10 @@ AbstractInputUtil.prototype.parseInputData = async function(inputs, reference = 
 		} else if (input.typeName == "ReferenceSelect") {
 			if (reference[input.url] == undefined) reference[input.url] = [];
 			reference[input.url].push(input.columnName);
-		} else if (input.typeName == "PrerequisiteReferenceSelect") {
+		} else if (input.typeName == "ReferenceCheckBox") {
+			if (reference[input.url] == undefined) reference[input.url] = [];
+			reference[input.url].push(input.columnName);
+		}else if (input.typeName == "PrerequisiteReferenceSelect") {
 			input.isPrerequisiteReferenceSelect = true;
 			if (reference[input.url] == undefined) reference[input.url] = [];
 			reference[input.url].push(input.columnName)
@@ -444,7 +479,9 @@ AbstractInputUtil.prototype.getRawInputConfig = async function(inputs){
 		if(inputs[i].isEditable == undefined) inputs[i].isEditable = true;
 		if(inputs[i].size == undefined) inputs[i].size = 'normal';
 		if(inputs[i].isNumber == undefined) inputs[i].isNumber = false;
-			if(inputs[i].typeName == 'Currency' || inputs[i].typeName == 'Fraction' || inputs[i].typeName == 'Number') inputs[i].isNumber = true;
+		if(inputs[i].typeName == 'Currency' || inputs[i].typeName == 'Fraction' || inputs[i].typeName == 'Number'){
+			inputs[i].isNumber = true;
+		}
 		if(inputs[i].url != undefined && inputs[i].typeName != 'AutoComplete' && inputs[i].typeName != 'PrerequisiteReferenceSelect'){
 			let response = await GET(inputs[i].url, undefined, 'json', true);
 			if (response != undefined && response.isSuccess) {
@@ -511,7 +548,7 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 	for (let i in inputs) {
 		prerequisite.childInput[inputs[i].detail.columnName] = inputs[i];
 	}
-	prerequisite.onchange = async function() {
+	prerequisite.onchange = async function(isForceFetch=false) {
 		if (this.value == undefined) return;
 		if (this.value == '') return;
 		for (let index in prerequisite.childInput) {
@@ -520,11 +557,14 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 			if (input == undefined) continue;
 			let detail = item.detail;
 			let result;
-			if (prerequisite.fetched[detail.columnName] == undefined) prerequisite.fetched[detail.columnName] = {};
-			if (prerequisite.fetched[detail.columnName][this.value] == undefined) {
+			if (prerequisite.fetched[detail.columnName] == undefined){
+				prerequisite.fetched[detail.columnName] = {};
+			}
+			if (prerequisite.fetched[detail.columnName][this.value] == undefined || isForceFetch) {
 				let response;
-				if (this.currentValue == undefined) response = await GET(detail.url+this.value, undefined, 'json', true);
-				else{
+				if (this.currentValue == undefined){
+					response = await GET(detail.url+this.value, undefined, 'json', true);
+				} else {
 					if(typeof(this.currentValue) == 'string'){
 						response  = await GET(detail.url+JSON.parse(this.currentValue).id, undefined, 'json', true);
 					}else {
@@ -532,12 +572,15 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 					}
 				}
 				
-				if (response == undefined || !response.isSuccess) result = [];
-				else {
+				if (response == undefined || !response.isSuccess){
+					result = [];
+				} else {
 					result = response.results;
 					if (response.result != undefined) result = response.result;
 				}
-				if(result.length != 0) prerequisite.fetched[detail.columnName][this.value] = result;
+				if(result.length != 0){
+					prerequisite.fetched[detail.columnName][this.value] = result;
+				}
 			} else {
 				result = prerequisite.fetched[detail.columnName][this.value];
 			}
@@ -573,16 +616,17 @@ AbstractInputUtil.prototype.prepareInput = async function(modelName, input) {
 	let autoCompleteMap = {};
 	let fileMatrixMap = {};
 	let imageMap = {};
+	let fileMap = {};
 	let advanceInputMap = {};
 	for (let item of input) {
 		if (item.isGroup) {
 			if (item.input == undefined) continue;
 			for (let detail of item.input) {
-				await object.setInputMapper(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap);
+				await object.setInputMapper(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, fileMap, advanceInputMap);
 			}
 		} else {
 			let detail = item;
-			await object.setInputMapper(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap);
+			await object.setInputMapper(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, fileMap, advanceInputMap);
 		}
 	}
 	if (Object.keys(inputs).length > 0) {
@@ -598,10 +642,10 @@ AbstractInputUtil.prototype.prepareInput = async function(modelName, input) {
 			}
 		}
 	}
-	return {exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap, inputs}
+	return {exceptURL, autoCompleteMap, fileMatrixMap, imageMap, fileMap, advanceInputMap, inputs}
 }
 
-AbstractInputUtil.prototype.setInputMapper = async function(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap) {
+AbstractInputUtil.prototype.setInputMapper = async function(detail, inputs,  exceptURL, autoCompleteMap, fileMatrixMap, imageMap, fileMap, advanceInputMap) {
 	inputs[detail.columnName] = detail;
 	if (detail.typeName == "PrerequisiteReferenceSelect") {
 		if (exceptURL[detail.url] == undefined) exceptURL[detail.url] = [];
@@ -610,6 +654,7 @@ AbstractInputUtil.prototype.setInputMapper = async function(detail, inputs,  exc
 	if (detail.typeName == "AutoComplete") autoCompleteMap[detail.columnName] = detail;
 	if (detail.typeName == "FileMatrix") fileMatrixMap[detail.columnName] = detail;
 	if (detail.typeName == "Image") imageMap[detail.columnName] = detail;
+	if (detail.typeName == "File") fileMap[detail.columnName] = detail;
 	if (detail.isAdvanceForm) advanceInputMap[detail.columnName] = detail;
 }
 
@@ -658,7 +703,7 @@ AbstractInputUtil.prototype.setFileMatrixMap = async function(view, fileMatrixMa
 		if (view.dom[`${i}_icon`] == undefined) continue;
 		view.dom[`${i}_icon`].onclick = async function(){
 			let now = Date.now();
-			let domObject = new DOMObject(TEMPLATE.FileMatrixRecord, {columnName: i});
+			let domObject = new InputDOMObject(TEMPLATE.FileMatrixRecord, {columnName: i});
 			domObject.id = now;
 			if(domObject.dom.delete != undefined){
 				domObject.dom.delete.onclick = async function(){
@@ -669,6 +714,56 @@ AbstractInputUtil.prototype.setFileMatrixMap = async function(view, fileMatrixMa
 			if(view.dom[`${i}_records`] == undefined) view.dom[`${i}_records`] = {};
 			view.dom[`${i}_records`][now] = domObject;
 			view.dom[`${i}_tbody`].append(domObject);
+		}
+	}
+}
+
+AbstractInputUtil.prototype.setFileMap = async function(view, fileMap) {
+	let object = this;
+	for(let i in fileMap){
+		if (view.dom[i] == undefined) continue;
+		view.dom[i].removed = false;
+		view.dom[i].hasFile = true;
+		if(view.dom[`${i}_file`]){
+			view.dom[`${i}_file`].onclick = async function(){
+				view.dom[i].click();
+			}
+		}		
+		view.dom[i].onchange = async function(){			
+			if(!this.files.length){
+				view.dom[i].hasFile = false;
+				view.dom[i].removed = true;
+				return;
+			}
+			view.dom[`${i}_fileName`].html(view.dom[i].files[0].name);
+			view.dom[i].hasFile = true;
+			view.dom[i].removed = false;
+		}
+		if(view.dom[`${i}_preview`]){
+			view.dom[`${i}_preview`].onclick = async function(){
+				if(!view.dom[i].hasFile) return;
+				if(view.dom[i].getAttribute('fileURL')){
+					let blob = await GET(view.dom[i].getAttribute('fileURL'), undefined, 'blob');
+					await OPEN_FILE(blob, `preview`);
+					return;
+				}
+				let file = view.dom[i].files[0];
+				let reader = new FileReader();
+				reader.onload = function(e){
+					OPEN_FILE(GET_FILE_BY_DATA_URL(e.target.result));
+				}
+				if(file != undefined) reader.readAsDataURL(file);
+			}
+		}
+		if(view.dom[`${i}_delete`]){
+			view.dom[`${i}_delete`].onclick = async function(){
+				view.dom[i].type = 'text';
+				view.dom[i].type = 'file';
+				view.dom[`${i}_fileName`].html('No File Chosen');
+				view.dom[`${i}_preview`].classList.add('disabled');
+				view.dom[i].removed = true;
+				view.dom[i].hasFile = false;
+			}
 		}
 	}
 }
@@ -705,7 +800,9 @@ AbstractInputUtil.prototype.setImageMap = async function(view, imageMap) {
 				view.dom[`${i}_originalImage`].src = e.target.result;
 			}
 			if(file != undefined) reader.readAsDataURL(file);
-			if(view.dom[i].dataURL != undefined) view.dom[`${i}_croppedImage`].src = view.dom[i].dataURL;
+			if(view.dom[i].dataURL != undefined){
+				view.dom[`${i}_croppedImage`].src = view.dom[i].dataURL;
+			}
 			view.dom[`${i}_originalButton`].onclick();
 		}
 		if(view.dom[`${i}_delete`]){
@@ -771,6 +868,7 @@ AbstractInputUtil.prototype.getQuillConfig = async function(inputConfig){
 	if (inputConfig.config != undefined) {
 		if (inputConfig.config.hasImage == true) additional.push('image');
 		if (inputConfig.config.hasVideo == true) additional.push('video');
+		if (inputConfig.config.hasLink == true) additional.push('link');
 		for(let i in inputConfig.config.handlers){
 			let name = inputConfig.config.handlers[i].name;
 			let url = inputConfig.config.handlers[i].url;
@@ -792,7 +890,7 @@ AbstractInputUtil.prototype.getQuillConfig = async function(inputConfig){
 	}
 	if (additional.length > 0) config.modules.toolbar.container.push(additional);
 	if (Object.keys(handlers).length > 0) config.modules.toolbar.handlers = handlers;
-
+	
 	async function imageHandler(){
 		let quillItem = this;
 		let url = this.handlers.image.url;
@@ -808,7 +906,6 @@ AbstractInputUtil.prototype.getQuillConfig = async function(inputConfig){
 			quillItem.quill.insertEmbed(range.index, 'image', `share/${response.result}`, Quill.sources.USER);
 		}
 	}
-
 	return config;
 }
 
@@ -867,19 +964,34 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 }
 
 AbstractInputUtil.prototype.getRenderedTemplate = function(value, template) {
-	let result;
+	if (value == undefined) return;
 	if (value.__avatar__) {
 		let preRendered = Mustache.render(template, value);
-		let data = {
-			data: value,
-			value: preRendered,
-			rootURL: rootURL
+		let avatar = value.__avatar__;
+		if(typeof value.__avatar__ == 'object'){
+			avatar = value[value.__avatar__.column];
 		}
-		data.data.avatarSrc = `${value.__avatar__.url}${value[value.__avatar__.column]}`
-		let avatarTemplate = `<div class="flex gap-10px"><div class="autocomplete_avatar"><img src="{{rootURL}}{{{data.avatarSrc}}}" /></div><div class="flex center">{{{value}}}</div></div>`
-		result = Mustache.render(avatarTemplate, data);
+		let image = new Image();
+		let isDefault = false;
+		image.src = rootURL+avatar;
+		if(avatar == null){
+			isDefault = true;
+			image.src = rootURL+value.__avatar__.default;
+		}
+		let avatarTemplate = `<div class="flex gap-10px">
+			<div class="autocomplete_avatar" rel="avatarContainer"></div>
+			<div class="flex center">{{{preRendered}}}</div>
+		</div>`;
+		let rendered = new InputDOMObject(avatarTemplate, {preRendered});
+		rendered.dom.avatarContainer.appendChild(image);
+		image.onerror = function(){
+			if(!isDefault){
+				image.src = rootURL+value.__avatar__.default;
+			}
+			isDefault = true;
+		}
+		return rendered;
 	} else {
-		result = Mustache.render(template, value);
+		return Mustache.render(template, value);
 	}
-	return result;
 }

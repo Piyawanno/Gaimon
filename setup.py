@@ -76,7 +76,6 @@ class GaimonSetup :
 		]
 
 		self.extensionScript = [
-			'gaimonerp/stock/script/gaimon-stockcount'
 		]
 
 		self.copyCommand = 'cp'

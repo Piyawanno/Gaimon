@@ -2,13 +2,14 @@ from enum import IntEnum
 
 
 class Day(IntEnum):
-	SUNDAY = 1
-	MONDAY = 2
-	TUESDAY = 3
-	WEDNESDAY = 4
-	THURSDAY = 5
-	FRIDAY = 6
-	SATURDAY = 7
+	
+	MONDAY = 0
+	TUESDAY = 1
+	WEDNESDAY = 2
+	THURSDAY = 3
+	FRIDAY = 4
+	SATURDAY = 5
+	SUNDAY = 6
 
 Day.label = {
 	Day.SUNDAY.value : "Sunday",

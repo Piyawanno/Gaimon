@@ -404,6 +404,10 @@
     box-shadow: var(--box-shadow);
 }
 
+.common_statistic.dashboard .chart_container.smallest {
+    width: calc(100% / 5 - 8px);
+}
+
 .common_statistic.dashboard .chart_container.small {
     width: calc(25% - 15px);
 }

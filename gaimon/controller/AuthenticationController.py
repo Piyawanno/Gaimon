@@ -3,8 +3,11 @@ from gaimon.core.EmailSender import EmailSender
 from gaimon.core.Route import GET, POST
 from gaimon.model.User import User
 from gaimon.model.PasswordRenew import PasswordRenew
-from gaimon.core.RESTResponse import RESTResponse 
-from sanic import response
+from gaimon.core.RESTResponse import (
+	RESTResponse,
+	SuccessRESTResponse as Success,
+)
+from sanic import response, Request
 from aioredis import Redis
 from datetime import datetime
 from typing import List
@@ -71,7 +74,7 @@ class AuthenticationController:
 			if len(userList) == 0: return RESTResponse({'isSuccess': False})
 			results = userList[0].toTransportDict()
 			results['role'] = session['role']
-			permissions = await self.authen.processRole(self.session, userList[0])
+			permissions = await self.authen.processRole(self.session, userList[0], self.entity)
 			results['permissions'] = permissions
 			return RESTResponse({
 				'isSuccess': True,
@@ -86,12 +89,12 @@ class AuthenticationController:
 		username = request.json['username']
 		userList = await self.session.select(
 			User,
-			"WHERE username=? ORDER BY id DESC",
-			parameter=[username],
+			"WHERE lower(username)=lower(?) OR lower(username)=lower(?) ORDER BY id DESC",
+			parameter=[username, username],
 			limit=1
 		)
 		if len(userList):
-			if userList[0].username == username:
+			if userList[0].username.lower() == username.lower() or userList[0].email.lower() == username.lower():
 				return RESTResponse({"isSuccess": True, "salt": userList[0].salt})
 			else:
 				return RESTResponse({
@@ -224,7 +227,7 @@ class AuthenticationController:
 		user.passwordHash = request.json['passwordHash']
 		await self.session.update(user)
 		result['isSuccess'] = True
-		result['token'] = await self.authen.saveSession(self.session, {'id': user.id})
+		result['token'] = await self.authen.saveSession(self.session, {'id': user.id}, self.entity)
 		await self.setUserSession(request, user)
 		reference.isActivated = 1
 		await self.session.update(reference)
@@ -249,6 +252,7 @@ class AuthenticationController:
 		# TODO : Tobacco URL
 		# url = f"{self.application.rootURL}tobacco/user/reset/password/{key}"
 		url = f"{self.application.rootURL}authentication/user/reset/password/{key}"
+		print('-------', url)
 		conn: Redis = self.application.redis
 		await conn.hset(self.RESET_PASSWORD_KEY, key, user.id)
 		self.sendResetPasswordEmail(user.email, url)
@@ -270,6 +274,8 @@ class AuthenticationController:
 		user: User = await self.session.selectByID(User, userID)
 		if user is None :
 			return RESTResponse({"isSuccess": False, "message": "User is not exist."})
+		if user.salt is None:
+			user.salt = User.getSalt().hex()
 		salt = bytes.fromhex(user.salt)
 		user.passwordHash = User.hashPassword(request.json['password'].encode(), salt)
 		await self.session.update(user)
@@ -280,20 +286,30 @@ class AuthenticationController:
 	async def checkPermission(self, request):
 		return response.json({"isSuccess": True, 'result': True})
 
+
+	@GET("/authentication/get/role", role=['guest'])
+	async def getRole(sel, request: Request):
+		if 'role' in request.ctx.session: role = list(request.ctx.session['role'])
+		else: role = []
+		return Success(role)
+
 	@POST("/authentication/login/checkPermission", role=['guest'])
 	async def checkLogInPermission(self, request):
 		data = request.json
 		username = data['username']
-		clause = "WHERE username=? ORDER BY id DESC"
-		parameter = [username]
-		userList = await self.session.select(User, clause, parameter=parameter, limit=1)
+		# clause = "WHERE username=? ORDER BY id DESC"
+		userList = await self.session.select(
+			User,
+			"WHERE lower(username)=lower(?) OR lower(username)=lower(?) ORDER BY id DESC",
+			parameter=[username, username],
+			limit=1
+		)
 		if len(userList):
 			user = userList[0]
-			if user.username == username:
+			if userList[0].username.lower() == username.lower() or userList[0].email.lower() == username.lower():
 				if (user.salt is None
 					or len(user.salt) == 0) and "migration" in self.application.config[
-						"authentication"] and self.application.config["authentication"][
-							"migration"]:
+						"authentication"] and self.application.config["authentication"]["migration"]:
 					if self.application.config["authentication"]["migration"] == "wordpress":
 						return await self.checkPHPPermission(request, user)
 				return await self.checkGaimonPermission(request, user)
@@ -309,7 +325,6 @@ class AuthenticationController:
 		encodedTime = bytes.fromhex(data['encodedTime'])
 		hashTime, = struct.unpack('<d', encodedTime)
 		now = time.time()
-		print('------------>', now, hashTime, now - hashTime, __SALT_TIME_LIMIT__)
 		if (now - hashTime) > __SALT_TIME_LIMIT__:
 			return RESTResponse({
 				"isSuccess": False,
@@ -317,7 +332,7 @@ class AuthenticationController:
 			})
 		elif user.checkPassword(hashed, salt, encodedTime):
 			if not user.isActive: return RESTResponse({"isSuccess": False, 'isActive': False, 'id': user.id, "message": "User has not activated."})
-			token = await self.authen.saveSession(self.session, {'id': user.id})
+			token = await self.authen.saveSession(self.session, {'id': user.id}, self.entity)
 			await self.setUserSession(request, user)
 			return RESTResponse({"isSuccess": True, 'token': token})
 		else:
@@ -333,7 +348,7 @@ class AuthenticationController:
 			user.salt = salt.hex()
 			user.passwordHash = User.hashPassword(hashed.encode(), salt)
 			await self.session.update(user)
-			token = await self.authen.saveSession(self.session, {'id': user.id})
+			token = await self.authen.saveSession(self.session, {'id': user.id}, self.entity)
 			await self.setUserSession(request, user)
 			return RESTResponse({"isSuccess": True, 'token': token})
 		else:
@@ -394,7 +409,7 @@ class AuthenticationController:
 		request.ctx.session['uid'] = user.id
 		if user.gid is None: request.ctx.session['gid'] = -1
 		else: request.ctx.session['gid'] = user.gid
-		role = await self.authen.processRole(self.session, user)
+		role = await self.authen.processRole(self.session, user, self.entity)
 		request.ctx.session['role'] = list(role)
 
 	async def renderResetPasswordPage(self, hash, userID):	

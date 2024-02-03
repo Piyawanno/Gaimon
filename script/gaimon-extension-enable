@@ -1,0 +1,27 @@
+#!/usr/bin/python3
+
+import json, argparse, sys, os
+
+__parser__ = argparse.ArgumentParser(description="Gaimon Monitor server.")
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimon application.")
+__parser__.add_argument("extension", help="Name of extension")
+
+__option__ = __parser__.parse_args(sys.argv[1:])
+
+print(__option__)
+
+if __option__.namespace is not None :
+	__path__ = f'/etc/gaimon/namespace/{__option__.namepace}/Extension.json'
+else :
+	__path__ = f'/etc/gaimon/Extension.json'
+
+if os.path.isfile(__path__) :
+	with open(__path__) as fd :
+		extension = json.load(fd)
+else :
+	extension = []
+
+extension.append(__option__.extension)
+extension = list(set(extension))
+with open(__path__, 'wt') as fd :
+	json.dump(extension, fd, indent=4)

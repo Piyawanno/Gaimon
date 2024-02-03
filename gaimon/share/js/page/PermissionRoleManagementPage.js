@@ -49,7 +49,8 @@ const PermissionRoleManagementPage = function(main, parent) {
 	this.renderRoleForm = async function(modelName, config = {}, viewType = 'Form') {
 		config.title = 'Add Permission Role';
 		if (config.data) config.title = 'Edit Permission Role';
-		let form = await AbstractPage.prototype.renderView.call(this, modelName, config, viewType);
+		let disableEdit = ()=>{return false};
+		let form = await AbstractPage.prototype.renderView.call(this, modelName, config, viewType, disableEdit);
 		form.dom.form.tables = [];
 		let permissions = undefined;
 		if (config == undefined) config = {};
@@ -123,7 +124,7 @@ const PermissionRoleManagementPage = function(main, parent) {
 	}
 
 	this.renderPermissionForm = async function(config){
-		let table = new DOMObject(TEMPLATE.PermissionTable);
+		let table = new InputDOMObject(TEMPLATE.PermissionTable);
 		table = await object.getPermissionModule(table, config);
 		return table;
 	}
@@ -131,7 +132,7 @@ const PermissionRoleManagementPage = function(main, parent) {
 	this.getPermissionModule = async function(table, config = {}){
 		table.records = {};
 		table.module = {};
-		let module = (await main.protocol.user.getPermissionModule()).results;
+		let module = (await main.protocol.user.getPermissionModule()).result;
 		for(let i in module){
 			if(module[i].length == 0) continue;
 			let permission = [];
@@ -139,7 +140,7 @@ const PermissionRoleManagementPage = function(main, parent) {
 			content += await object.getModuleRecord(i);
 			content += await object.getPermissionChecker();
 			content += `</tr>`;
-			let record = new DOMObject(content);
+			let record = new InputDOMObject(content);
 			if (config.isView) record.disable();
 			table.dom.tbody.append(record);
 			table.module[i] = record;
@@ -148,7 +149,7 @@ const PermissionRoleManagementPage = function(main, parent) {
 				content += await object.getSubModuleRecord(i, module[i][j]);
 				content += await object.getPermissionChecker();
 				content += `</tr>`;
-				let record = new DOMObject(content);
+				let record = new InputDOMObject(content);
 				table.dom.tbody.append(record);
 				if(table.records[i] == undefined) table.records[i] = [];
 				table.records[i].push(record);
@@ -260,6 +261,7 @@ const PermissionRoleManagementPage = function(main, parent) {
 	this.submit = async function(form) {
 		let result = await AbstractPage.prototype.submit.call(this, form);
 		if (result.isPass) {
+			console.log(result.data);
 			await object.submitUserGroup(form, result.data);
 		}
 	}

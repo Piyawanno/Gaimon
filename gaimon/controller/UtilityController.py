@@ -1,28 +1,27 @@
-from gaimon.model.DynamicForm import DynamicForm
 from gaimon.model.Day import Day
 from gaimon.model.Month import Month
 from gaimon.core.HTMLPage import COMPRESSOR
 from gaimon.core.StaticCompressor import StaticCompressor, StaticType
 from gaimon.core.Route import GET, POST
-from gaimon.core.RESTResponse import RESTResponse, SuccessRESTResponse as Success
-from xerial.ColumnType import ColumnType
-from xerial.input.InputType import InputType
-from xerial.Record import Record
-from xerial.DateColumn import DATE_FORMAT
-from xerial.DateTimeColumn import DATETIME_FORMAT
-from packaging.version import Version
-from typing import Dict, List
+from gaimon.core.RESTResponse import (
+	RESTResponse,
+	SuccessRESTResponse as Success,
+	ErrorRESTResponse as Error,
+)
+from gaimon.util.InputProcessor import InputProcessor
+from gaimon.util.ExcelTemplateGenerator import ExcelTemplateGenerator
+from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from sanic import response, Request
-from datetime import datetime, date
 
-import os, json, markdown, importlib, mimetypes, pystache, copy
+import os, json, markdown, importlib, mimetypes, logging, io
 
-
-class UtilityController:
+class UtilityController (InputProcessor) :
 	def __init__(self, application):
 		from gaimon.core.AsyncApplication import AsyncApplication
+		from gaimon.core.ThemeHandler import ThemeHandler
 		self.application: AsyncApplication = application
 		self.extension = self.application.getExtensionInfo()
+		self.session: AsyncDBSessionBase = None
 		self.entity: str = None
 		self.resourcePath = self.application.resourcePath
 		self.mustache = {}
@@ -32,13 +31,29 @@ class UtilityController:
 		self.extensionLocale = {}
 		self.document = {}
 		self.picture = {}
-		with open("%s/country.json" % (self.resourcePath), encoding="utf-8") as fd:
-			self.countries = json.loads(fd.read())
-		with open("%s/language.json" % (self.resourcePath), encoding="utf-8") as fd:
-			self.language = json.loads(fd.read())
-		with open("%s/country-by-currency-code.json" % (self.resourcePath), encoding="utf-8") as fd:
-			self.currency = json.loads(fd.read())
+		self.theme: ThemeHandler = None
+		self.readCountryData()
+		
 	
+	def readCountryData(self) :
+		import gaimon
+		path = None
+		for i in gaimon.__path__ :
+			if os.path.isdir(i) :
+				path = i
+				break
+		
+		if path is None :
+			logging.warning('*** No directory for module gaimon.')
+
+		dataPath = f'{path}/data'
+		with open("%s/country.json" % (dataPath), encoding="utf-8") as fd:
+			self.countries = json.loads(fd.read())
+		with open("%s/language.json" % (dataPath), encoding="utf-8") as fd:
+			self.language = json.loads(fd.read())
+		with open("%s/country-by-currency-code.json" % (dataPath), encoding="utf-8") as fd:
+			self.currency = json.loads(fd.read())
+
 	@POST("/log/register", role=['guest'], isLogData=True)
 	async def recordLog(self, request) :
 		return Success()
@@ -55,85 +70,32 @@ class UtilityController:
 	async def getAllCurrency(self, request):
 		return RESTResponse({'isSuccess': True, 'result': self.currency})
 
-	@GET("/tab/extension", role=['guest'])
+	@GET("/tab/extension", role=['guest'], hasDBSession=False)
 	async def getJSPageTabExtension(self, request):
 		return Success(self.application.pageTabExtension)
+	
+	@GET("/excel/template/<model>", role=['user'])
+	async def getExcelTemplate(self, request: Request, model: str):
+		modelClass = self.session.model.get(model, None)
+		if modelClass is None: return Error(f'Model {model} cannot be found.')
+		generator = ExcelTemplateGenerator(modelClass)
+		buffer: io.BytesIO = await generator.generate(self.session)
+		buffer.seek(0)
+		return response.raw(buffer.read(), content_type='application/vnd.ms-excel')
 	
 	@GET("/input/<model>", role=['guest'])
 	async def getModelInput(self, request, model: str):
 		modelClass = self.session.model.get(model, None)
 		if modelClass is None:
-			modelClass = await self.application.dynamicHandler.getModel(model)
+			modelClass = await self.application.dynamicHandler.getModel(model, self.session, self.entity)
 			if modelClass is None:
 				return RESTResponse({
 					'isSuccess': False,
 					'message': f'Model {model} cannot be found.'
 				})
-		formList: List[DynamicForm] = await self.session.select(
-			DynamicForm,
-			"WHERE modelName=? and formType = 0",
-			parameter=[model],
-			limit=1
-		)
-		
-		if not (hasattr(modelClass,'inputDict') and hasattr(modelClass,'input')) :
-			Record.extractInput(modelClass, [])
-		input = modelClass.inputDict
-		mergedInput = modelClass.input
-		if hasattr(modelClass,'__has_callable_default__' ) and modelClass.__has_callable_default__ :
-			input = self.processDefault(modelClass)
-			mergedInput = self.processMergedDefault(modelClass)
-		
-		result = {
-			'isSuccess': True,
-			'inputGroup': getattr(modelClass, 'inputGroup', None),
-			'inputPerLine': getattr(modelClass, 'inputPerLine', None),
-			'children': [i.toMetaDict() for i in modelClass.children],
-			'input': input,
-			'avatar': getattr(modelClass, '__avatar__', 'share/icon/logo_padding.png'),
-			'isDefaultAvatar': getattr(modelClass, '__avatar__', None) is None,
-			'mergedInput': mergedInput,
-			'attachedGroup': modelClass.attachedGroup,
-		}
-
-		if len(formList) == 0: return RESTResponse(result)
-		form = formList[0].toDict()
-		self.processInput(form['inputList'], form['groupList'], result)
+		result = await self.process(self.session, modelClass, model)
 		return RESTResponse(result, ensure_ascii=False)
-
-	def processDefault(self, modelClass) :
-		input = []
-		for i in modelClass.inputDict :
-			copied:dict = copy.copy(i)
-			default = copied.get('default', None)
-			default = default() if callable(default) else default
-			if hasattr(default, 'toDict') : default = default.toDict()
-			elif isinstance(default, date) : default = default.strftime(DATE_FORMAT)
-			elif isinstance(default, datetime) : default = default.strftime(DATETIME_FORMAT)
-			copied['default'] = default
-			input.append(copied)
-		return input
 	
-	def processMergedDefault(self, modelClass) :
-		mergedInput = []
-		for i in modelClass.input :
-			copied:dict = copy.copy(i)
-			default = copied.get('default', None)
-			default = default() if callable(default) else default
-			if hasattr(default, 'toDict') : default = default.toDict()
-			copied['default'] = default
-			mergedInput.append(copied)
-			sub = copied.get('input', None)
-			if sub is None : continue
-			for j in sub :
-				default = j.get('default', None)
-				default = default() if callable(default) else default
-				if hasattr(default, 'toDict') : default = default.toDict()
-				elif isinstance(default, date) : default = default.strftime(DATE_FORMAT)
-				elif isinstance(default, datetime) : default = default.strftime(DATETIME_FORMAT)
-				j['default'] = default
-		return mergedInput
-
 	@GET("/compress/css/<pageID>/<sequence>", role=["guest"], hasDBSession=False)
 	async def getCSSCompress(self, request, pageID, sequence):
 		sequence = int(sequence)
@@ -189,72 +151,14 @@ class UtilityController:
 		else:
 			return response.text('Compressed CSS not found', status=404)
 
-	def processInput(self, inputList, groupList, result={}):
-		mergedInput = []
-		groupMapper = {}
-		groupParsedOrder = []
-		for index, item in enumerate(groupList):
-			parsedOrder = {
-				'id': index + 1,
-				'label': item['label'],
-				'order': str(item['order']),
-				'isGroup': True,
-				'input': []
-			}
-			groupMapper[parsedOrder['label']] = parsedOrder
-			parsedOrder['parsedOrder'] = Version(parsedOrder['order'])
-			groupParsedOrder.append(parsedOrder)
-			mergedInput.append(parsedOrder)
-		groupParsedOrder.sort(key=lambda x: x['parsedOrder'])
-		groupParsedOrder = [{
-			'id': i['id'],
-			'label': i['label'],
-			'order': i['order']
-		} for i in groupParsedOrder]
-		result['inputGroup'] = groupParsedOrder
-
-		inputs = []
-		for item in inputList:
-			config: Dict = item['input'].copy()
-			del config['type']
-			del config['order']
-			del config['inputPerLine']
-			if 'typeName' in config: del config['typeName']
-			input: Dict = InputType.mapped[item['input']['type']](**config).toDict()
-
-			input['parsedOrder'] = Version(str(item['input']['order']))
-			input['columnType'] = ColumnType.mapped[item['type']].__name__
-			input['columnName'] = item['name']
-			input['isGroup'] = False
-			input['inputPerLine'] = item['input']['inputPerLine']
-			inputs.append(input)
-			if 'group' in item['input'] and item['input']['group']['label'] in groupMapper:
-				input['group'] = groupMapper[item['input']['group']['label']]['id']
-				groupMapper[item['input']['group']['label']]['input'].append(input)
-			else:
-				mergedInput.append(input)
-		mergedInput.sort(key=lambda x: x['parsedOrder'])
-		inputs.sort(key=lambda x: x['parsedOrder'])
-		result['input'] = []
-		result['mergedInput'] = []
-		for item in mergedInput:
-			if item['isGroup'] and len(item['input']):
-				item['input'].sort(key=lambda x: x['parsedOrder'])
-				for input in item['input']:
-					del input['parsedOrder']
-			if 'parsedOrder' in item: del item['parsedOrder']
-			result['mergedInput'].append(item)
-		result['input'] = inputs
-		return result
-
 	@GET("/locale/<language>/<oldLanguage>", role=['guest'], hasDBSession=False)
 	async def getLocale(self, request: Request, language, oldLanguage):
 		path = f'{importlib.import_module("gaimon").__path__[-1]}/locale/'
 		uid = request.ctx.session['uid']
-		data = await self.readLocale(language, path, uid)
+		data = await self.readLocale(request, language, path, uid)
 		return RESTResponse({'isSuccess': True, 'results': data}, ensure_ascii=False)
 
-	async def readLocale(self, language: str, path: str, uid: int):
+	async def readLocale(self, request: Request, language: str, path: str, uid: int):
 		if language in self.locale: return self.locale[language]
 		for root, directories, files in os.walk(path):
 			for i in files:
@@ -262,15 +166,15 @@ class UtilityController:
 					content = fd.read()
 					if not i.split('.')[0].split('-')[1] in self.locale: self.locale[i.split('.')[0].split('-')[1]] = {}
 					self.locale[i.split('.')[0].split('-')[1]] = json.loads(content)
-		await self.readAllExtensionLocale(language, uid)
+		await self.readAllExtensionLocale(request, language, uid)
 		if language in self.locale:
 			return self.locale[language]
 		else:
 			return {}
 
-	async def readAllExtensionLocale(self, language: str, uid: int):
+	async def readAllExtensionLocale(self, request: Request, language: str, uid: int):
 		locale = {}
-		extensionList = await self.extension.getExtension(self.entity)
+		extensionList = await self.extension.getExtension(request)
 		for key in extensionList :
 			locale.update(await self.readExtensionLocale(language, key))
 		return locale
@@ -321,6 +225,7 @@ class UtilityController:
 
 	@GET("/mustache/get/<branch>", role=['guest'], hasDBSession=False)
 	async def getMustache(self, request, branch):
+		print(list(self.theme.clientTemplate.keys()))
 		template = self.theme.clientTemplate.get(branch, None)
 		if template is not None:
 			return RESTResponse({'isSuccess': True, 'results': template}, ensure_ascii=False)
@@ -409,7 +314,7 @@ class UtilityController:
 		splitted = documentPath.split(".")
 		module = '.'.join(splitted[:-1])
 		uid = request.ctx.session['uid']
-		tree = await self.extension.getTree(self.entity)
+		tree = await self.extension.getExtensionTree(request)
 		if not tree.isImported(module) :
 			return response.text("Invalid document path", 501)
 		path = importlib.import_module(module).__path__[-1]
@@ -433,7 +338,7 @@ class UtilityController:
 		fileType = mimetypes.guess_type(picturePath)
 		if raw is not None : return response.raw(raw, content_type=fileType)
 		uid = request.ctx.session['uid']
-		tree = await self.extension.getTree(self.entity)
+		tree = await self.extension.getExtensionTree(request)
 		if not tree.isImported(module) :
 			return response.text("Invalid document path", 501)
 		path = importlib.import_module(module).__path__[-1]

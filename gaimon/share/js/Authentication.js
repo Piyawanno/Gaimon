@@ -8,6 +8,7 @@ const Authentication = function() {
 
 	object.isLoggedIn = false;
 	object.renderFunction = undefined;
+	object.role = null;
 
 	this.checkLogin = async function(isMobileApp, title) {
 		try {
@@ -222,13 +223,22 @@ const Authentication = function() {
 	};
 
 	this.hashSaltedPassword = function(saltedPassword, salt, encodedTime) {
-		const concated = new Uint8Array(salt.length + encodedTime.length);
+		const concat = new Uint8Array(salt.length + encodedTime.length);
 		for(let i=0; i<salt.length; i++) {
-			concated[i] = salt[i];
+			concat[i] = salt[i];
 		}
 		for(let i=0; i<encodedTime.length; i++) {
-			concated[salt.length+i] = encodedTime[i];
+			concat[salt.length+i] = encodedTime[i];
 		}
-		return Pbkdf2HmacSha512(saltedPassword, concated, AUTHEN_N, AUTHEN_L);
+		return Pbkdf2HmacSha512(saltedPassword, concat, AUTHEN_N, AUTHEN_L);
 	};
+
+	this.checkPermission = async function(role){
+		if(object.role == null){
+			object.role = await GET("authentication/get/role");
+		}
+		if(role == 'guest') return true;
+		if(object.role.includes('root')) return true;
+		if(object.role.includes(role)) return true;
+	}
 }

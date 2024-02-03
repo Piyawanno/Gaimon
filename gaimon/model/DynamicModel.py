@@ -1,10 +1,11 @@
-import json
 from xerial.Record import Record
 from xerial.IntegerColumn import IntegerColumn
 from xerial.StringColumn import StringColumn
 from xerial.JSONColumn import JSONColumn
-
 from xerial.input.TextInput import TextInput
+from gaimon.util.HashFunction import SMHash
+
+import json
 
 class DynamicModel(Record):
 	modelName = StringColumn()
@@ -21,8 +22,9 @@ class DynamicModel(Record):
 
 	hashed = IntegerColumn(length=64)
 
-	def fromJson(self, name: str, config: dict):
+	def fromJSON(self, name: str, config: dict):
 		self.modelName = name
 		self.label = config['label']
 		self.attributeList = json.dumps(config['attributeList'])
 		self.parentName = config['parentName']
+		self.hashed = SMHash(name)

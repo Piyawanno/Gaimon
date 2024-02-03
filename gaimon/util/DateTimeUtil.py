@@ -36,3 +36,11 @@ def monthIDToDateTime(monthID: int) -> datetime:
 		year = year - 1
 		month = 12
 	return datetime(year=year, month=month, day=1)
+
+def monthIDToDateID(monthID: int) -> int:
+	year = int(monthID / 12) + 1970
+	month = monthID % 12
+	if month == 0: 
+		year = year - 1
+		month = 12
+	return dateTimeToDateID(datetime(year=year, month=month, day=1))

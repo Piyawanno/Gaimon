@@ -14,7 +14,7 @@ from xerial.input.ImageInput import ImageInput
 
 from enum import IntEnum
 
-import hashlib, secrets
+import hashlib, secrets, os
 
 HASH_ITERATION = 1_000
 HASH_LENGTH = 64
@@ -22,17 +22,26 @@ SALT_LENGTH = 64
 
 class UserInputGroup(IntEnum):
 	GENERIC = 10
+	PERSONNEL = 20
 
 UserInputGroup.label = {
 	UserInputGroup.GENERIC: 'Generic Data',
+	UserInputGroup.PERSONNEL: 'Personnel Data'
 }
 
 UserInputGroup.order = {
 	UserInputGroup.GENERIC: '1.0',
+	UserInputGroup.PERSONNEL: '2.0'
 }
 
+
+__DEFAULT_AVATAR__ = 'share/icon/logo_padding.png'
 class User(Record):
-	__avatar__ = {'column': 'id','url': 'user/avatar/image/'}
+	__avatar__ = {
+		'column': 'avatar',
+		'url': 'share/',
+		'default': __DEFAULT_AVATAR__,
+	}
 	__table_name__ = "GaimonUser"
 	__group_label__ = UserInputGroup
 
@@ -47,7 +56,9 @@ class User(Record):
 			group=UserInputGroup.GENERIC,
 			isTable=True,
 			isSearch=True,
-			isRequired=True
+			isRequired=True,
+			isLink=True,
+			linkColumn='id',
 		)
 	)
 	displayName = StringColumn(
@@ -57,9 +68,11 @@ class User(Record):
 			label="Display Name",
 			order="5",
 			group=UserInputGroup.GENERIC,
-			isTable=False,
+			isTable=True,
 			isSearch=True,
-			isRequired=True
+			isRequired=True,
+			isLink=True,
+			linkColumn='id',
 		)
 	)
 	gid = IntegerColumn(
@@ -84,6 +97,7 @@ class User(Record):
 	)
 	firstName = StringColumn(
 		length=255,
+		default='',
 		input=TextInput(
 			label="Name",
 			order="3",
@@ -95,6 +109,7 @@ class User(Record):
 	)
 	lastName = StringColumn(
 		length=255,
+		default='',
 		input=TextInput(
 			label="Surname",
 			order="4",
@@ -121,11 +136,12 @@ class User(Record):
 		input=ImageInput(
 			label="Avatar",
 			order="8",
-			url='user/avatar/image/',
+			url='user/avatar/',
 			group=UserInputGroup.GENERIC,
 			isTable=False,
 			isSearch=False,
-			isRequired=False
+			isRequired=False,
+			isShare=True,
 		)
 	)
 
@@ -160,7 +176,17 @@ class User(Record):
 		if self.firstName is None: firstName = ""
 		lastName = self.lastName
 		if self.lastName is None: lastName = ""
-		return {"value": self.id, "label": (firstName + " " + lastName).strip()}
+		self.checkAvatar()
+		return {
+			"value": self.id,
+			"label": (firstName + " " + lastName).strip(),
+			'avatar': self.avatar,
+		}
+	
+	def checkAvatar(self) :
+		isAvatar = self.avatar is not None and len(self.avatar) > 4
+		self.avatar = f'share/{self.avatar}' if isAvatar else __DEFAULT_AVATAR__
+		return self
 	
 	def getFullName(self):
 		firstName = self.firstName
@@ -185,22 +211,22 @@ class User(Record):
 		return user
 
 	def checkPassword(self, hashed, salt, encodedTime):
-		concated = b''.join([salt, encodedTime])
+		joined = b''.join([salt, encodedTime])
 		return hashed == hashlib.pbkdf2_hmac(
 			'SHA512',
 			bytes.fromhex(self.passwordHash),
-			concated,
+			joined,
 			HASH_ITERATION,
 			HASH_LENGTH
 		)
 
 	@staticmethod
 	def hashSaltedPassword(saltedPassword, salt, encodedTime):
-		concated = b''.join([salt, encodedTime])
+		joined = b''.join([salt, encodedTime])
 		return hashlib.pbkdf2_hmac(
 			'SHA512',
 			saltedPassword,
-			concated,
+			joined,
 			HASH_ITERATION,
 			HASH_LENGTH
 		)
@@ -217,4 +243,3 @@ class User(Record):
 	@staticmethod
 	def getSalt():
 		return secrets.token_bytes(SALT_LENGTH)
-

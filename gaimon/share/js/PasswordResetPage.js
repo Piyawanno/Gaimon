@@ -9,7 +9,7 @@ const ResetPasswordPage = function() {
 		if (title == undefined) title = `${FULL_TITLE} - Renew Password`;
 		object.body = document.querySelector('body');
 		object.body.innerHTML = '';
-		object.home = new DOMObject(TEMPLATE.PasswordReset, {
+		object.home = new InputDOMObject(TEMPLATE.PasswordReset, {
 			'title': FULL_TITLE,
 			'user' : user,
 		});
@@ -61,7 +61,7 @@ const ResetPasswordPage = function() {
 			await POST('authentication/reset/password', data);
 			SHOW_FINISHED_DIALOG('เปลี่ยนรหัสผ่านเสร็จสิ้น', function(){
 				window.location.replace(`${window.origin}`);
-			});			
+			});
 		}
 	}
 }

@@ -57,17 +57,26 @@ const CommonDashboard = function(main, parent) {
 		let table = await object.parent.getTableView(config.modelName, data, 'Table');
 		view.dom.log.append(table.component);
 		view.dom.log.append(table.pagination);
+		view.table = table.component;
 		table.component.pageNumber = 1;
 		table.component.limit = view.dom.limit;
+		table.component.count = log.count;
 		table.component.getPageNumber = function() {
 			return parseInt(table.component.pageNumber);
 		}
 		table.component.setPageNumber = function(pageNumber) {
+			console.log(pageNumber);
 			table.component.pageNumber = pageNumber;
 		}
 		table.component.limit.onchange = async function() {
 			await table.component.renderFunction();
 		}
+
+		table.component.getCount = function() {
+			return table.component.count;
+		}
+
+
 		table.component.getFilerData = async function() {
 			let filter = {
 				limit: parseInt(table.component.limit.value), 
@@ -76,13 +85,18 @@ const CommonDashboard = function(main, parent) {
 			let filterData = await object.getCommonFilterData();
 			Object.keys(filterData.date).map(x => { filter[x] =  filterData.date[x] });
 			Object.keys(innerFilter).map(x => { filter[x] =  innerFilter[x] });
+			if (config.additional) {
+				Object.keys(config.additional).map(x => { filter[x] =  config.additional[x] });
+			}
 			return filter
 		}
 
 		table.component.renderFunction = async function(limit = 10) {
 			let filter = await table.component.getFilerData();
 			let log = await fetchProtocol(filter);
+			table.component.count = log.count;
 			table.pagination.dom.pageNumber.placeholder = `${await table.component.getPageNumber()}/${log.count}`;
+			table.pagination.data.count = log.count;
 			await table.component.clearRecord();
 			await table.component.createMultipleRecord(log.data);
 		}
@@ -91,12 +105,14 @@ const CommonDashboard = function(main, parent) {
 		view.renderFunction = table.component.renderFunction;
 
 		if (config.modelName == undefined && config.inputs == undefined) view.dom.search.hide();
+		if (config.hasFilter == undefined) config.hasFilter = true
+		if (!config.hasFilter) view.dom.search.hide();
 
 		view.dom.search.onclick = async function() {
 			let searchConfig = {};
 			if (config.search) searchConfig = config.search;
 			let searhForm = await object.parent.getView(config.modelName == undefined ? '': config.modelName, searchConfig, 'SearchForm');
-			let inner = new DOMObject(`<div class="abstract_form_input">${searhForm.dom.form.innerHTML}</div>`);
+			let inner = new InputDOMObject(`<div class="abstract_form_input">${searhForm.dom.form.innerHTML}</div>`);
 			let dialog = await object.parent.renderBlankView({title: 'Filter'}, 'Dialog');
 			dialog.dom.form.html(inner);
 			inner.setData(innerFilter);
@@ -158,6 +174,14 @@ const CommonDashboard = function(main, parent) {
 	this.appendPieChart = async function(config = {}, fetchProtocol) {
 		let chart = await object.renderPieChart(object.dashboard, config, fetchProtocol);
 		object.chartList.push(chart);
+		return chart;
+	}
+
+	this.appendSpaceBox = async function(config = {}, fetchProtocol) {
+		let template = await TEMPLATE.get('CommonSpaceBox');
+
+		let chart = new DOMObject(template, {});
+		object.dashboard.dom.container.append(chart);
 		return chart;
 	}
 
@@ -323,16 +347,17 @@ const CommonDashboard = function(main, parent) {
 	this.renderPieChart = async function(dashboard, config, fetchProtocol) {
 		let ID = config.data.id;
 		let view = new DOMObject(await TEMPLATE.get('CommonChart'), {title: config.title});
+		for (let item of config.classList) {
+			view.html.classList.add(item);
+		}
 		dashboard.dom.container.append(view);
 		async function render() {
 			let filter = await object.getCommonFilterData();
 			filter.id = ID;
+			if (config.additional) {
+				Object.keys(config.additional).map(x => { filter[x] =  config.additional[x] });
+			}
 			let statistic = await fetchProtocol(filter);
-			console.log(statistic);
-			statistic.datasets[0].data[1] = 110;
-			statistic.datasets[0].data[1] = 20;
-			statistic.datasets[0].data[2] = 60;
-			statistic.datasets[0].data[3] = 10;
 			let chartConfig = config.chart;
 			chartConfig.data = {};
 			chartConfig.data.labels = statistic.labels;
@@ -421,14 +446,38 @@ const CommonDashboard = function(main, parent) {
 			if (view.fetched == undefined) view.fetched = await view.fetchProtocol(await view.getFilter());
 			let formatter = new Intl.NumberFormat(LANGUAGE, {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, currency: view.fetched[config.key].originCurrency});
 			view.dom.value.innerHTML = formatter.format(view.fetched[config.key].originValue);
-			let currencyFormatter = new Intl.NumberFormat(LANGUAGE, {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, style: "currency", currency: view.fetched[config.key].originCurrency});
-			let result = currencyFormatter.formatToParts(view.fetched[config.key].originValue);
-			for (let item of result) {
-				if (item.type == "currency") {
-					view.dom.currency.innerHTML = item.value;
-					break;
+			let numberFormatConfig = {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, style: "currency", currency: view.fetched[config.key].originCurrency};
+			let currencyFormatter;
+			let result;
+			if (view.fetched[config.key].originCurrency == undefined) {
+				numberFormatConfig.style = undefined;
+				if (config.isInteger) {
+					result = view.fetched[config.key];
+				} else {
+					currencyFormatter = new Intl.NumberFormat(LANGUAGE, numberFormatConfig);
+					result = currencyFormatter.format(view.fetched[config.key]);
+				}
+				
+				view.dom.value.innerHTML = result;
+				if (config.unit != undefined) {
+					view.dom.currency.innerHTML = config.unit
+				} else if (config.unitKey && view.fetched[config.unitKey]) {
+					view.dom.currency.innerHTML = view.fetched[config.unitKey];
+				} else {
+					view.dom.currency.hide();
+				}
+				isCurrency = false;
+			} else {
+				currencyFormatter = new Intl.NumberFormat(LANGUAGE, numberFormatConfig);
+				result = currencyFormatter.formatToParts(view.fetched[config.key].originValue);
+				for (let item of result) {
+					if (item.type == "currency") {
+						view.dom.currency.innerHTML = item.value;
+						break;
+					}
 				}
 			}
+			
 			if (config.color) {
 				view.html.style.borderRight = `20px solid ${config.color}`;
 			}
@@ -480,16 +529,42 @@ const CommonDashboard = function(main, parent) {
 			if (view.fetched == undefined) view.fetched = await view.fetchProtocol(filter);
 			view.dom.value.innerHTML = formatter.format(view.fetched[config.key].originValue);
 
-			let currencyFormatter = new Intl.NumberFormat(LANGUAGE, {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, style: "currency", currency: view.fetched[config.key].originCurrency});
-			let result = currencyFormatter.formatToParts(view.fetched[config.key].originValue);
-			for (let item of result) {
-				if (item.type == "currency") {
-					view.dom.currency.innerHTML = item.value;
-					break;
+			let numberFormatConfig = {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, style: "currency", currency: view.fetched[config.key].originCurrency};
+			let currencyFormatter;
+			let result;
+			let isCurrency = true;
+			if (view.fetched[config.key].originCurrency == undefined) {
+				numberFormatConfig.style = undefined;
+				if (config.isInteger) {
+					result = view.fetched[config.key];
+				} else {
+					currencyFormatter = new Intl.NumberFormat(LANGUAGE, numberFormatConfig);
+					result = currencyFormatter.format(view.fetched[config.key]);
 				}
+				
+				view.dom.value.innerHTML = result;
+				view.dom.percent.innerHTML = formatter.format(view.fetched[config.percentKey]);
+				if (config.unit != undefined) {
+					view.dom.currency.innerHTML = config.unit
+				} else if (config.unitKey && view.fetched[config.unitKey]) {
+					view.dom.currency.innerHTML = view.fetched[config.unitKey];
+				} else {
+					view.dom.currency.hide();
+				}
+				isCurrency = false;
+			} else {
+				currencyFormatter = new Intl.NumberFormat(LANGUAGE, numberFormatConfig);
+				result = currencyFormatter.formatToParts(view.fetched[config.key].originValue);
+				for (let item of result) {
+					if (item.type == "currency") {
+						view.dom.currency.innerHTML = item.value;
+						break;
+					}
+				}
+				view.dom.percent.innerHTML = formatter.format(view.fetched[config.percentKey].originValue);
 			}
 
-			view.dom.percent.innerHTML = formatter.format(view.fetched[config.percentKey].originValue);
+			
 
 			let diff = filter.end - filter.start + 1;
 			let unit = '';
@@ -504,9 +579,20 @@ const CommonDashboard = function(main, parent) {
 			
 			view.dom.comparatorValue.innerHTML = diff;
 			view.dom.comparatorUnit.html(unit);
-			
-			let isNotChange = view.fetched[config.percentKey].originValue == 0;
-			let isIncrease = view.fetched[config.percentKey].originValue > 0 && !config.isInvert;
+			let isNotChange;
+			let isIncrease;
+			if (view.fetched[config.percentKey] == undefined) {
+				isNotChange = true;
+				isIncrease = false;
+			} else {
+				isNotChange = view.fetched[config.percentKey].originValue == 0;
+				isIncrease = view.fetched[config.percentKey].originValue > 0 && !config.isInvert;
+			}
+
+			if (!isCurrency) {
+				isNotChange = view.fetched[config.percentKey] == 0;
+				isIncrease = view.fetched[config.percentKey] > 0 && !config.isInvert;
+			}
 
 			if (isNotChange) {
 				view.dom.comparatorBox.classList.add('equal');

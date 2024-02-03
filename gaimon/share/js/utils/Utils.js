@@ -250,7 +250,8 @@ async function RENDER_STATE(event) {
 	}
 	let page = main.pageIDDict[state.PAGE];
 	if (page == undefined) return;
-	await RENDER_NAVIGATOR();
+	console.log(state);
+	await RENDER_NAVIGATOR(state);
 	if (state.isInit != undefined && state.isInit) {
 		let isSubMenu = false;
 		let menuDetail = main.menuDict[page.pageID];
@@ -347,7 +348,7 @@ async function PUSH_STATE(page, data, url) {
 		pathName = window.location.pathname + '?p='+url;
 	}
 	history.pushState(data, '', pathName);
-	await RENDER_NAVIGATOR();
+	await RENDER_NAVIGATOR(data);
 }
 
 async function PUSH_SIMPLE_STATE(data, url = '/'){
@@ -376,11 +377,11 @@ function GET_PARAMS_FROM_URL(){
 	return data;
 }
 
-async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = false) {
+async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd=false, addCallBack=undefined) {
 	if (isImage == undefined) isImage = false;
-	let iconDict = {}
-	if (!isImage) iconDict = await CREATE_SVG_ICON(icon)
-	else iconDict = await CREATE_IMAGE_ICON(icon)
+	let iconDict = {};
+	if (!isImage) iconDict = await CREATE_SVG_ICON(icon);
+	else iconDict = await CREATE_IMAGE_ICON(icon);
 	let menu = {'name': name, 'isSVG': iconDict.isSVG, 'icon': iconDict.icon, 'hasAdd': hasAdd, 'isMobile': isMobile()};
 	let tag;
 	if (isSubMenu == undefined) isSubMenu = false;
@@ -389,11 +390,8 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 	let url = await page.getPageStateURL();
 	menu.url = url;
 	menu.pageID = pageID;
-	if (isSubMenu) {
-		tag = new DOMObject(TEMPLATE.SubMenuItem, menu);
-	} else {
-		tag = new DOMObject(TEMPLATE.MenuItem, menu);
-	}
+	if (isSubMenu) tag = new DOMObject(TEMPLATE.SubMenuItem, menu);
+	else  tag = new DOMObject(TEMPLATE.MenuItem, menu);
 	
 	main.home.dom.container.onclick = function(){
 		main.home.dom.subMenuContainer.hide();
@@ -402,7 +400,6 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 		e.preventDefault();
 	}
 	if (!isSubMenu) {
-		
 		tag.dom.menu.addEventListener('click', async function(e) {
 			e.preventDefault();
 			if (tag.hasChild) {
@@ -436,6 +433,7 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 			await page.setPageState();
 			SHOW_LOADING_DIALOG(async function(){
 				await page.onPrepareState();
+				console.log(page.render);
 				await page.render();
 			});
 			main.home.dom.subMenuContainer.hide();
@@ -452,7 +450,8 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 					main.selectedSubMenu.push(tag.dom.menu);
 					SHOW_LOADING_DIALOG(async function(){
 						await page.onPrepareState();
-						await page.renderView(page.model);
+						if(addCallBack == undefined) await page.renderView(page.model);
+						else await addCallBack(page);
 					});
 					main.home.dom.subMenuContainer.hide();
 					await setMostUsed(page);
@@ -477,37 +476,105 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd = fals
 	return tag;
 }
 
-async function RENDER_NAVIGATOR(){
-	let event = history;
-	if (main.personalBar != undefined && event.state != undefined && event.state.PAGE_NAME != undefined) {
+async function RENDER_NAVIGATOR(config){
+	let state = history.state;
+	if (config != undefined) state = config;
+	if (main.personalBar != undefined && state != undefined && state.PAGE_NAME != undefined) {
 		let navigator = main.personalBar.home.dom.navigator;
 		navigator.html('');
-		let parent = main.pageIDDict[event.state.PAGE].parent;
+		let parent = main.pageIDDict[state.PAGE].parent;
 		if(parent.parentID == undefined && parent.menu != undefined){
-			console.log(parent);
-			navigator.html(new DOMObject(`<div class="" localize>${parent.menu.data.name}</div>`));
+			let name = parent.menu.data.name;
+			if(main.pageIDDict[state.PAGE].referencePage != undefined){
+				let referencePage = main.pageIDDict[state.PAGE].referencePage;
+				let page = main.pageIDDict[referencePage];
+				name = page.parent.menu.data.name;
+			}
+			navigator.html(new DOMObject(`<div class="" localize>${name}</div>`));
 			let icon = await CREATE_SVG_ICON('ChevronRight');
 			navigator.append(new DOMObject(icon.icon));
 		}
-		let button = new DOMObject(`<div class="item" localize>${event.state.PAGE_NAME}</div>`);
-		navigator.append(button);
-		button.html.onclick = async function(){
-			await main.pageIDDict[event.state.PAGE].render();
-			await main.pageIDDict[event.state.PAGE].setPageState();
-			// RENDER_STATE();
-			// main.pageIDDict[event.state.PAGE].render();
+		if(main.pageIDDict[state.PAGE].referencePage != undefined){
+			let referencePage = main.pageIDDict[state.PAGE].referencePage;
+			let page = main.pageIDDict[referencePage];
+			let button = new DOMObject(`<div class="item" localize>${page.title}</div>`);
+			navigator.append(button);
+			button.html.onclick = async function(){
+				await page.render(state);
+				if (state.state) await page.setPageState();
+				else page.setPageState(state);
+			}
+		}else{
+			let button = new DOMObject(`<div class="item" localize>${state.PAGE_NAME}</div>`);
+			navigator.append(button);
+			button.html.onclick = async function(){
+				let page = main.pageIDDict[state.PAGE];
+				// if(page.referencePage){
+				// 	page = main.pageIDDict[page.referencePage];
+				// 	await page.render();
+				// 	page.home.dom.menuList[event.state.PAGE].onclick();
+				// }else 
+				await page.render(state);
+				if (state.state) await page.setPageState();
+				else page.setPageState(state);
+				// RENDER_STATE();
+				// main.pageIDDict[state.PAGE].render();
+			}
 		}
+		
+		// if(parent.parentPageID != undefined && parent.parentID == undefined && parent.menu != undefined){
+		// 	navigator.html(new DOMObject(`<div class="" localize>${parent.parentPageID}</div>`));
+		// 	let icon = await CREATE_SVG_ICON('ChevronRight');
+		// 	navigator.append(new DOMObject(icon.icon));
+		// 	if(parent.parentID == undefined && parent.menu != undefined){
+		// 		let button = new DOMObject(`<div class="item" localize>${parent.menu.data.name}</div>`)
+		// 		navigator.append(button);
+		// 		button.html.onclick = async function(){
+		// 			console.log(config);
+		// 			await parent.render();
+		// 			await parent.setPageState();
+		// 		}
+		// 		let icon = await CREATE_SVG_ICON('ChevronRight');
+		// 		navigator.append(new DOMObject(icon.icon));
+		// 	}
+		// 	let button = new DOMObject(`<div class="" localize>${state.PAGE_NAME}</div>`);
+		// 	navigator.append(button);
+		// }else{
+		// 	if(parent.parentID == undefined && parent.menu != undefined){
+		// 		navigator.html(new DOMObject(`<div class="" localize>${parent.menu.data.name}</div>`));
+		// 		let icon = await CREATE_SVG_ICON('ChevronRight');
+		// 		navigator.append(new DOMObject(icon.icon));
+		// 	}
+		// 	let button = new DOMObject(`<div class="item" localize>${state.PAGE_NAME}</div>`);
+		// 	navigator.append(button);
+		// 	button.html.onclick = async function(){
+		// 		let page = main.pageIDDict[state.PAGE];
+		// 		if(page.referencePage){
+		// 			page = main.pageIDDict[page.referencePage];
+		// 			await page.render();
+		// 			page.home.dom.menuList[state.PAGE].onclick();
+		// 		}else await page.render();
+		// 		await page.setPageState();
+		// 		// RENDER_STATE();
+		// 		// main.pageIDDict[state.PAGE].render();
+		// 	}
+		// }		
 	}
-	if (main.personalBar != undefined && event.state != undefined && event.state.title != undefined){
+	if (main.personalBar != undefined && state != undefined && state.title != undefined){
 		let navigator = main.personalBar.home.dom.navigator;
 		let icon = await CREATE_SVG_ICON('ChevronRight');
 		navigator.append(new DOMObject(icon.icon));
-		if(event.state.data == undefined){
+		if(state.data == undefined){
 			navigator.append(new DOMObject(`<div class="" localize>Add</div>`));
 		}else{
-			if(event.state.isView) navigator.append(new DOMObject(`<div class="" localize>View</div>`));
+			if(state.isView) navigator.append(new DOMObject(`<div class="" localize>View</div>`));
 			else navigator.append(new DOMObject(`<div class="" localize>Edit</div>`));
 		}
+	} else if (main.pageIDDict[state.PAGE] != undefined && main.pageIDDict[state.PAGE].referencePage != undefined){
+		let navigator = main.personalBar.home.dom.navigator;
+		let icon = await CREATE_SVG_ICON('ChevronRight');
+		navigator.append(new DOMObject(icon.icon));
+		navigator.append(new DOMObject(`<div class="" localize>${main.pageIDDict[state.PAGE].title}</div>`));
 	}
 }
 
@@ -956,37 +1023,50 @@ function CHECK_PERMISSION_USER(extension, roles, permissions){
 async function SEND_OPERATION(operation, data) {
 }
 
+
+function GET_FILE_BY_DATA_URL(dataurl, filename){
+	let arr = dataurl.split(','),
+	mime = arr[0].match(/:(.*?);/)[1],
+	bstr = atob(arr[1]), 
+	n = bstr.length, 
+	u8arr = new Uint8Array(n);            
+	while(n--){
+		u8arr[n] = bstr.charCodeAt(n);
+	}        
+	return new File([u8arr], filename, {type:mime});
+}
+
 String.prototype.b64encode = function() { 
 	let text = this + '';
 	let result = btoa(unescape(encodeURIComponent(text)));
-    return result; 
+	return result; 
 };
 String.prototype.b64decode = function() {
 	let text = this + '';
-    return decodeURIComponent(escape(atob(text))); 
+	return decodeURIComponent(escape(atob(text))); 
 };
 
 String.prototype.hexEncode = function(){
-    let hex, i;
+	let hex, i;
 
-    let result = "";
-    for (i=0; i<this.length; i++) {
-        hex = this.charCodeAt(i).toString(16);
-        result += ("000"+hex).slice(-4);
-    }
+	let result = "";
+	for (i=0; i<this.length; i++) {
+		hex = this.charCodeAt(i).toString(16);
+		result += ("000"+hex).slice(-4);
+	}
 
-    return result
+	return result
 }
 
 String.prototype.hexDecode = function(){
-    let j;
-    let hexes = this.match(/.{1,4}/g) || [];
-    let back = "";
-    for(j = 0; j<hexes.length; j++) {
-        back += String.fromCharCode(parseInt(hexes[j], 16));
-    }
+	let j;
+	let hexes = this.match(/.{1,4}/g) || [];
+	let back = "";
+	for(j = 0; j<hexes.length; j++) {
+		back += String.fromCharCode(parseInt(hexes[j], 16));
+	}
 
-    return back;
+	return back;
 }
 
 function BACK(callback){
@@ -995,11 +1075,19 @@ function BACK(callback){
 }
 
 String.prototype.hashCode = function() {
-    let hash = 0;
-    for (let i = 0; i < this.length; i++) {
-        let char = this.charCodeAt(i);
-        hash = ((hash<<5)-hash)+char;
-        hash = hash & hash; // Convert to 32bit integer
-    }
-    return hash;
+	let hash = 0;
+	for (let i = 0; i < this.length; i++) {
+		let char = this.charCodeAt(i);
+		hash = ((hash<<5)-hash)+char;
+		hash = hash & hash; // Convert to 32bit integer
+	}
+	return hash;
 }
+
+// Element.prototype._addEventListener = Element.prototype.addEventListener;
+// Element.prototype.addEventListener = function(a, b, c) {
+// 	if(!this.event) this.event = {};
+// 	if(!this.event[a]) this.event[a] = {};
+// 	if(!this.event[a][b]) this._addEventListener(a, b, c);
+// 	this.event[a][b] = b;
+// };

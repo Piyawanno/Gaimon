@@ -118,7 +118,7 @@
 	counter-increment: list-0;
   }
   .ql-editor ol li:before {
-	content: counter(list-0, decimal) '. ';
+	/* content: counter(list-0, decimal) '. '; */
   }
   .ql-editor ol li.ql-indent-1 {
 	counter-increment: list-1;

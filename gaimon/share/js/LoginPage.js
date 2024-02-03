@@ -121,39 +121,41 @@ const LoginPage = function() {
 		}
 
 		object.home.dom.username.onkeyup = function(event) {
-			const re = /^([a-zA-Z0-9]|[-._](?![-._])){4,20}$/;
-			let result = re.exec(this.value);
-			if (this.value.length == 0) {
-				this.classList.remove('error');
-				return;
-			}
+			// const re = /^([a-zA-Z0-9]|[-._](?![-._])){4,20}$/;
+			// let result = re.exec(this.value);
+			// if (this.value.length == 0) {
+			// 	this.classList.remove('error');
+			// 	return;
+			// }
 			if (event.keyCode == 13) {
 				if (object.home.dom.username.value.length > 0) {
 					object.home.dom.password.focus();
 				}
-			} else if (result == null) {
-				this.classList.add('error');
-			} else if (result != null) {
-				this.classList.remove('error');
-			}
+			} 
+			// else if (result == null) {
+			// 	this.classList.add('error');
+			// } else if (result != null) {
+			// 	this.classList.remove('error');
+			// }
 		}
 
 		object.home.dom.password.onkeyup = function(event) {
-			const re = /^([a-zA-Z0-9]|[-._](?![-._])){8,32}$/;
-			let result = re.exec(this.value);
-			if (this.value.length == 0) {
-				this.classList.remove('error');
-				return;
-			}
+			// const re = /^([a-zA-Z0-9]|[-._](?![-._])){8,32}$/;
+			// let result = re.exec(this.value);
+			// if (this.value.length == 0) {
+			// 	this.classList.remove('error');
+			// 	return;
+			// }
 			if (event.keyCode == 13) {
 				if (object.home.dom.password.value.length > 0 && object.home.dom.username.value.length > 0) {
 					object.home.dom.login.click();
 				}
-			} else if (result == null) {
-				this.classList.add('error');
-			} else if (result != null) {
-				this.classList.remove('error');
-			}
+			} 
+			// else if (result == null) {
+			// 	this.classList.add('error');
+			// } else if (result != null) {
+			// 	this.classList.remove('error');
+			// }
 		}
 		object.home.dom.login.defaultFunction = object.defaultLogin;
 		object.home.dom.login.defaultFunction.success = object.startApp;
@@ -203,7 +205,7 @@ const LoginPage = function() {
 	}
 
 	this.showForgotPasswordDialog = async function(){
-		let form = new DOMObject(TEMPLATE.ForgotPassword);
+		let form = new InputDOMObject(TEMPLATE.ForgotPassword);
 		object.home.dom.forgotPasswordDialog.html(form);
 		form.dom.email.onkeyup = async function(e){
 			if(e.keyCode == 13) form.dom.submit.onclick();
@@ -218,6 +220,7 @@ const LoginPage = function() {
 	}
 
 	this.submitForgotPassword = async function(form){
+		console.log(form);
 		let result = form.getData();
 		if(!result.isPass){
 			SHOW_ALERT_DIALOG('กรุณากรอกข้อมูลให้ถูกต้อง');

@@ -28,7 +28,7 @@ const AbstractDialog = function(page) {
 	};
 
 	this.appendDialogContent = async function(dialog, tabValue, inputList, data) {
-		const dialogContent = new DOMObject(`<div class="abstract_form_input hidden" rel="${tabValue}Content"></div>`);
+		const dialogContent = new InputDOMObject(`<div class="abstract_form_input hidden" rel="${tabValue}Content"></div>`);
 		const domDict = {};
 		const relationDict = {};
 		for(const input of inputList) {

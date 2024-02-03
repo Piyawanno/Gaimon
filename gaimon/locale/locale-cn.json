@@ -207,5 +207,7 @@
 	"Write" : "编写",
 	"Yearly" : "每年",
 	"Precision" : "精确",
-	"End Date" : "结束日期"
+	"End Date" : "结束日期",
+	"Version" : "版本",
+	"Default" : "默认"
 }

@@ -15,18 +15,26 @@ const AbstractView = function(page) {
 		else if (viewType == 'SearchForm') viewTemplate = TEMPLATE.SearchForm;
 		else if (viewType == 'SearchDialog') viewTemplate = TEMPLATE.SearchDialog;
 		else if (viewType == 'ConfirmDialog') viewTemplate = TEMPLATE.ConfirmDialog;
+		else if (viewType == 'ExportExcelDialog') viewTemplate = TEMPLATE.ExportExcelDialog;
 		else return;
-		let view = new DOMObject(viewTemplate, {title: config.title, isForm: true});
+		let view = new InputDOMObject(viewTemplate, {title: config.title, isForm: true});
+		object.setOperationButton(config, view);
+		// await object.initViewEvent(view, config, viewType);
+		return view;
+	}
+
+	this.setOperationButton = function(config, view){
 		if(config.isView){
 			let operations = view.dom.operation.getElementsByClassName('abstract_button');
 			for(let button of operations){
 				let rel = button.getAttribute('rel');
-				if(rel != 'cancel') button.hide();
-				else button.html('Close');
+				if(rel == 'cancel') button.html('Close');
+				else if(rel == 'edit') button.show();
+				else button.hide();
 			}
+		}else if(view.dom.edit != undefined){
+			view.dom.edit.hide();
 		}
-		// await object.initViewEvent(view, config, viewType);
-		return view;
 	}
 
 	this.initInputView = async function(tag, item, config, columnLinkMap) {
@@ -40,103 +48,10 @@ const AbstractView = function(page) {
 	}
 
 	this.getView = async function(modelName, config, viewType) {
-		if (config == undefined) config = {};
-		if (config.title == undefined) {
-			if (config.data == undefined) {
-				config.title = `Add ${object.page.title}`;
-			} else {
-				config.title = `Edit ${object.page.title}`;
-			}
-			if(config.isView) config.title = `View ${object.page.title}`;
-			if (viewType == 'SearchForm' || viewType == 'SearchDialog') config.title = `Filter ${object.page.title}`;
-		}
-
-		let viewGroupTemplate;
-		let isSearchForm = false;
-		if (viewType == 'Form') viewGroupTemplate = TEMPLATE.Group;
-		else if (viewType == 'Dialog') viewGroupTemplate = TEMPLATE.GroupDialog;
-		else if (viewType == 'SearchForm' || viewType == 'SearchDialog') {
-			viewGroupTemplate = TEMPLATE.Group;
-			isSearchForm = true;
-		}
-		else if (viewType == 'ConfirmDialog') viewGroupTemplate = TEMPLATE.GroupDialog;
-		else return;
-
-		let view = await object.getBlankView(config, viewType)
-		let input = await object.prepareConfig(modelName, config);
-		config = await object.getViewConfig(config);
-		let {exceptURL, autoCompleteMap, fileMatrixMap, imageMap, advanceInputMap, inputs} = await object.page.util.prepareInput(modelName, input);
-		view.dom.form.html('');
-		let columnLinkMap = {};
-		if(viewType == 'SearchDialog'){
-			let filter = await object.getSearchDialogView(view, input);
-			view.dom.form.append(filter);
-			view.dom.form.filter = filter;
-		}else{
-			if (config.data) {
-				columnLinkMap = AbstractInputUtil.prototype.getLinkColumn(input, config.data)
-			}
-			
-			for (let item of input) {
-				if (item.isGroup) {
-					let group = new DOMObject(viewGroupTemplate, item);
-					if (item.input == undefined) continue;
-					let count = 0;
-					for (let subItem of item.input) {
-						if (!isSearchForm || (isSearchForm && subItem.isSearch)) {
-							let tag = await object.appendInput(view, subItem, config, group.dom.group, isSearchForm);
-							await object.initInputView(tag, subItem, config, columnLinkMap);
-							count += 1;
-						}
-					}
-					if (count > 0) view.dom.form.append(group, undefined, undefined, view.dom);
-				} else {
-					if (!isSearchForm || (isSearchForm && item.isSearch)) {
-						let tag = await object.appendInput(view, item, config, view.dom.form, isSearchForm);
-						await object.initInputView(tag, item, config, columnLinkMap);
-					}
-				}
-			}
-		}
-		await object.page.util.setAutoCompleteMap(view, autoCompleteMap);
-		await object.page.util.setFileMatrixMap(view, fileMatrixMap);
-		await object.page.util.setImageMap(view, imageMap);
-		await object.page.util.setPrerequisiteInput(modelName, exceptURL, view, config.data);
-		if (config.hasEdit) {
-			view.setData(config.data, ['form']);
-			view.id = config.data.id;
-		}
-		if(config.isView){
-			let operations = view.dom.operation.getElementsByClassName('abstract_button');
-			for(let button of operations){
-				let rel = button.getAttribute('rel');
-				if(rel != 'cancel') button.hide();
-				else button.html('Close');
-			}
-			view.readonly();
-		}
-		// await object.initViewEvent(view, config, viewType);
-		if(Object.keys(advanceInputMap).length) await object.initAdvanceFormEvent(view, advanceInputMap);
-
-		view.dom.childTable = {};
-		view.dom.form.tables = [];
-		if(!input.childInput) input.childInput = [];
-		for (let child of input.childInput) {
-			let tableConfig = {};
-			tableConfig.isView = config.isView;
-			let table = await object.page.tableView.getView(child.modelName, tableConfig, 'TableForm');
-			table.modelName = child.modelName;
-			table.inputName = input.childInputParentMap[child.modelName].name;
-			table.childDetail = input.childInputParentMap[child.modelName];
-			view.dom.childTable[child.modelName] = table;
-			view.dom.form.tables.push(table);
-			if (view.dom.additionalForm) view.dom.additionalForm.append(table);
-			if (config.data) {
-				if (config.data[table.inputName]) {
-					await table.createMultipleRecord(config.data[table.inputName]);
-				}
-			}
-			
+		let state = new ViewCreatorState(object, modelName, config, viewType);
+		let view = await state.create();
+		view.getViewData = function() {
+			return object.getViewData(view);
 		}
 		return view;
 	}
@@ -152,7 +67,7 @@ const AbstractView = function(page) {
 	}
 
 	this.getSearchDialogView = async function(view, input){
-		let filter = new DOMObject(TEMPLATE.Filter);
+		let filter = new InputDOMObject(TEMPLATE.Filter);
 		if(!object.page.filter) object.page.filter = {};
 		if(!object.page.compare) object.page.compare = {};
 		if(!object.page.parameterLabel) object.page.parameterLabel = {};
@@ -196,13 +111,12 @@ const AbstractView = function(page) {
 		for (let item of input) {
 			if(item.isGroup){
 				for(let i in item.input){
-					
 					let option = `<option value="${item.input[i].columnName}" typeName="${item.input[i].typeName}">${item.input[i].label}</option>`;
 					if(!item.input[i].isSearch) continue;
 					if(item.input[i].option){
 						item.input[i].inputPerLine = 1;
 						item.input[i].isRequired = false;
-						option = new DOMObject(TEMPLATE.input.SelectInput, item.input[i]);
+						option = new InputDOMObject(TEMPLATE.input.SelectInput, item.input[i]);
 						filter.dom.additional.append(option);
 						filter.dom[item.input[i].columnName] = option.dom[item.input[i].columnName];
 					}else filter.dom.parameter.append(option);
@@ -220,6 +134,29 @@ const AbstractView = function(page) {
 			await object.getSearchCompareSymbol(filter, type);
 		}
 		filter.dom.parameter.onchange();
+	}
+
+	this.getExportExcelDialogView = async function(view, input){
+		let filter = new InputDOMObject(TEMPLATE.Filter);
+		if(!object.page.filter) object.page.filter = {};
+		if(!object.page.compare) object.page.compare = {};
+		if(!object.page.parameterLabel) object.page.parameterLabel = {};
+		if(!filter.filter) filter.filter = object.page.filter;
+		if(!filter.compare) filter.compare = object.page.compare;
+		if(!filter.parameterLabel) filter.parameterLabel = object.page.parameterLabel;
+		await object.getSearchParameter(filter, input);
+		// filter.dom.add.onclick = async function(){
+		// 	let value = filter.dom.filter.value;
+		// 	if(value == '') return;
+		// 	let parameter = filter.dom.parameter.value;
+		// 	let parameterLabel = filter.dom.parameter.selectedOptions[0].text;
+		// 	let compare = filter.dom.compare.value;			
+		// 	filter.filter[parameter] = value;
+		// 	filter.compare[parameter] = compare;
+		// 	filter.parameterLabel[parameter] = parameterLabel;
+		// 	await object.renderSearchTag(view, filter);
+		// }
+		return filter;
 	}
 
 	this.getType = async function(typeName){
@@ -250,39 +187,48 @@ const AbstractView = function(page) {
 		return new DOMObject(view.dom.form.innerHTML);
 	}
 
-	this.renderBlankView = async function(config, viewType) {
+	this.renderBlankView = async function(config, viewType, checkEdit) {
 		if (config == undefined) config = {};
 		let destination = await object.getRenderDestination(viewType);
 		let view = await object.getBlankView(config, viewType);
-		await object.initViewEvent(view, config, viewType);
+		await object.initViewEvent(view, config, viewType, checkEdit);
 		destination.html('');
 		destination.append(view);
 		await object.getViewConfig(config);
 		if (object.steps.length > 0) {
 			await object.renderStepTab(view, config);
 		}
+
+		if (object.tabs.length > 0 && config.isView){
+			await object.renderTab(view, config);
+		}
 		return view;
 	}
 
-	this.renderByView = async function(view, config, viewType) {
+	this.renderByView = async function(view, config, viewType, checkEdit) {
 		if (config == undefined) config = {};
 		let destination = await object.getRenderDestination(viewType);
-		await object.initViewEvent(view, config, viewType);
+		await object.initViewEvent(view, config, viewType, checkEdit);
 		destination.html('');
 		destination.append(view);
 		return view;
 	}
 
-	this.renderView = async function(modelName, config, viewType = 'Form') {
+	this.renderView = async function(modelName, config, viewType = 'Form', checkEdit=undefined) {
 		if (config == undefined) config = {};
 		let destination = await object.getRenderDestination(viewType);
 		let view = await object.getView(modelName, config, viewType);
-		await object.initViewEvent(view, config, viewType);
+		await object.initViewEvent(view, config, viewType, checkEdit);
 		view.modelName = modelName;
 		destination.html('');
 		destination.append(view);
-		if (object.steps.length > 0) {
+
+		if (object.steps.length > 0 && config.step) {
 			await object.renderStepTab(view, config);
+		}
+
+		if (object.tabs.length > 0 && config.tab){
+			await object.renderTab(view, config);
 		}
 		return view;
 	}
@@ -297,7 +243,19 @@ const AbstractView = function(page) {
 		}
 		if (config.isSetState == undefined) config.isSetState = true;
 		if (config.step != undefined) await object.appendSteps(config.step);
+		if (config.tab != undefined) await object.appendTab(config.tab);
 		return config;
+	}
+
+	this.appendTab = async function(tagName){
+		object.tabs = [];
+		object.tabMaps = {};
+		if (main.viewTabMap[tagName]) {
+			for (let tab of main.viewTabMap[tagName]) {
+				object.tabMaps[tab.pageID] = tab;
+				object.tabs.push(tab);
+			}
+		}
 	}
 
 	this.appendSteps = async function(stepName) {
@@ -354,7 +312,6 @@ const AbstractView = function(page) {
 	// }
 
 	this.callPageView = async function(){
-
 	}
 
 	this.nextStep = async function(group, currentStep, data){
@@ -363,6 +320,7 @@ const AbstractView = function(page) {
 			let step = main.viewStepMap[group][i];
 			if(step.pageID == currentStep){
 				let nextStep = main.viewStepMap[group][parseInt(i)+1];
+				if (nextStep == undefined) continue;
 				let config = {
 					isSetState: false,
 					isView: false,
@@ -378,16 +336,40 @@ const AbstractView = function(page) {
 		}
 	}
 
+	this.renderTab = async function(view, config = {}) {
+		object.stepTabs = [];
+		object.stepTabMap = {};
+		if (view.dom.step == undefined) return;
+		view.dom.step.html('');
+		for(let step of object.tabs){
+			let component = new InputDOMObject(TEMPLATE.AbstractTab, {name: step.title});
+			if (step.pageID == config.selected) component.dom.tab.classList.add('highlightTab');
+			if (step.render == config.selected) component.dom.tab.classList.add('highlightTab');
+			view.dom.tabMenuList.append(component);
+			component.dom.tab.onclick = async function() {
+				if (step.source == undefined) return;
+				if (config.data == undefined) return;
+				let stepConfig = {}
+				let result = await step.source.callback(config.data);
+			}
+		}
+		view.dom.tab.show();
+	}
+
+
 	this.renderStepTab = async function(view, config = {}) {
 		object.stepTabs = [];
 		object.stepTabMap = {};
 		if (view.dom.step == undefined) return;
 		view.dom.step.html('');
+		if (config.selectedStep != undefined) {
+			main.selectedStep = config.selectedStep;
+		}
 		for(let step of object.steps){
 			if (main.pageIDDict[step.pageID] == undefined) continue;
 			step.page = main.pageIDDict[step.pageID];
 			if (step.isSelected) selectedStep = step.state;
-			let component = new DOMObject(TEMPLATE.AbstractStep, {name: step.title});
+			let component = new InputDOMObject(TEMPLATE.AbstractStep, {name: step.title});
 			if (await step.isEnable(config.data)) {
 				component.dom.step.onclick = async function() {
 					if (step.source == undefined) return;
@@ -437,10 +419,10 @@ const AbstractView = function(page) {
 		let inputPerLine = 2;
 		if (config == undefined) config = {};
 		if (config.inputs != undefined) {
-			input = config.inputs;
-			input.childInput = config.childInput != undefined ? config.childInput : [];
-			input.childInputParentMap = config.childInputParentMap;
 			let resultInput = await object.page.util.getMergedInputData(modelName);
+			input = config.inputs;
+			input.childInput = config.childInput != undefined ? config.childInput : resultInput.childInput;
+			input.childInputParentMap = config.childInputParentMap != undefined ? config.childInputParentMap : resultInput.childInputParentMap;
 			inputPerLine = resultInput.inputPerLine;
 		} else {
 			let resultInput = await object.page.util.getMergedInputData(modelName);
@@ -463,10 +445,9 @@ const AbstractView = function(page) {
 			let inputConfig = JSON.parse(JSON.stringify(item));
 			if(!inputConfig.isForm && !isSearch) return;
 			inputConfig.hasEdit = config.hasEdit;
-			// if (inputConfig.inputPerLine == undefined) {
-			// 	inputConfig.inputPerLine = config.inputPerLine;
-			// }
-			if (config.inputPerLine != undefined){
+			if (inputConfig.inputPerLine != undefined) {
+				
+			} else if (config.inputPerLine != undefined){
 				inputConfig.inputPerLine = config.inputPerLine
 			}
 			if (isSearch) {
@@ -498,159 +479,46 @@ const AbstractView = function(page) {
 			destination = object.page.home.dom.filter;
 		} else if (viewType == 'ConfirmDialog') {
 			destination = main.home.dom.alertDialog;
+		} else if (viewType == 'ExportExcelDialog') {
+			destination = object.page.home.dom.excel;
 		} else {
 			return;
 		}
 		return destination;
 	}
 
-	this.initViewEvent = async function(view, config, viewType) {
+	this.getViewData = function(view) {
+		let result = view.getData();
+		if (view.dom.form && view.dom.form.tables) {
+			for (let table of view.dom.form.tables) {
+				if (table.records == undefined) break;
+				if (!Array.isArray(table.records)) break;
+				result.data[table.inputName] = []
+				for (let record of table.records) {
+					let recordResult = record.getData();
+					result.isPass = result.isPass & recordResult.isPass
+					if (record.id) recordResult.data.id = record.id;
+					if (table.childDetail) recordResult.data[table.childDetail.parentColumn] = view.id;
+					result.data[table.inputName].push(recordResult.data);
+					for (let key of recordResult.file.keys()) {
+						let value = recordResult.file.get(key);
+						result.file.append(`${table.inputName}.${key}`, value);
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	this.initViewEvent = async function(view, config, viewType, checkEdit) {
 		if (config.isView == undefined) config.isView = false;
 		if (view.isInitEvent != undefined) return;
 		view.isInitEvent = true;
-		let closeFunction;
-		let isSearchForm = false;
-		let isSearchDialog = false;
-		if (viewType == 'Form') {
-			closeFunction = object.page.cancel;
-		} else if (viewType == 'Dialog') {
-			config.isSetState = false;
-			closeFunction = function() {
-				object.page.main.home.dom.dialog.html('');
-			}
-		} else if (viewType == 'SearchForm') {
-			isSearchForm = true;
-			config.isSetState = false;
-			closeFunction = view.clearData;
-		} else if (viewType == 'SearchDialog') {
-			isSearchDialog = true;
-			config.isSetState = false;
-			closeFunction = function(){
-				view.dom.form.filter.clearData();
-				view.dom.form.filter.filter = {};
-				view.dom.form.filter.parameterLabel = {};
-				view.dom.form.filter.compare = {};
-				object.page.filter = {};
-				SHOW_LOADING_DIALOG(async function(){
-					await object.renderSearchTag(view, view.dom.form.filter);
-					await object.page.getData(object.page.limit);
-					object.page.main.home.dom.dialog.html('');
-				});
-			}			
-		} else if (viewType == 'ConfirmDialog') {
-			config.isSetState = false;
-			closeFunction = function() {
-				main.home.dom.alertDialog.html('');
-			}
-		} else {
-			return;
+		let state = new ViewEventState(object, view, config, viewType);
+		state.setViewEvent(checkEdit);
+		if (config.isSetState == undefined){
+			config.isSetState = true;
 		}
-		async function submit() {
-			let result = view.getData();
-			if (view.dom.form && view.dom.form.tables) {
-				for (let table of view.dom.form.tables) {
-					if (table.records == undefined) break;
-					if (!Array.isArray(table.records)) break;
-					result.data[table.inputName] = []
-					for (let record of table.records) {
-						let recordResult = record.getData();
-						result.isPass = result.isPass & recordResult.isPass
-						if (record.id) {
-							recordResult.data.id = record.id;
-						}
-						if (table.childDetail) {
-							recordResult.data[table.childDetail.parentColumn] = view.id;
-						}
-						result.data[table.inputName].push(recordResult.data);
-					}
-				}
-			}
-			if (!isSearchForm && !isSearchDialog) {
-				if (view.onSubmit != undefined) view.onSubmit(view);
-				else if (object.page.restProtocol != undefined) {
-					
-					if (view.id != undefined) result.data.id = view.id;
-					let data = result.data;
-					let isValid = await object.page.validate(view, data);
-					if (isValid) {
-						if (!result.file.isEmpty()) {
-							data = result.file;
-							data.append('data', JSON.stringify(result.data));
-						}
-						if (view.id != undefined) {
-							await object.page.restProtocol.update(data);
-						} else {
-							await object.page.restProtocol.insert(data);
-						}
-						view.close();
-					}
-					
-				} else {
-					object.page.submit(view);
-				}
-			} else if (isSearchDialog) {
-				let filter = view.dom.form.filter;
-				if (view.onSubmit != undefined) view.onSubmit(view);
-				else {
-					let result = filter.getData();
-					object.page.filter = filter.filter;
-					object.page.compare = filter.compare;
-					object.page.parameterLabel = filter.parameterLabel;
-					for(let i in result.data){
-						if(i == 'parameter' || i == 'compare' || i == 'filter') continue;
-						object.page.filter[i] = result.data[i];
-					}						
-					SHOW_LOADING_DIALOG(async function(){
-						await object.page.getData(object.page.limit);
-						object.page.main.home.dom.dialog.html('');
-					});						
-				}
-			} else {
-				if (view.onSubmit != undefined) view.onSubmit(view);
-				else {
-					object.page.filter = result.data;
-					SHOW_LOADING_DIALOG(async function(){
-						await object.page.getData(object.page.limit);
-					});
-				}
-			}
-		}
-		if (view.dom.submit != undefined) {
-			view.dom.submit.onclick = async function(){
-				await submit()
-			}
-		}
-		if (view.dom.confirm != undefined) {
-			view.dom.confirm.onclick = async function(){
-				await submit()
-			}
-		}
-
-		if (view.dom.cancel != undefined) {
-			view.dom.cancel.onclick = async function(){
-				closeFunction();
-			}
-		}
-		view.close = closeFunction;
-
-		if (view.dom.close != undefined) {
-			view.dom.close.onclick = async function(){
-				object.page.main.home.dom.dialog.html('');
-			}
-		}
-
-		view.show = async function() {
-			await object.renderByView(view, config, viewType);
-		}
-
-		if (config.operation) {
-			view.dom.operation.html('');
-			for (let i in config.operation) {
-				let operation = new DOMObject(TEMPLATE.Button, config.operation[i]);
-				view.dom.operation.append(operation, config.operation.ID);
-			}
-		}
-		if (config.isSetState == undefined) config.isSetState = true;
 		if (config.isSetState) {
 			if (config.state == undefined) {
 				object.page.changeFormState({state: viewType.toLowerCase(), title: config.title, data: config.data, isView: config.isView}, `${object.page.pageID}/${viewType.toLowerCase()}`);

@@ -40,6 +40,7 @@ const VisualBlockCreator = function() {
 		this.isInit = false;
 		const toolList = [];
 		object.count = 0;
+		console.log(toolData);
 		for(const tool of toolData) {
 			const template = await TEMPLATE.get('VisualBlockTool', false);
 			const rendered = Mustache.render(template, tool);
@@ -364,7 +365,7 @@ const VisualBlockCreator = function() {
 				step : tool.step,
 				id : id
 			};
-			const group = new DOMObject(await TEMPLATE.get('VisualBlockInput'), input);
+			const group = new InputDOMObject(await TEMPLATE.get('VisualBlockInput'), input);
 			const body = `visualblock_form_${input.group}_${input.step}_${input.id}`;
 			if(item.isForm) {
 				const config = item.input;
@@ -596,7 +597,7 @@ const VisualBlockCreator = function() {
 
 	this.getInputData = async function(form) {
 		const result = {};
-		const dom = new DOMObject(form.outerHTML);
+		const dom = new InputDOMObject(form.outerHTML);
 		const data = dom.getData();
 		for(let i in data.data) {
 			let input;
@@ -621,7 +622,7 @@ const VisualBlockCreator = function() {
 
 	this.getAllInputData = async function(form) {
 		const result = {};
-		const dom = new DOMObject(form.outerHTML);
+		const dom = new InputDOMObject(form.outerHTML);
 		const data = dom.getAllData();
 		for(let i in data.data) {
 			input = form.querySelector(`input[rel="${i}"]`);

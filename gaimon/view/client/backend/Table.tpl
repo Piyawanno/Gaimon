@@ -15,7 +15,7 @@
 				<div class="flex-column-center" rel="addLabel" localize>Add</div>
 			</div>
 			{{/hasAdd}}
-		</div>		
+		</div>
 	</div>		
 	{{/isTableForm}}
 	<div class="overflow-x-auto width-100-percent">

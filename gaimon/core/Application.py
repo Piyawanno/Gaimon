@@ -44,7 +44,12 @@ def createDecoratorBrowser(self, ruleMap, decoratorClass, processRule:Callable=p
 				attribute = getattr(decorator, attributeName)
 				rule:CommonDecoratorRule = getattr(attribute, '__RULE__', None)
 				if rule is None : continue
-				rule.ruleList = [processRule(i) for i in rule.ruleList]
+				ruleList = []
+				for i in rule.ruleList:
+					item = processRule(i)
+					if type(item) == list: ruleList.extend(item)
+					else: ruleList.append(item)
+				rule.ruleList = ruleList
 				rule.setDecoratorClass(decorator.__class__)
 				extendDecorator(rule)
 		return decoratorList
@@ -132,7 +137,7 @@ class Application:
 		self.controllerClass = {}
 		self.connectionCount = 0
 		self.initORM()
-		self.authen = Authentication(self.session, self.redis)
+		self.authen = Authentication(self)
 		self.map(self.controller)
 
 	def initORM(self):
@@ -175,6 +180,15 @@ class Application:
 
 	def storeStaticFile(self, path: str, data: bytes):
 		path = f'{self.resourcePath}/file/{path}'
+		with open(path, 'wb') as fd:
+			fd.write(data)
+
+	def isStaticUpload(self, path: str) -> bool:
+		path = f'{self.resourcePath}/upload/{path}'
+		return os.path.isfile(path)
+	
+	def storeStaticUpload(self, path: str, data: bytes):
+		path = f'{self.resourcePath}/upload/{path}'
 		with open(path, 'wb') as fd:
 			fd.write(data)
 
@@ -236,7 +250,7 @@ class Application:
 	def releaseController(self, name, controller):
 		if len(self.controllerPool[name]) < __MAX_POOL_SIZE__:
 			self.controllerPool[name].append(controller)
-
+		
 	def browseModule(self, directory):
 		for i in os.listdir(directory):
 			if i[-3:] != '.py' or i == "__init__.py" or os.path.isdir(f"{directory}/{i}"): continue

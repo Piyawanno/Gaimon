@@ -7,9 +7,11 @@ from xerial.JSONColumn import JSONColumn
 from xerial.CurrencyColumn import CurrencyColumn
 from xerial.input.ReferenceSelectInput import ReferenceSelectInput
 from xerial.input.EnumSelectInput import EnumSelectInput
+from xerial.input.ImageInput import ImageInput
+from xerial.input.FileInput import FileInput
 from xerial.Record import Record
 
-from typing import Tuple, Awaitable, List, Dict, Any
+from typing import Tuple, Awaitable, List, Dict, Any, Callable
 from sanic.request import RequestParameters, Request, File
 from dataclasses import dataclass
 
@@ -53,8 +55,9 @@ def processFractionClause(state:ClauseState) :
 
 def processReferenceClause(state:ClauseState) :
 	if isinstance(state.meta, IntegerColumn) and int(state.value) == -1:
-		state.clause.append(f'{state.key} != ?')
-		state.parameter.append(state.meta.parseValue(state.value))
+		# state.clause.append(f'{state.key} != ?')
+		# state.parameter.append(state.meta.parseValue(state.value))
+		pass
 	else:
 		state.clause.append(f'{state.key} = ?')
 		state.parameter.append(state.meta.parseValue(state.value))
@@ -83,23 +86,31 @@ def processEachClause(request, modelClass) -> Tuple[List[str], List[Any]] :
 	return clause, parameter
 
 # NOTE : Return (clause, parameter, limit, offset)
-def processRequestQuery(request, modelClass) -> Tuple[str, list, int, int]:
+def processRequestQuery(request, modelClass, isOrder=False) -> Tuple[str, list, int, int]:
 	request = copy.copy(request)
 	limit, offset = processLimitOffset(request)
 	clause, parameter = processEachClause(request, modelClass)
 	clause = 'WHERE ' + (' AND '.join(clause)) if len(clause) else ''
+	if isOrder:
+		orderBy = request.get('orderBy', 'id')
+		isDecreasing = request.get('isDecreasing', True)
+		direction = 'DESC' if isDecreasing else 'ASC'
+		clause = f'{clause} ORDER BY {orderBy} {direction}'
 	return clause, parameter, limit, offset
 
-def createSelectHandler(modelClass: type):
+def createSelectHandler(modelClass: type, isRelated=False):
 	async def handleSelect(session: AsyncDBSessionBase, data: dict):
 		data = copy.copy(data)
 		item = data.get('data', data)
 		item['isDrop'] = 0
 		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
+		orderBy = data.get('orderBy', 'id')
+		isDecreasing = data.get('isDecreasing', True)
+		direction = 'DESC' if isDecreasing else 'ASC'
 		fetched = await session.select(
 			modelClass,
-			f"{clause} ORDER BY ID DESC",
-			isRelated=False,
+			f"{clause} ORDER BY {orderBy} {direction}",
+			isRelated=isRelated,
 			parameter=parameter,
 			limit=limit,
 			offset=offset
@@ -112,10 +123,11 @@ def createSelectWithPageHandler(modelClass: type):
 		data = copy.copy(data)
 		item = data.get('data', data)
 		item['isDrop'] = 0
+		orderBy = data.get('orderBy', 'id')
 		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
 		fetched = await session.select(
 			modelClass,
-			f"{clause} ORDER BY ID DESC",
+			f"{clause} ORDER BY {orderBy} DESC",
 			isRelated=False,
 			parameter=parameter,
 			limit=limit,
@@ -131,6 +143,7 @@ def createSelectWithPageHandler(modelClass: type):
 def createSelectByIDHandler(modelClass: type):
 	async def handleSelectByID(session: AsyncDBSessionBase, ID: int):
 		fetched = await session.selectByID(modelClass, ID, isRelated=False, hasChildren=True)
+		if fetched is None: return None
 		if hasattr(modelClass, 'isDrop') and fetched.isDrop: return None
 		return fetched
 	return handleSelectByID
@@ -217,15 +230,37 @@ def createIngestHandler(modelClass: type):
 
 	return handleIngest
 
-def createInsertWithFileHandler(application, modelClass: type, isShare:bool=False):
-	storeFileList = {}
-	for i in modelClass.fileInput :
-		storeFileList[i.name] = createFileStore(application, i.path, isShare)
+def createInsertWithFileHandler(application, modelClass: type):
+	initStatus = []
+	storeFileMap = {}
+	def getFileInput() :
+		if len(initStatus) : return
+		initStatus.append(True)
+		if not hasattr(modelClass, '__file_input__') : return
+		for i in modelClass.__file_input__ :
+			isShare = i.isShare
+			storeFileMap[i.columnName] = createFileStore(application, i.path, isShare)
 	handleInsert = createInsertHandler(modelClass)
-	async def handle(session: AsyncDBSessionBase, request:Request) -> Record:
-		data = json.load(request.form['data'])
-		for k, v in storeFileList.items() :
-			pathList = v(request, k)
+	async def handle(session: AsyncDBSessionBase, data: dict, request:Request) -> Record:
+		if getattr(request, 'form', None) is None:
+			record = await handleInsert(session, data)
+			return record
+		if not 'data' in request.form:
+			record = await handleInsert(session, data)
+			return record
+		getFileInput()
+		for k, v in storeFileMap.items() :
+			meta = modelClass.metaMap.get(k, None)
+			if meta is None: continue
+			pathList = await v(request, k)
+			if meta.input.__class__ == ImageInput:
+				if len(pathList): pathList = pathList[0][1]
+				data[k] = pathList
+				continue
+			if meta.input.__class__ == FileInput:
+				if len(pathList): pathList = pathList[0]
+				data[k] = json.dumps(pathList)
+				continue
 			data[k] = json.dumps(pathList)
 		record = await handleInsert(session, data)
 		return record
@@ -245,13 +280,71 @@ def createInsertMultipleHandler(modelClass: type):
 		return recordList
 	return handleInsert
 
+def createUpdateWithFileHandler(application, modelClass: type):
+	from gaimon.core.StaticFileHandler import StaticFileHandler
+	initStatus = []
+	storeFileMap = {}
+	removeFileMap = {}
+	fileHandler:StaticFileHandler = application.static
+	handleUpdate = createUpdateHandler(modelClass)
+
+	def getFileInput() :
+		if len(initStatus) : return
+		initStatus.append(True)
+		if not hasattr(modelClass, '__file_input__') : return
+		for i in modelClass.__file_input__ :
+			isShare = i.isShare
+			storeFileMap[i.columnName] = createFileStore(application, i.path, isShare)
+			if isShare :
+				removeFileMap[i.columnName] = fileHandler.removeStaticShare
+			else :
+				removeFileMap[i.columnName] = fileHandler.removeStaticFile
+	
+	async def handle(session: AsyncDBSessionBase, data: dict, request:Request) -> Record:
+		if getattr(request, 'form', None) is None: 
+			record = await handleUpdate(session, data)
+			return record
+		if not 'data' in request.form:
+			record = await handleUpdate(session, data)
+			return record
+		getFileInput()
+		async def storeFile(data, record) :
+			files = getattr(request, 'files', None)
+			for k, v in storeFileMap.items() :
+				currentPath = getattr(record, k, None)
+				isRemove = data.get(f'{k}Removed', False)
+				if (isRemove or k in files) and currentPath is not None:
+					data[k] = ""
+					await removeFileMap[k](currentPath)
+					if k not in files: continue
+				if k not in files :
+					data[k] = currentPath
+					continue
+				meta = modelClass.metaMap.get(k, None)
+				if meta is None: continue
+				pathList = await v(request, k)
+				if meta.input.__class__ == ImageInput:
+					if len(pathList): pathList = pathList[0][1]
+					data[k] = pathList
+					continue
+				if meta.input.__class__ == FileInput:
+					if len(pathList): pathList = pathList[0]
+					data[k] = json.dumps(pathList)
+					continue
+				data[k] = json.dumps(pathList)
+		record = await handleUpdate(session, data, storeFile)
+		return record
+	return handle
+
+
 def createUpdateHandler(modelClass: type):
-	async def handleUpdate(session: AsyncDBSessionBase, data: dict) -> Record:
+	async def handleUpdate(session: AsyncDBSessionBase, data: dict, handleMixin: Callable=None) -> Record:
 		id = data.get('id', None)
 		if id is None : return None
 		record = await session.selectByID(modelClass, data['id'], hasChildren=True)
 		if record is not None :
 			await updateChildren(session, record, data)
+			if handleMixin is not None : await handleMixin(data, record)
 			record.fromDict(data)
 			await session.update(record)
 			return record
@@ -264,8 +357,7 @@ def createUpdateHandler(modelClass: type):
 
 	async def updateEachChildren(session: AsyncDBSessionBase, record: Record, data:dict, attribute: str):
 		childData = data.get(attribute, [])
-		if len(childData) == 0: return
-		del data[attribute]
+		if attribute in data: del data[attribute]
 		childMap = {int(i['id']): i for i in childData if 'id' in i}
 		childData = [i for i in childData if not 'id' in i]
 		childRecordList:List[Record] = getattr(record, attribute, [])
@@ -365,7 +457,8 @@ def createFileStore(application, path:str, isShare:bool=False) :
 	static:StaticFileHandler = application.static
 	store = static.storeStaticShare if isShare else static.storeStaticFile
 	async def storeFile(request:Request, key:str) :
-		# if getattr(request, 'files', None) is None: return [['', '']]
+		files = getattr(request, 'files', None)
+		if files is None: return []
 		requestFile:RequestParameters = request.files.get(key, None)
 		if key not in request.files: return []
 		requestFile = request.files[key]

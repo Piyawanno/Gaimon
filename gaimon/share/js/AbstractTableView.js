@@ -8,8 +8,62 @@ const AbstractTableView = function(page) {
 
 	this.getView = async function(modelName, config, viewType) {
 		let pagination;
-		let componentTemplate;
+		let componentTemplate = object.getViewTemplate(config, viewType);
+		if (componentTemplate == null) return;
 		if (config == undefined) config = {};
+		config = await object.getConfig(config, viewType);
+		let data = config.data;
+		let input = await object.getColumn(modelName, config, viewType);
+		await object.configureAvatar(modelName, config);
+		let component = new InputDOMObject(componentTemplate, config);
+		component.input = input;
+		await object.prepareViewComponent(component, viewType, modelName);
+		await object.initViewEvent(component, modelName, config, viewType);
+		if(config.count != undefined){
+			component.pageNumber = 1;
+			pagination = await object.getPagination(component.limit, config.count, component);
+			component.pagination = pagination;
+		}
+		await component.createMultipleRecord(data);
+		await object.initSelectEvent(component, component.currentTableHead);
+		if (pagination == undefined) return component;
+		return {component, pagination};
+	}
+
+	this.prepareViewComponent = async function(component, viewType, modelName){
+		let config = component.data;
+		let input = component.input;
+		if (component.dom.card) component.dom.table = component.dom.card;
+		if (component.dom.table) component.dom.table.limit = 10;
+		let thead;
+		if (viewType == 'Table' || viewType == 'TableForm') {
+			thead = await object.getTableHeader(modelName, config, viewType, input);
+			if (object.isAppendColumnGroup){
+				let columnGroup = await object.appendColumnGroup(input.length)
+				component.dom.table.prepend(columnGroup);
+			}
+			component.dom.thead.append(thead);
+		}
+		component.currentTableHead = thead;
+		component.records = [];
+		component.selectedRecords = [];
+		return component
+	}
+
+	this.configureAvatar = async function(modelName, config){
+		object.avatar = await AbstractInputUtil.prototype.getAvatar(modelName);
+		config.avatar = object.avatar;
+		config.hasAvatarURL = false;
+		config.avatarColumn = 'id';
+		if (typeof object.avatar == 'object') {
+			config.avatar = object.avatar.url;
+			config.hasAvatarURL = true;
+			config.avatarColumn = object.avatar.column;
+		}
+	}
+
+	this.getViewTemplate = function(config, viewType){
+		let componentTemplate = null;
 		if (viewType == 'Table') {
 			componentTemplate = TEMPLATE.Table;
 			if (config.hasAdd == undefined) config.hasAdd = true;
@@ -23,44 +77,8 @@ const AbstractTableView = function(page) {
 				config.hasAdd = false;
 				config.hasDelete = false;
 			}
-		} else {
-			return;
 		}
-		config = await object.getConfig(config, viewType);
-		let data = config.data;
-		let input = await object.getColumn(modelName, config, viewType);
-		object.avatar = await AbstractInputUtil.prototype.getAvatar(modelName);
-		config.avatar = object.avatar;
-		config.hasAvatarURL = false;
-		config.avatarColumn = 'id';
-		if (typeof object.avatar == 'object') {
-			config.avatar = object.avatar.url;
-			config.hasAvatarURL = true;
-			config.avatarColumn = object.avatar.column;
-		}
-		let component = new DOMObject(componentTemplate, config);
-		component.input = input;
-		if (component.dom.card) component.dom.table = component.dom.card;
-		if (component.dom.table) component.dom.table.limit = 10;
-		let thead;
-		if (viewType == 'Table' || viewType == 'TableForm') {
-			thead = await object.getTableHeader(modelName, config, viewType, input);
-			if (object.isAppendColumnGroup) component.dom.table.prepend(await object.appendColumnGroup(input.length));
-			component.dom.thead.append(thead);
-		}
-		component.records = [];
-		component.selectedRecords = [];
-		await object.initViewEvent(component, modelName, config, viewType);
-		if(config.count != undefined){
-			component.pageNumber = 1;
-			pagination = await object.getPagination(component.limit, config.count, component);
-			component.pagination = pagination;
-		}
-		await component.createMultipleRecord(data);
-		await object.initSelectEvent(component, thead);
-		
-		if (pagination == undefined) return component;
-		return {component, pagination};
+		return componentTemplate;
 	}
 
 	this.renderOperation = async function(record, operationTemplate, config) {
@@ -82,184 +100,8 @@ const AbstractTableView = function(page) {
 	}
 
 	this.getRecord = async function(modelName, config, column, table, viewType) {
-		let recordTemplate;
-		let operationTemplate;
-		if (viewType == 'Table') {
-			recordTemplate = TEMPLATE.TableBody;
-			operationTemplate = TEMPLATE.TableOperationRecord;
-		} else if (viewType == 'Card') {
-			recordTemplate = TEMPLATE.CardDetail;
-			operationTemplate = TEMPLATE.MobileOperation;
-		} else if (viewType == 'TableForm') {
-			return await object.page.tableForm.getRecord(modelName, config, column, table, viewType);
-		} else {
-			return;
-		}
-		let tasks = {};
-		let prerequisiteTasks = {}
-		let data = config.data;
-		let list = [];
-		let columnLinkMap = [];
-		if (column == undefined) column = table.input;
-		for(let item of column){
-			let value = await object.getColumnValue(item, data);
-			if (item.typeName == "ReferenceSelect" || item.typeName == "AutoComplete") {
-				if (item.tableURL != undefined && data[item.columnName] != null) {
-					if (tasks[item.tableURL] == undefined) tasks[item.tableURL] = [];
-					tasks[item.tableURL].push({column: item.columnName, value: data[item.columnName], foreignModelName: item.foreignModelName})
-				}
-			} else if (item.typeName == "PrerequisiteReferenceSelect") {
-				let prerequisite = item.prerequisite.split('.')[1];
-				if (item.tableURL != undefined && data[item.columnName] != null) {
-					if (prerequisiteTasks[item.tableURL] == undefined) prerequisiteTasks[item.tableURL] = [];
-					prerequisiteTasks[item.tableURL].push({column: item.columnName, value: [data[prerequisite], data[item.columnName]], foreignModelName: item.foreignModelName})
-				}
-			} else if (item.typeName == "Status") {
-				
-			}
-			if (item.isLink) {
-				let referenceValue = data[item.columnName];
-				if (item.linkColumn) {
-					referenceValue = data[item.linkColumn];
-				}
-				columnLinkMap[item.columnName] = {column: item, value: referenceValue};
-			} else {
-				item.isLink = false;
-			}
-			let align = '';
-			if (item.isNumber) align = 'right';
-			else if (item.isStatus) align = 'center';
-			let option = {
-				'align': align,
-				'value': value,
-				'key': item.columnName,
-				'label': item.label,
-				'isLink': item.isLink,
-				'isHidden': item.typeName == 'Hidden' ? true : false
-			}
-			
-			list.push(option);
-		}
-		let now = new Date();
-		let options = {
-			'id': data != undefined ? data.id : -1,
-			'rootURL': rootURL,
-			'tbody': list, 
-			'index': config.index,
-			'hasView': config.hasView,
-			'hasAvatar': config.hasAvatar,
-			'hasEdit': config.hasEdit, 
-			'hasDelete': config.hasDelete, 
-			'hasSelect': config.hasSelect,
-			'hasIndex': config.hasIndex,
-			'cssClass': config.cssClass,
-			'avatar': config.avatar,
-			'hasAvatarURL': config.hasAvatarURL,
-			'avatarColumn': config.avatarColumn,
-			'avatarID': data[config.avatarColumn],
-			'timestamp': now.getTime()
-		};
-		let record = new DOMObject(recordTemplate, options);
-		await object.setMouseOverOnStatus(record);
-		record.id = data.id;
-		record.uid = `${randomString(10)}_${Date.now()}`;
-		record.modelName = modelName;
-		record.record = data;
-		record.tasks = tasks;
-		record.prerequisiteTasks = prerequisiteTasks;
-		await object.renderOperation(record, operationTemplate, config);
-		for (let column in columnLinkMap) {
-			if (record.dom[column] == undefined) continue;
-			if (record.dom[`${column}_link`] != undefined) {
-				record.dom[`${column}_link`].onclick = async function(e) {
-					e.preventDefault();
-				}
-			}
-			record.dom[column].onclick = async function(e) {
-				e.preventDefault();
-				if (columnLinkMap[column] == '') return;
-				if (columnLinkMap[column] == -1) return;
-				AbstractInputUtil.prototype.triggerLinkEvent(object.page, columnLinkMap[column]);
-				// let value = columnLinkMap[column].value;
-				// if (columnLinkMap[column].column.foreignModelName) {
-				// 	if (main.pageModelDict[columnLinkMap[column].column.foreignModelName] == undefined) return;
-				// 	let modelName = columnLinkMap[column].column.foreignModelName;
-				// 	main.pageModelDict[modelName].renderViewFromExternal(modelName, {data: {id: value}, isView: true}, 'Form');
-				// } else {
-				// 	object.page.renderViewFromExternal(object.page.model, {data: {id: value}, isView: true}, 'Form')
-				// }
-			}
-		}
-		if(config.hasView){
-			record.dom.view.onclick = async function(){
-				if(config.viewFunction != undefined) config.viewFunction(data.id);
-				else if (table.onViewRecord != undefined) await table.onViewRecord(record);
-				else{
-					let detail = data;
-					if (object.page.config == undefined) object.page.config = {};
-					if (object.page.config.isFetchByID == undefined) object.page.config.isFetchByID = true;
-					if (object.page.restProtocol != undefined && object.page.config.isFetchByID) {
-						detail = await object.page.restProtocol.getByID(data.id);
-					}
-					await object.page.renderView(modelName, {data: detail, isView: true}, 'Form');
-				}
-			}
-		}
-		if(config.hasEdit){
-			record.dom.edit.onclick = async function(){
-				if(config.editFunction != undefined) config.editFunction(data.id);
-				else if (table.onEditRecord != undefined) await table.onEditRecord(record);
-				else {
-					let detail = data;
-					if (object.page.config == undefined) object.page.config = {};
-					if (object.page.config.isFetchByID == undefined) object.page.config.isFetchByID = true;
-					if (object.page.restProtocol != undefined && object.page.config.isFetchByID) {
-						detail = await object.page.restProtocol.getByID(data.id);
-					}
-					console.log(data);
-					await object.page.renderView(modelName, {data: detail, isView: false}, 'Form');
-				}
-			}
-		}
-		if(config.hasDelete){
-			record.dom.delete.onclick = async function(){
-				SHOW_CONFIRM_DELETE_DIALOG('Do you want to delete this data?', async function(){
-					let index = table.records.indexOf(record);
-					if (index > -1) table.records.splice(index, 1);
-					record.html.remove();
-					if(config.deleteFunction != undefined){
-						object.page.delete(record);
-						config.deleteFunction(data.id);
-					} else {
-						object.page.delete(record);
-						if (table.onDeleteRecord != undefined) await table.onDeleteRecord(record);
-						else if (record.onDelete != undefined) await record.onDelete(data);
-					}
-				});
-			}
-		}
-		let contextMenu = new DOMObject(TEMPLATE.ContextMenu, config);
-		record.contextMenu = contextMenu;
-		record.html.append(contextMenu);
-		let recordMouseDown;
-		record.html.oncontextmenu = async function(e){
-			e.preventDefault();
-			let contextMenuList = main.body.querySelectorAll('.contextMenu');
-			for(let i in contextMenuList){
-				if(typeof(contextMenuList[i]) == 'object'){
-					contextMenuList[i].classList.add('hidden');
-				}
-			}
-		}
-		record.html.onmousedown = async function() {
-			recordMouseDown = setTimeout(function() {
-				if (record.html.classList.contains('selected')) record.html.classList.remove('selected');
-				else record.html.classList.add('selected');
-			}, 300);
-		}
-		record.html.onmouseup = async function(){
-			clearTimeout(recordMouseDown);
-		}
+		let state = new TableRecordRenderState(object, modelName, config, column, table, viewType);
+		let record = await state.render();
 		return record;
 	}
 
@@ -277,6 +119,9 @@ const AbstractTableView = function(page) {
 	}
 
 	this.renderView = async function(modelName, config, viewType) {
+		if(modelName == undefined || modelName == null){
+			throw new Error('Model name is not defined.');
+		}
 		let component, pagination;
 		let generalView = await object.getView(modelName, config, viewType);
 		if (config == undefined) config = {};
@@ -295,6 +140,7 @@ const AbstractTableView = function(page) {
 				await object.page.renderView(modelName, undefined, 'Form');
 			}
 		}
+		if (object.page.config.hasExcel) object.initExcelEvent();
 		if (object.page.config.hasFilter) {
 			object.page.home.dom.search.onclick = async function() {
 				await object.page.renderSearchForm(modelName, {data : object.filter});
@@ -320,83 +166,32 @@ const AbstractTableView = function(page) {
 		return component;
 	}
 
+	this.initExcelEvent = async function(){
+		object.page.home.dom.downloadTemplate.onclick = async function(){
+			object.page.downloadExcelTemplate();
+		}
+		object.page.home.dom.importExcel.onclick = async function(){
+			object.page.home.dom.excelFile.click();
+		}
+		object.page.home.dom.exportExcel.onclick = async function(){
+			object.renderExportExcelDialog();
+		}
+		object.page.home.dom.excelFile.onchange = async function(){
+			if(this.files.length == 0) return;
+			object.page.importExcel(this.files[0]);
+			this.type = 'text';
+			this.type = 'file';
+		}
+	}
+
+	this.renderExportExcelDialog = async function(){
+		await object.page.renderExportExcelDialog(object.page.model);
+		object.page.home.dom.excel.show();
+	}
+
 	this.getPagination = async function(limit, count, component){
-		if (limit == undefined || isNaN(parseInt(limit))) limit = object.page.limit;
-		limit = parseInt(limit);
-		let options = {
-			pageNumber: await object.page.getPageNumber(),
-			limit: count
-		}
-		if (component.getPageNumber) options.pageNumber = await component.getPageNumber();
-		let pagination = new DOMObject(TEMPLATE.Pagination, options);
-		pagination.dom.firstPage.onclick = async function(){
-			if (component && component.limit && typeof component.limit == 'object') limit = parseInt(component.limit.value);
-			SHOW_LOADING_DIALOG(async function(){
-				if (component && component.setPageNumber) component.setPageNumber(1);
-				else await object.page.setPageNumber(1);
-				if (component && component.renderFunction) component.renderFunction(limit);
-				else await object.page.getData(limit);
-			});			
-		}
-		pagination.dom.backPage.onclick = async function(){
-			let pageNumber;
-			if (component && component.getPageNumber) pageNumber = component.getPageNumber();
-			else pageNumber = await object.page.getPageNumber();
-			pageNumber = pageNumber - 1;
-			if(pageNumber < 1) pageNumber = 1;
-			if (component && component.limit && typeof component.limit == 'object') limit = parseInt(component.limit.value);
-			SHOW_LOADING_DIALOG(async function(){
-				// await object.page.setPageNumber(pageNumber);
-				// await object.page.getData(limit);
-				if (component && component.setPageNumber) component.setPageNumber(pageNumber);
-				else await object.page.setPageNumber(pageNumber);
-				if (component && component.renderFunction) component.renderFunction(limit);
-				else await object.page.getData(limit);
-			});
-		}
-		pagination.dom.pageNumber.onkeyup = async function(event){
-			if(event.keyCode == 13){
-				let pageNumber = parseInt(this.value);
-				if(pageNumber < 1) pageNumber = 1;
-				if(pageNumber > count) pageNumber = count;
-				if (component && component.limit && typeof component.limit == 'object') limit = parseInt(component.limit.value);
-				SHOW_LOADING_DIALOG(async function(){
-					// await object.page.setPageNumber(pageNumber);
-					// await object.page.getData(limit);
-					if (component && component.setPageNumber) component.setPageNumber(pageNumber);
-					else await object.page.setPageNumber(pageNumber);
-					if (component && component.renderFunction) component.renderFunction(limit);
-					else await object.page.getData(limit);
-				});
-			}
-		}
-		pagination.dom.nextPage.onclick = async function(){
-			let pageNumber;
-			if (component && component.getPageNumber) pageNumber = component.getPageNumber();
-			else pageNumber = await object.page.getPageNumber();
-			pageNumber = pageNumber + 1;
-			if(pageNumber > count) pageNumber = count;
-			if (component && component.limit && typeof component.limit == 'object') limit = parseInt(component.limit.value);
-			SHOW_LOADING_DIALOG(async function(){
-				// await object.page.setPageNumber(pageNumber);
-				// await object.page.getData(limit);
-				if (component && component.setPageNumber) component.setPageNumber(pageNumber);
-				else await object.page.setPageNumber(pageNumber);
-				if (component && component.renderFunction) component.renderFunction(limit);
-				else await object.page.getData(limit);
-			});
-		}
-		pagination.dom.lastPage.onclick = async function(){
-			if (component && component.limit && typeof component.limit == 'object') limit = parseInt(component.limit.value);
-			SHOW_LOADING_DIALOG(async function(){
-				// await object.page.setPageNumber(count);
-				// await object.page.getData(limit);
-				if (component && component.setPageNumber) component.setPageNumber(count);
-				else await object.page.setPageNumber(count);
-				if (component && component.renderFunction) component.renderFunction(limit);
-				else await object.page.getData(limit);
-			});
-		}
+		let state = new TablePaginationRenderState(object, limit, count, component);
+		let pagination = await state.render();
 		return pagination;
 	}
 
@@ -418,13 +213,11 @@ const AbstractTableView = function(page) {
 		for(let i in config.operation){
 			let operation = new DOMObject(TEMPLATE.TableOperationHead, config.operation[i]);
 			thead.html.append(operation);
-			
 			if (config.operation[i].ID) {
 				for (let i in operation.dom) {
 					thead.dom[i] = operation.dom[i];
 				}
 			}
-			
 		}
 		// NOTE
 		// Colspan with operation length
@@ -460,8 +253,10 @@ const AbstractTableView = function(page) {
 					if (tasks[url].foreignModelName) {
 						let column = await AbstractInputUtil.prototype.getBaseInputData(tasks[url].foreignModelName);
 						if (!column.isDefaultAvatar) {
-							let data = {}
-							if (typeof column.avatar == 'string') {
+							let data = {};
+							if(result[item.value].avatar != undefined){
+								data.__avatar__ = result[item.value].avatar;
+							} else if (typeof column.avatar == 'string') {
 								data["id"] = "";
 								data.__avatar__ = {column: "id", url: column.avatar};
 							} else {
@@ -471,7 +266,8 @@ const AbstractTableView = function(page) {
 							value = AbstractInputUtil.prototype.getRenderedTemplate(data, result[item.value].label);
 						}
 					}
-					item.target.innerHTML = value;
+					if(typeof value == 'string') item.target.innerHTML = value;
+					else item.target.html(value);
 				}
 			}
 		}
@@ -529,7 +325,7 @@ const AbstractTableView = function(page) {
 			object.fetchValueFromTasks(tableTasks);
 			object.fetchValueFromPrerequisiteTasks(prerequisiteTableTasks);
 		}
-		table.createRecord = async function(data) {
+		table.getRecord = async function(data) {
 			if (table.records == undefined) table.records = [];
 			if (!Array.isArray(table.records)) table.records = [];
 			let offset = 0;
@@ -571,8 +367,21 @@ const AbstractTableView = function(page) {
 				'avatarID': data != undefined ? data[config.avatarColumn]: -1,
 			}
 			let tbody = await object.getRecord(modelName, options, input, table, viewType);
+			return tbody;
+		}
+
+		table.createRecord = async function(data) {
+			let tbody = await table.getRecord(data);
 			table.dom.tbody.append(tbody, 'records');
 			if (table.records) table.records.push(tbody);
+			if (table.onCreateRecord != undefined) await table.onCreateRecord(tbody);
+			return tbody;
+		}
+
+		table.prependRecord = async function(data) {
+			let tbody = await table.getRecord(data);
+			table.dom.tbody.prepend(tbody, 'records');
+			if (table.records) table.records.unshift(tbody);
 			if (table.onCreateRecord != undefined) await table.onCreateRecord(tbody);
 			return tbody;
 		}
@@ -677,131 +486,35 @@ const AbstractTableView = function(page) {
 		if (config == undefined) config = {};
 		if (config.data == undefined) config.data = [];
 		if (config.hasView == undefined) config.hasView = false;
-		if (config.hasAvatar == undefined) {
-			if (object.page.hasAvatar != undefined) config.hasAvatar = object.page.hasAvatar;
-			if (object.page.config != undefined && object.page.config.hasAvatar != undefined) config.hasAvatar = object.page.config.hasAvatar;
-			else config.hasAvatar = true;
-		} if (config.hasIndex == undefined) config.hasIndex = true;
+		if (config.hasAvatar == undefined) object.getAvatarConfig(config);
+		if (config.hasIndex == undefined) config.hasIndex = true;
 		if (config.hasEdit == undefined) config.hasEdit = true;
 		if (config.hasDelete == undefined) config.hasDelete = true;
 		if (config.hasSelect == undefined) config.hasSelect = false;
 		if (config.style == undefined) config.style = '';
 		if (config.operation == undefined) config.operation = [];
-		if (viewType == "TableForm") {
-			config.hasEdit = false;
-		}
-		config.operation = config.operation.concat(await object.getDefaultOperation(config.hasEdit, config.hasDelete, config.hasView));
+		if (viewType == "TableForm")  config.hasEdit = false;
+		let operation = await object.getDefaultOperation(
+			config.hasEdit,
+			config.hasDelete,
+			config.hasView
+		);
+		config.operation = config.operation.concat(operation);
 		return config;
 	}
 
-	this.getColumnValue = async function(column, data) {
-		let value = "";
-		if (data == undefined) return value;
-		if (column.typeName == "EnumSelect" || column.typeName == "Select" || column.typeName == "EnumCheckBox") {
-			value = data[column.columnName];
-			for (let j in column.option) {
-				if (column.option[j].value == value) return column.option[j].label;
-			}
-		} else if (column.typeName == "Enable") {
-			value = data[column.columnName];
-			if (value) value = 'Enable'
-			else value = 'Disable'
-		} else if (column.typeName == "ReferenceSelect") {
-			if (column.option != undefined) {
-				column.optionMap = {}
-				for (let option of column.option) {
-					column.optionMap[option.value] = option.label;
-				}
-			}
-			if (column.optionMap == undefined) return "-";
-			if (column.optionMap[data[column.columnName]] == undefined) return "-";
-			if (column.optionMap[data[column.columnName]] != undefined) value = column.optionMap[data[column.columnName]]
-		} else if (column.typeName == "PrerequisiteReferenceSelect") {
-			if (column.tableURL) return '-';
-			value = data[column.columnName];
-			let prerequisite = column.prerequisite.split('.');
-			prerequisite = data[prerequisite[prerequisite.length-1]];
-			if (prerequisite != undefined && prerequisite != -1) {
-				let results;
-				if (object.prerequisiteCache[column.url+prerequisite] == undefined) {
-					let response = await GET(column.url+prerequisite, undefined, 'json', true);
-					if (!response.isSuccess) return "-";
-					results = response.results;
-					if (response.result != undefined) results = response.result;
-					object.prerequisiteCache[column.url+prerequisite] = {time: Date.now(), results: results};
-				} else if (object.prerequisiteCache[column.url+prerequisite].time - Date.now() > 5000){
-					let response = await GET(column.url+prerequisite, undefined, 'json', true);
-					if (!response.isSuccess) return "-";
-					results = response.results;
-					if (response.result != undefined) results = response.result;
-					object.prerequisiteCache[column.url+prerequisite] = {time: Date.now(), results: results};
-				} else {
-					results = object.prerequisiteCache[column.url+prerequisite].results;
-				}
-				let valueMap = {};
-				try {
-					valueMap = results.reduce((a, v) => ({ ...a, [v.value]: v.label}), {});
-				} catch (error) {
-					// console.error(error);
-				}
-				if (valueMap[value] == undefined){
-					return "-"
-				}
-				value = valueMap[value];
-			} else {
-				return '-'
-			}
-		} else if (column.typeName == "AutoComplete") {
-			if (column.tableURL) return '-';
-			if(data[column.columnName] == '') return value;
-			let response = await POST(`${column.url}/by/reference`, {'reference': data[column.columnName]}, undefined, 'json', true);
-			if (response == undefined) return value;
-			if (response.isSuccess) value = response.label;
-		} else if(column.typeName == "Fraction") {
-			let fraction = data[column.columnName];
-			value = (new Fraction(fraction)).toString();
-			value = new Intl.NumberFormat('th-TH', {}).format(value);
-		} else if (column.typeName == "Currency") {
-			let currency = data[column.columnName];
-			if (typeof currency != 'object') {
-				value = new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB'}).format(currency);
-			} else {
-				value = new Intl.NumberFormat('th-TH', { style: 'currency', currency: currency.originCurrency}).format(currency.originValue);
-			}
-		} else if (column.typeName == "Number") {
-			value = new Intl.NumberFormat('th-TH', {}).format(data[column.columnName]);
-		} else if (column.typeName == "FileMatrix") {
-			value = JSON.parse(data[column.columnName]);
-		} else if (column.typeName == "Color") {
-			value = `<input style="width:100%;" type="color" disabled value="${data[column.columnName]}"/>`
-		} else if (column.typeName == "Status") {
-			let item = data[column.columnName];
-			let classList = item.classList != undefined ? item.classList.join(" "): "";
-			let color = item.color != undefined ? item.color: '';
-			let style = color != '' ? `style="background:${color} !important;"`: '';
-			value = `<div ${style} class="status_flag ${classList}"><span class="tooltiptext" localize>${item.label}</span></div>`;
-		} else if (column.typeName == "Image") {
-			let item = data[column.columnName];
-			let icon = await CREATE_SVG_ICON("Image");
-			let template = `
-					<div class="flex center">
-						<div class="abstract_operation_button " rel="view" onclick="">${icon.icon}</div>
-					</div>
-					`
-			value = template;
-		} else if (column.typeName == "Date") {
-			if (data[column.columnName] != undefined && data[column.columnName] != 0) {
-				value = new Intl.DateTimeFormat(LANGUAGE, {day: "2-digit", month: "2-digit", year: "numeric"}).format(new Date(data[column.columnName]))
-			}
-		} else if (column.typeName == "DateTime") {
-			if (data[column.columnName] != undefined && data[column.columnName] != 0) {
-				value = new Intl.DateTimeFormat(LANGUAGE, {day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false}).format(new Date(data[column.columnName]))
-			}
-		} else if (column.optionMap != undefined) {
-			value = data[column.columnName];
-		} else {
-			value = data[column.columnName];
+	this.getAvatarConfig = function(config){
+		if (object.page.hasAvatar != undefined){
+			config.hasAvatar = object.page.hasAvatar;
 		}
-		return value
+		if (object.page.config != undefined && object.page.config.hasAvatar != undefined){
+			config.hasAvatar = object.page.config.hasAvatar;
+		} else {
+			config.hasAvatar = true;
+		}
+	}
+
+	this.getColumnValue = async function (column, data) {
+		return await getColumnValue(object, column, data);
 	}
 }

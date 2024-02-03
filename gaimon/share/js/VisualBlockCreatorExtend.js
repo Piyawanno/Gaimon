@@ -42,7 +42,7 @@ const VisualBlockCreatorExtend = function() {
 				step : tool.step,
 				id : id
 			};
-			const group = new DOMObject(await TEMPLATE.get('VisualBlockInput'), input);
+			const group = new InputDOMObject(await TEMPLATE.get('VisualBlockInput'), input);
 			const body = `visualblock_form_${input.group}_${input.step}_${input.id}`;
 			if(item.isForm) {
 				const config = item.input;

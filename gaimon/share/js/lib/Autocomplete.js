@@ -36,7 +36,6 @@ let Autocomplete = function() {
 	}
 
 	this.getRenderedTemplate = function(value) {
-		console.log(value);
 		return AbstractInputUtil.prototype.getRenderedTemplate(value, object.template);
 	}
 
@@ -46,7 +45,9 @@ let Autocomplete = function() {
 		let tag = document.createElement("DIV");
 		tag.setAttribute("class", "item");
 		if (object.template.length > 0) {
-			tag.innerHTML = object.getRenderedTemplate(value);
+			let rendered = object.getRenderedTemplate(value);
+			if(typeof rendered == 'string') tag.innerHTML = rendered;
+			else tag.appendChild(rendered.html);
 		} else {
 			tag.innerHTML = value;
 		}
@@ -162,7 +163,6 @@ let Autocomplete = function() {
 						parameter: object.parameter
 					}
 					let response = await POST(object.data, data);
-					console.log(response);
 					object.autocompleteTag.innerHTML = '';
 					let result;
 					if (response.results != null && response.results != undefined) result = response.results;
@@ -178,6 +178,7 @@ let Autocomplete = function() {
 				}
 			}
 		});
+
 		object.tag.addEventListener("click", async function(e) {
 			let rect = object.tag.getBoundingClientRect();
 			object.autocompleteTag.style.top = rect.bottom + "px";
@@ -203,8 +204,12 @@ let Autocomplete = function() {
 					let response = await POST(object.data, data);
 					object.autocompleteTag.innerHTML = '';
 					let result;
-					if (response.results != null && response.results != undefined) result = response.results;
-					else if (response.result != null && response.result != undefined) result = response.result;
+					if (response.results != null && response.results != undefined){
+						console.log(`*** DEPRECATED: 'results' should not be used@${object.data}.`);
+						result = response.results;
+					}else if (response.result != null && response.result != undefined){
+						result = response.result;
+					}
 					if (result == undefined) return;
 				   object.filter(result, val, object.callback);
 				}else{
@@ -228,8 +233,12 @@ let Autocomplete = function() {
 		let response = await POST(object.data, data);
 		object.autocompleteTag.innerHTML = '';
 		let result;
-		if (response.results != null && response.results != undefined) result = response.results;
-		else if (response.result != null && response.result != undefined) result = response.result;
+		if (response.results != null && response.results != undefined){
+			console.log(`*** DEPRECATED: 'results' should not be used@${object.data}.`);
+			result = response.results;
+		}else if (response.result != null && response.result != undefined){
+			result = response.result;
+		}
 		return result;
 	}
 
@@ -267,8 +276,8 @@ let Autocomplete = function() {
 		  x[i].classList.remove("autocomplete-active");
 		}
 	}
-	this.closeAllLists = function(elmnt) {
-		if (elmnt != object.autocompleteTag && elmnt != object.tag) {
+	this.closeAllLists = function(element) {
+		if (element != object.autocompleteTag && element != object.tag) {
 			object.autocompleteTag.innerHTML = '';
 		}
 	}

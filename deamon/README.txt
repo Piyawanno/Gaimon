@@ -5,7 +5,7 @@ https://askubuntu.com/questions/155791/how-do-i-sudo-a-command-in-a-script-witho
 
 ==================
 
-1. chage sudoer to file to be able to run "sudo xpeed-db" without password
+1. chage sudoer to file to be able to run "sudo gaimon-deamon" without password
 
 	- open terminal
 	- $sudo visudo 
@@ -20,7 +20,7 @@ https://askubuntu.com/questions/155791/how-do-i-sudo-a-command-in-a-script-witho
 		root ALL=(ALL) NOPASSWD: /usr/local/bin/gaimon
 		root ALL=(ALL) NOPASSWD: /usr/bin/gaimon
 
-2. copy file "xpeed" to /etc/init.d
+2. copy file "gaimon-deamon" to /etc/init.d
 	- open new terminal
 	- $sudo cp ./gaimon-deamon /etc/init.d/gaimon-deamon
 

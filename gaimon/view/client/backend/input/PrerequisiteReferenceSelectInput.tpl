@@ -5,7 +5,7 @@
 	</div>
 	<div class="flex gap-5px">
 		<div class="width-100-percent">
-			<select rel="{{{columnName}}}" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}} localize>
+			<select rel="{{{columnName}}}" {{#isRequired}}required{{/isRequired}} {{#config.isView}}disabled{{/config.isView}} {{^isEditable}}disabled{{/isEditable}} localize>
 				{{^isFilter}}<option rel="defaultValue_{{{columnName}}}" value="-1" localize>None</option>{{/isFilter}}
 				{{#isFilter}}<option value="-1" localize>All</option>{{/isFilter}}
 			</select>

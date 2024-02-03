@@ -12,6 +12,7 @@
 				onkeypress="return /^-?[0-9]*$/.test(this.value+event.key)" step="1"
 			{{/isFloatingPoint}}}
 			{{#isRequired}}required{{/isRequired}}
-			{{^isEditable}}disabled{{/isEditable}}></div>
-	<div class="error text-align-center hidden" rel="{{{columnName}}}_error"></div>
+			{{^isEditable}}disabled{{/isEditable}}
+			{{#config.isView}}readonly{{/config.isView}}></div>
+	<div class="error_message text-align-center hidden" rel="{{{columnName}}}_error"></div>
 </div>

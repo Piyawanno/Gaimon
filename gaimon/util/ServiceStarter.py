@@ -1,6 +1,6 @@
 import os
 
-__ALLOWED_OPERATION__ = {'start', 'stop', 'restart', 'kill'}
+__ALLOWED_OPERATION__ = {'start', 'stop', 'restart', 'kill', 'close'}
 
 
 class ServiceStarter:
@@ -9,10 +9,20 @@ class ServiceStarter:
 		self.namespace = namespace
 
 	def operate(self, operation: str):
-		if operation in __ALLOWED_OPERATION__:
+		if operation == 'close' :
+			self.closeSession()
+		elif operation in __ALLOWED_OPERATION__:
 			self.manageService(operation)
 		else:
 			print(f"*** Error : Operation {operation} is not defined.")
+
+	def closeSession(self) :
+		for service in self.config['service']:
+			name = service['name']
+			command = f"tmux kill-session -t {name}"
+			print(f">>> Closing tmux session {name}")
+			print(command)
+			os.system(command)
 
 	def manageService(self, operation):
 		if self.namespace is None or len(self.namespace) == 0:

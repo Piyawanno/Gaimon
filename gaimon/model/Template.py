@@ -12,7 +12,7 @@ class Template(Record):
 
 	name = StringColumn(
 		input=TextInput(
-			label='name',
+			label='Name',
 			order='1.0',
 			isTable=True,
 			isSearch=True,
@@ -22,7 +22,7 @@ class Template(Record):
 
 	version = StringColumn(
 		input=TextInput(
-			label='version',
+			label='Version',
 			order='2.0',
 			isTable=True,
 			isSearch=True,

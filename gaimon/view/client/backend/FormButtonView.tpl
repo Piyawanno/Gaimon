@@ -1,0 +1,1 @@
+<div class="abstract_button" localize>{{label}}</div>

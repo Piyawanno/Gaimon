@@ -1,4 +1,4 @@
-<div class="abstract_dialog">
+<div class="abstract_dialog" rel="abstract_dialog">
 	<div class="abstract_dialog_container {{size}}" rel="dialog_container">
 		<div rel="dialogMenu" class="abstract_dialog_menu hidden"></div>
 		<div rel="additionalTopBar" class="abstract_additional_topBar hidden"></div>

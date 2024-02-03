@@ -5,7 +5,7 @@ import sys, argparse
 
 __parser__ = argparse.ArgumentParser(description="Gaimon service starter.")
 __parser__.add_argument("-n", "--namespace", help="Namespace of gaimon service.")
-__parser__.add_argument("-o", "--operation", help="Operation mode.", required=True, choices=['start', 'stop', 'restart', 'kill'],)
+__parser__.add_argument("-o", "--operation", help="Operation mode.", required=True, choices=['start', 'stop', 'restart', 'kill', 'close'],)
 
 __option__ = __parser__.parse_args(sys.argv[1:])
 
@@ -21,6 +21,5 @@ __config__ = readConfig(
 	namespace=__namespace__
 )
 
-print(__config__)
 starter = ServiceStarter(__config__, __namespace__)
 starter.operate(__option__.operation)
