@@ -23,8 +23,8 @@ const DocumentStatusManagement = function(main){
 		// 	label: 'Document status', ID: 'documentStatus', icon: ''
 		// }];
 		let operation = [];
-		if(config.hasAction == undefined) config.hasAction = true;
-		// if(config.hasAction) operation.push({label: 'Operation', ID: 'action', icon: 'DocumentStatus'});
+		// if(config.hasAction == undefined) config.hasAction = true;
+		if(config.hasAction) operation.push({label: 'Operation', ID: 'action', icon: 'DocumentStatus'});
 		if(config.hasPrint) operation.push({label: 'Print', ID: 'print', icon: 'Printer'});
 		return operation;
 	}
@@ -36,7 +36,7 @@ const DocumentStatusManagement = function(main){
 			// if(table.isQuotation != undefined) record.isQuotation = true;
 			await object.setStatus(record);
 			if(record.record.documentStatus == DocumentStatus.DRAFT){
-				// await object.initDraftEvent(record, page);
+				await object.initDraftEvent(record, page);
 			}else if(record.record.documentStatus == DocumentStatus.INTERNAL_IN_CONSIDERATION){
 				await object.initInternalInConsiderationEvent(record, page);
 			}else if(record.record.documentStatus == DocumentStatus.INTERNAL_APPROVED){
@@ -79,7 +79,6 @@ const DocumentStatusManagement = function(main){
 	}
 
 	this.appendDecisionButton = async function(form, page, isForm = true){
-		console.log(form);
 		let documentStatus = form.rawData.documentStatus;
 		if(isForm){
 			await object.appendApproveButton(form, page, isForm);
@@ -138,8 +137,11 @@ const DocumentStatusManagement = function(main){
 				form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
 			}
 			if(documentStatus == undefined) form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
-			if(form.onSubmit != undefined) form.onSubmit(form);
-			else page.submit(form, isForm);
+			if(form.onSubmit != undefined){
+				form.onSubmit(form);
+			}else{
+				page.submit(form, isForm);
+			}
 		}
 	}
 
@@ -191,7 +193,8 @@ const DocumentStatusManagement = function(main){
 		form.dom.operation.prepend(button);
 		button.dom.draft.onclick = async function(){
 			form.documentStatusEnum = DocumentStatus.DRAFT;
-			page.submit(form);
+			if(form.onSubmit != undefined) form.onSubmit(form);
+			else page.submit(form);
 		}
 	}
 
@@ -272,7 +275,7 @@ const DocumentStatusManagement = function(main){
 		form.dom.otherOperation.prepend(otherOperation);
 	}
 
-	this.setDecision = async function(config, page){
+	this.setDecision = async function(config = {}, page){
 		let form = config.dialog;
 		let operation = new DOMObject(TEMPLATE.DocumentStatusOperation);
 		if (form.dom.dialog_container) {
@@ -283,7 +286,7 @@ const DocumentStatusManagement = function(main){
 		form.dom.form.append(operation);
 		form.dom.operation = operation.dom.operation;
 		form.dom.otherOperation = operation.dom.otherOperation;
-		form.rawData.documentStatus = config.data.documentStatus;
+		if(config.data) form.rawData.documentStatus = config.data.documentStatus;
 		await object.appendDecisionButton(form, page, false);
 	}
 
@@ -313,13 +316,13 @@ const DocumentStatusManagement = function(main){
 
 	this.initInternalApproveEvent = async function(record, page){
 		let domObject = new DOMObject((await CREATE_SVG_ICON('DocumentSender')).icon);
-		// record.dom.action.html('');
-		// record.dom.action.append(domObject);
-		// if(record.dom.action != undefined){
-		// 	record.dom.action.onclick = async function(){
-		// 		page.updateDocumentStatus(record.record, DocumentStatus.CUSTOMER_IN_CONSIDERATION);
-		// 	}
-		// }
+		if(record.dom.action != undefined){
+			record.dom.action.html('');
+			record.dom.action.append(domObject);
+			record.dom.action.onclick = async function(){
+				page.updateDocumentStatus(record.record.id, DocumentStatus.CUSTOMER_IN_CONSIDERATION);
+			}
+		}
 		if(record.dom.print != undefined){
 			record.dom.print.onclick = async function(){
 				page.print({data: record.record});

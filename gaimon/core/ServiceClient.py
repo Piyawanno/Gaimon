@@ -22,7 +22,7 @@ class ServiceClient:
 		self.ID = config.get('ID', None)
 		self.lastCheck = -1.0
 
-	def call(self, route, parameter=None, payload=None, headers=None):
+	def call(self, route, parameter=None, payload=None, headers=None, entity:str='main'):
 		headers = {} if headers is None else headers
 		if self.isCheckPermission:
 			body = json.dumps(self.getPermissionPayLoad(parameter))

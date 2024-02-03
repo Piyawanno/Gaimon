@@ -5,7 +5,7 @@ import aiohttp, time
 
 
 class AsyncServiceClient(ServiceClient):
-	async def call(self, route, parameter=None, payload=None, headers=None):
+	async def call(self, route, parameter=None, payload=None, headers=None, entity:str='main'):
 		headers = {} if headers is None else headers
 		url = self.rootURL + route[1:]
 		if self.isCheckPermission:

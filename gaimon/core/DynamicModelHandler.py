@@ -4,9 +4,9 @@ from xerial.ModelClassGenerator import ModelClassGenerator
 from xerial.MetaDataExtractor import MetaDataExtractor
 from gaimon.model.DynamicModel import DynamicModel
 
-from typing import List
+from typing import Any, Dict, List
 
-import json
+import json, time
 
 
 class DynamicModelHandler:
@@ -16,32 +16,32 @@ class DynamicModelHandler:
 		self.session: DBSessionBase = application.session
 		self.generator = ModelClassGenerator()
 		self.modelList = []
+		self.modelClassDict:Dict[str, Any] = {}
 
-	async def checkModel(self, isCreateTable: bool = False, session: DBSessionBase = None):
+	def getModelList(self, entity:str):
+		return self.modelList
+	
+	def getModelByName(self, name: str, entity:str):
+		return self.modelClassDict.get(name, None)
+
+	async def checkModel(self, isCreateTable: bool = False, session: DBSessionBase = None, entity: str="main"):
 		if session is None: session = self.session
+		start = time.time()
 		self.modelList: List[DynamicModel] = await session.select(DynamicModel, "")
+		result = []
 		for model in self.modelList:
 			if model.attributeList == None: continue
 			model.attributeList = json.loads(model.attributeList)
 			modelClass = self.generator.append(model.modelName, model.attributeList)
+			self.modelClassDict[model.modelName] = modelClass
 			MetaDataExtractor.checkBackup(modelClass)
 			session.appendModel(modelClass)
+			result.append(modelClass)
 		if isCreateTable: await session.createTable()
 		self.sessionPool.model = session.model
+		return result
 
-	async def append(self, name: str, label: str, attributeList: List[dict]) -> type:
-		model = DynamicModel()
-		model.modelName = name
-		model.label = label
-		model.attributeList = json.dumps(attributeList)
-		await self.session.insert(model)
-		modelClass = self.generator.append(name, attributeList)
-		self.session.appendModel(modelClass)
-		await self.session.createTable()
-		self.sessionPool.model = self.session.model
-		return modelClass
-
-	async def getModel(self, name: str, session: DBSessionBase = None) -> type:
+	async def getModel(self, name: str, session: DBSessionBase = None, entity: str="main") -> type:
 		if session is None: session = self.session
 		modelClass = session.model.get(name, None)
 		if modelClass is not None: return modelClass

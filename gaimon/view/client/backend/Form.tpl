@@ -1,5 +1,9 @@
 <div class="abstract_form_container">
-	<div class="abstract_step_container cd-breadcrumb triangle hidden" rel="step"></div>
+	<div class="abstract_step_container  cd-breadcrumb triangle hidden" rel="step"></div>
+	<div class="abstract_menu_container tab_view hidden" rel="tab">
+		<div class="flex-wrap" rel="tabMenuList"></div>
+		<div rel="buttonTabList"></div>
+	</div>
 	<div class="abstract_form" rel="form_container">
 		<div class="flex space-between" rel="titleContainer">
 			<div class="form_header" rel="title" localize>{{{title}}}</div>
@@ -11,6 +15,9 @@
 					</div>
 					<div class="layer"></div>
 				</div>
+			</div>
+			<div class="flex space-between gap-5px">
+				<div class="flex flex-column-responsive gap-5px" style="height: 30px;" rel="operationContainer"></div>
 			</div>
 		</div>
 		<div class="abstract_menu_container hidden" rel="menu">
@@ -244,6 +251,7 @@
 		<div class="abstract_form_input" rel="additionalForm"></div>
 		<div class="flex gap-5px flex-end" rel="operation">
 			<div class="abstract_button submit_button" rel="submit" localize>Submit</div>
+			<div class="abstract_button edit_form_button" rel="edit" localize>Edit</div>
 			<div class="abstract_button cancel_button" rel="cancel" localize>Cancel</div>
 		</div>
 	</div>

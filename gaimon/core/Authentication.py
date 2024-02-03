@@ -2,7 +2,7 @@ from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from gaimon.model.User import User
 from gaimon.model.UserGroupPermission import UserGroupPermission
 
-from typing import List
+from typing import Dict, List
 from datetime import datetime, timezone, timedelta
 
 import json, jwt
@@ -10,53 +10,85 @@ import json, jwt
 #TODO : Replace Redis with MicroService
 
 class Authentication:
-	def __init__(self, session, redis):
-		self.session = session
-		self.redis = redis
+	def __init__(self, application):
+		from gaimon.core.AsyncApplication import AsyncApplication
+		self.application:AsyncApplication = application
+		self.session = self.application.session
+		self.redis = self.application.redis
+		self.userHandler = self.application.userHandler
 		self.AUTHENTICATION_REDIS_KEY = "GaimonAuthentication"
 		self.ROLE_REDIS_KEY = "GaimonRole"
+		self.GROUP_ROLE_KEY = "GaimonGroupRole"
 		self.TOKEN_REDIS_KEY = "GaimonToken"
 		self.TOKEN_TIME_REDIS_KEY = "GaimonTokenTime"
 		self.SIGNING_KEY = "sx5AL5uk0CkfmFQ8Kda7HbWDdupLaOksEj3sXMvY9tM="
 		self.PERMISSION_REDIS_KEY = 'GaimonPermission'
 
+	async def triggerRole(self, session: AsyncDBSessionBase, entity: str):
+		models:List[UserGroupPermission] = await session.select(UserGroupPermission, '')
+		result = {}
+		for model in models:
+			roles:List[str] = result.get(model.gid, [])
+			roles.append(model.toString())
+			result[model.gid] = roles
+		await self.redis.hset(self.GROUP_ROLE_KEY, entity, json.dumps(result))
+
+	async def getUserByID(
+		self,
+		userID: int,
+	):
+		if userID < 0: return None
+		raw = await self.redis.hget(self.AUTHENTICATION_REDIS_KEY, userID)
+		return json.loads(raw)
+
 	async def checkUserInformation(
 		self,
 		session: AsyncDBSessionBase,
 		userID: int,
-		isForce: bool = False
+		isForce: bool = False,
+		entity: str = 'main'
 	):
 		if userID < 0: return None
 		raw = await self.redis.hget(self.AUTHENTICATION_REDIS_KEY, userID)
 		if not raw is None and not isForce: return json.loads(raw)
-		userList: List[User] = await session.select(User, f'WHERE id={userID}', limit=1)
-		if len(userList) == 0: return None
-		return await self.checkUserInformationByUser(session, userList[0], isForce)
+		user:User = await self.userHandler.getUserByID(session, userID, entity)
+		if user is None: return None
+		return await self.checkUserInformationByUser(session, user, isForce, entity)
 	
 	async def checkUserInformationByUser(
 		self,
 		session: AsyncDBSessionBase,
 		user: User,
-		isForce: bool = False
+		isForce: bool = False,
+		entity: str = 'main'
 	):
 		raw = await self.redis.hget(self.AUTHENTICATION_REDIS_KEY, user.id)
 		if not raw is None and not isForce: return json.loads(raw)
 		result = user.toDict()
 		result['uid'] = user.id
-		result['role'] = await self.checkRole(session, user)
+		result['role'] = await self.processRole(session, user, entity)
 		await self.redis.hset(self.AUTHENTICATION_REDIS_KEY, user.id, json.dumps(result))
 		return result
+	
+	async def processRole(self, session:AsyncDBSessionBase, user: User, entity: str, isForce:bool=False):
+		if isForce: await self.triggerRole(session, entity)
+		if user.id < 0: return ['guest']
+		if user.isRoot: return ['root']
+		groupID = -1
+		if not user.gid is None: groupID = int(user.gid)
+		role = ["user"]
+		result = await self.redis.hget(self.GROUP_ROLE_KEY, entity)
+		if result is None: 
+			await self.triggerRole(session, entity)
+			result = await self.redis.hget(self.GROUP_ROLE_KEY, entity)
+		if result is None: return role
+		result:Dict[str, List[str]] = json.loads(result)
+		return result.get(str(groupID), role)
 
 	async def setUserInformationByToken(self, token, data, expireTime=None):
 		await self.redis.hset(self.TOKEN_REDIS_KEY, token, json.dumps(data))
 		if not expireTime is None:
 			await self.redis.hset(self.TOKEN_TIME_REDIS_KEY, token, expireTime)
-
-	async def checkRole(self, session: AsyncDBSessionBase, user: User):
-		from gaimon.core.PermissionChecker import PermissionChecker
-		role = await PermissionChecker.processRole(session, user)
-		await self.redis.hset(self.ROLE_REDIS_KEY, user.id, json.dumps(role))
-		return role
 
 	async def refreshToken(self, session: AsyncDBSessionBase, token: dict):
 		isExpire = await self.isExpire(token)
@@ -95,7 +127,7 @@ class Authentication:
 		await self.redis.hdel(self.TOKEN_REDIS_KEY, token)
 		await self.redis.hdel(self.TOKEN_TIME_REDIS_KEY, token)
 
-	async def saveSessionByUser(self, session: AsyncDBSessionBase, user: User):
+	async def saveSessionByUser(self, session: AsyncDBSessionBase, user: User, entity:str):
 		now = datetime.now(timezone.utc)
 		data = {}
 		data['id'] = user.id
@@ -105,7 +137,7 @@ class Authentication:
 		if type(token) == bytes: token = token.decode()
 		payload = await self.decodeJWT(token)
 		if payload is None: return None
-		result = await self.checkUserInformationByUser(session, user, True)
+		result = await self.checkUserInformationByUser(session, user, True, entity)
 		await self.setUserInformationByToken(
 			token,
 			result,
@@ -113,7 +145,7 @@ class Authentication:
 		)
 		return token
 
-	async def saveSession(self, session: AsyncDBSessionBase, data: dict):
+	async def saveSession(self, session: AsyncDBSessionBase, data: dict, entity:str="main"):
 		now = datetime.now(timezone.utc)
 		data["iat"] = now
 		data["exp"] = now + timedelta(days=7)
@@ -121,17 +153,13 @@ class Authentication:
 		if type(token) == bytes: token = token.decode()
 		payload = await self.decodeJWT(token)
 		if payload is None: return None
-		result = await self.checkUserInformation(session, int(payload['id']), True)
+		result = await self.checkUserInformation(session, int(payload['id']), True, entity)
 		await self.setUserInformationByToken(
 			token,
 			result,
 			datetime.timestamp(data["exp"])
 		)
 		return token
-
-	async def saveSessionByID(self, id: int):
-		result = await self.checkUserInformation(int(id))
-		return result
 
 	def encodeJWT(self, data):
 		return jwt.encode(data.copy(), self.SIGNING_KEY, algorithm="HS512")
@@ -147,26 +175,10 @@ class Authentication:
 			return None
 		return None
 
-	async def getRoleByGroupID(self, session, groupID, isForce=True):
+	async def getRoleByGroupID(self, groupID:int, entity:str):
 		if groupID is None or groupID < 0: return []
-		if not isForce:
-			raw = await self.redis.hget(self.PERMISSION_REDIS_KEY, groupID)
-			if not raw is None:
-				return json.loads(raw)
-		permissionList: List[UserGroupPermission] = await session.select(
-			UserGroupPermission,
-			f'WHERE gid={groupID}'
-		)
-		role = [i.toString() for i in permissionList]
-		await self.redis.hset(self.PERMISSION_REDIS_KEY, groupID, json.dumps(role))
-		return role
-
-	async def processRole(self, session, user):
-		if user.id < 0: return ['guest']
-		if user.isRoot: return ['root']
-		groupID = -1
-		if not user.gid is None: groupID = int(user.gid)
-		role = ['user']
-		if groupID < 0: return role
-		role.extend(await self.getRoleByGroupID(session, groupID))
-		return role
+		role = ["user"]
+		result = await self.redis.hget(self.GROUP_ROLE_KEY, entity)
+		if result is None: return role
+		result:Dict[str, List[str]] = json.loads(result)
+		return result.get(str(groupID), role)

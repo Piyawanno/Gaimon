@@ -149,7 +149,8 @@ section h2 {
 .cd-breadcrumb.custom-icons li.current:nth-of-type(4) > *::before, .cd-multi-steps.custom-icons li.current:nth-of-type(4) > *::before {
 	background-position: -60px -20px;
 }
-@media only screen and (min-width: 768px) {
+/* @media only screen and (min-width: 768px) { */
+@media only screen and (min-width: 0px) {
 	.cd-breadcrumb, .cd-multi-steps {
 	 	padding: 0 1.2em;
 	}
@@ -163,7 +164,8 @@ section h2 {
 	}
 }
 
-@media only screen and (min-width: 768px) {
+/* @media only screen and (min-width: 768px) { */
+@media only screen and (min-width: 0px) {
 	.cd-breadcrumb.triangle {
 		/* background-color: transparent; */
 		padding: 0;
@@ -173,6 +175,9 @@ section h2 {
 		padding: 0;
 		/* margin: 4px 4px 4px 0; */
 		margin: 0px 4px 0px 0;
+		height: 40px;
+		min-height: 40px;
+		max-height: 40px;
 	}
 	.cd-breadcrumb.triangle li:last-of-type {
 	  	margin-right: 0;
@@ -184,6 +189,7 @@ section h2 {
 		background-color: #607d8b;
 		border-color: #607d8b;
 		color: #fff;
+		height: 100%;
 	}
 	.cd-breadcrumb.triangle li.current > * {
 		color: #ffffff;
@@ -192,12 +198,14 @@ section h2 {
 	}
 	.cd-breadcrumb.triangle li:first-of-type > * {
 		padding-left: 1.6em;
-		border-radius: 10px 0 0 10px;
+		border-top-left-radius: 10px;
+		border-bottom-left-radius: 10px;
 	}
 	.cd-breadcrumb.triangle li:last-of-type > * {
 		padding-right: 1.6em;
+		border-top-right-radius: 10px;
+		border-bottom-right-radius: 10px;
 		/* border-radius: 0 .25em .25em 0; */
-		border-radius: 0 10px 10px 0;
 	}
 	.no-touch .cd-breadcrumb.triangle a:hover {
 		color: #ffffff;
@@ -249,7 +257,8 @@ section h2 {
 	}
 }
 
-@media only screen and (min-width: 768px) {
+/* @media only screen and (min-width: 768px) { */
+@media only screen and (min-width: 0px) {
 	.no-touch .cd-breadcrumb.triangle.custom-icons li:first-of-type a:hover::before, .cd-breadcrumb.triangle.custom-icons li.current:first-of-type em::before, .no-touch .cd-multi-steps.text-center.custom-icons li:first-of-type a:hover::before, .cd-multi-steps.text-center.custom-icons li.current:first-of-type em::before {
 		background-position: 0 -40px;
 	}
@@ -402,7 +411,8 @@ section h2 {
 	content: counter(steps) " - ";
 }
 
-@media only screen and (min-width: 768px) {
+/* @media only screen and (min-width: 768px) { */
+@media only screen and (min-width: 0px) {
 	.cd-multi-steps.text-top.count li > *::before,
 	.cd-multi-steps.text-bottom.count li > *::before {
 		/* this is the spot indicator */

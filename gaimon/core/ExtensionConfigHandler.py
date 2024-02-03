@@ -44,7 +44,6 @@ class ExtensionConfigHandler:
 		for i in os.listdir(source):
 			sourcePath = f"{source}/{i}"
 			targetPath = f"{target}/{i}"
-			print(sourcePath)
 			if os.path.isfile(targetPath): continue
 			with open(sourcePath, encoding="utf-8") as sfd:
 				content = sfd.read()
@@ -57,7 +56,7 @@ class ExtensionConfigHandler:
 	def setExtensionConfig(self):
 		config = self.readCoreExtensionConfig()
 		if config is None or len(config) == 0: return
-		source = f"{self.path}/config/gloal/"
+		source = f"{self.path}/config/global/"
 		target = f"{self.resourcePath}/config/extension/{self.ID}"
 		if not os.path.isdir(target): os.makedirs(target)
 		for i in os.listdir(source):
@@ -71,7 +70,9 @@ class ExtensionConfigHandler:
 
 			if os.path.isfile(targetPath):
 				with open(targetPath, "rt", encoding="utf-8") as fd:
-					existing = json.load(fd)
+					content = fd.read()
+					if len(content) == 0: existing = {}
+					else: existing = json.loads(content)
 					isUpdated = ExtensionConfigHandler.updateConfig(config, existing)
 			else:
 				existing = config
@@ -79,11 +80,11 @@ class ExtensionConfigHandler:
 
 			if isUpdated:
 				with open(targetPath, "wt") as fd:
-					json.dump(existing)
+					json.dump(existing, fd)
 
 	def readCoreExtensionConfig(self):
 		if self.extensionConfig is None:
-			source = f"{self.path}/config/gloal/"
+			source = f"{self.path}/config/global/"
 			if not os.path.isdir(source): return
 			self.extensionConfig = self.readCofigDirectory(source)
 		return self.extensionConfig

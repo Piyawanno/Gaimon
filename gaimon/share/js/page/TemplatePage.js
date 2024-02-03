@@ -61,7 +61,7 @@ const TemplatePage = function(main, parent){
 		event.preventDefault();
 	}
 
-	this.drag = function(event, type){        
+	this.drag = function(event, type){
 		event.dataTransfer.setData('rel', event.target.getAttribute('rel'));
 		event.dataTransfer.setData('name', event.target.getAttribute('name'));
 		event.dataTransfer.setData('type', type);

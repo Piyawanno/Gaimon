@@ -25,6 +25,8 @@ const BackendMain = function() {
 	object.pageIDDict = {};
 	object.pageModelDict = {};
 	object.tabExtension = {};
+	object.tabsByPageID = {};
+	object.tabMapperByPageID = {};
 
 	object.page = {};
 	object.websocketRegister = new GaimonSocketRegister(object);
@@ -62,7 +64,6 @@ const BackendMain = function() {
 			url.encodeHex();
 		}
 		let isAllow = await object.checkPagePermission();
-		console.log('isAllow', isAllow);
 		if (!isAllow) {
 			// document.body
 			document.body.innerHTML = "You don't have an permission.";
@@ -116,6 +117,17 @@ const BackendMain = function() {
 			let pageID = query.get('p');
 			if (pageName == null && pageID == null) object.menuDict[DEFAULT_MENU].menu.dom.menu.click()	
 		}
+		// for (let pageID in object.extensionMenuMap) {
+		// 	if (object.subMenu[pageID] == undefined) {
+		// 		object.extensionMenuMap[pageID].html.classList.add('hidden');
+		// 		continue;
+		// 	};
+		// 	if (object.subMenu[pageID].length == 0) {
+		// 		object.extensionMenuMap[pageID].html.classList.add('hidden');
+		// 		continue;
+		// 	};
+			
+		// }
 	}
 
 	this.prepareExtension = async function() {
@@ -134,7 +146,6 @@ const BackendMain = function() {
 		if (isMobile()) await object.initMobile();
 		else await object.initDesktop();
 		object.tabExtension = []
-		console.log('GeneralPage', object.menuDict['GeneralPage'])
 		await object.renderGaimonMenu();
 		await object.renderExtensionMenu();
 		let tabs = await object.protocol.utility.getJSPageTabExtension();
@@ -156,6 +167,14 @@ const BackendMain = function() {
 				console.log(object.menuDict['GeneralPage'].menu.html.classList.add("hidden"));
 			}
 		}
+
+		for (let pageID in main.pageIDDict) {
+			let page = main.pageIDDict[pageID];
+			if(page.onCreate){
+				await page.onCreate();
+			}
+		}
+
 		for (let pageID in main.pageIDDict) {
 			await object.appendTabFromPage(main.pageIDDict[pageID]);
 		}
@@ -182,7 +201,7 @@ const BackendMain = function() {
 				window.DISABLE_MENU = DISABLE_MENU;
 			}
 		}
-		object.page.user.loadPermissions('gaimon');
+		object.page.user.loadPermission('gaimon');
 		if (object.subMenu['GeneralPage'] == undefined) {
 			object.subMenu['GeneralPage'] = [];
 		}
@@ -191,7 +210,10 @@ const BackendMain = function() {
 			let userMenu = await object.page.user.getMenu(true);
 			object.page.user.module = 'user';
 			object.subMenu['GeneralPage'].push(userMenu);
-			object.menuDict[object.page.user.pageID] = {menu: userMenu, parent: 'GeneralPage'}
+			object.menuDict[object.page.user.pageID] = {
+				menu: userMenu,
+				parent: 'GeneralPage'
+			}
 		}
 
 		if (object.checkPermission(object.page.permission) && window.DISABLE_MENU['permission'] == undefined) {
@@ -200,7 +222,7 @@ const BackendMain = function() {
 			object.menuDict[object.page.permission.pageID] = {menu: permissionMenu};
 		}
 
-		// object.page.unitPage.loadPermissions('gaimon');
+		// object.page.unitPage.loadPermission('gaimon');
 		// if (object.checkPermission(object.page.unitPage) && window.DISABLE_MENU['unit'] == undefined) {
 		// 	let unitMenu = await object.page.unitPage.getMenu(true);
 		// 	object.page.unitPage.module = 'unit';
@@ -208,7 +230,7 @@ const BackendMain = function() {
 		// 	object.menuDict[object.page.unitPage.pageID] = {menu: unitMenu, parent: 'GeneralPage'}
 		// }
 
-		object.page.job.loadPermissions('gaimon');
+		object.page.job.loadPermission('gaimon');
 		if (object.checkPermission(object.page.template) && window.DISABLE_MENU['schedule'] == undefined) {
 			let jobMenu = await object.page.job.getMenu();
 			object.page.job.module = 'job';
@@ -219,7 +241,7 @@ const BackendMain = function() {
 			object.menuDict[object.page.job.pageID] = {menu: jobMenu}
 		}
 
-		object.page.dashboard.loadPermissions('gaimon');
+		object.page.dashboard.loadPermission('gaimon');
 		if (object.checkPermission(object.page.dashboard) && window.DISABLE_MENU['dashboard'] == undefined) {
 			let dashboardMenu = await object.page.dashboard.getMenu();
 			object.page.dashboard.module = 'dashboard';
@@ -228,7 +250,7 @@ const BackendMain = function() {
 			object.menuDict[object.page.dashboard.pageID] = {menu: dashboardMenu}
 		}
 
-		// object.page.template.loadPermissions('gaimon');
+		// object.page.template.loadPermission('gaimon');
 		// if (object.checkPermission(object.page.template)) {
 		// 	let templateMenu = await object.page.template.getMenu();
 		// 	object.menus.push(templateMenu);
@@ -244,19 +266,24 @@ const BackendMain = function() {
 		}
 		for (let group in EXTENSION_MENU) {
 			let menuConfig = config[group];
-			if (window.DISABLE_MENU[group] != undefined) continue;
 			if (menuConfig.hasChild == undefined) menuConfig.hasChild = true
 			if (!menuConfig.hasChild) {
 				menuConfig.pageName = menuConfig.ID;
-				if (object.extensionMenu[group] == undefined) object.extensionMenu[group] = await AbstractPage.prototype.create(menuConfig.pageName, this, this);
+				if (object.extensionMenu[group] == undefined){
+					let create = AbstractPage.prototype.create
+					object.extensionMenu[group] = await create(menuConfig.pageName, this, this);
+				}
 			} else {
 				menuConfig.pageName = GET_PAGE_NAME(menuConfig.label);
-				if (object.extensionMenu[group] == undefined) object.extensionMenu[group] = await AbstractPage.prototype.create(group, this, this);
+				if (object.extensionMenu[group] == undefined){
+					let create = AbstractPage.prototype.create;
+					object.extensionMenu[group] = await create(group, this, this);
+				}
 			}
 			let parent = object.extensionMenu[group];
 			if (!parent.isGenerate) {
 				let extension = menuConfig.extension;
-				parent.loadPermissions(extension);
+				parent.loadPermission(extension);
 				parent.extension = extension;
 				if (!object.checkPermission(parent)) continue;
 				await parent.register();
@@ -282,9 +309,10 @@ const BackendMain = function() {
 					let page = await AbstractPage.prototype.create(scriptName, this, parent);
 					object.extendPage(page);
 					page.extension = extension;
-					page.loadPermissions(extension);
+					page.loadPermission(extension);
 					if (page.checkIsEnable != undefined && !page.checkIsEnable()) page.isHidden = true;
 					if (item.isHidden) page.isHidden = true;
+					// if (EXTENSION[item.groupExtension] == undefined) continue;
 					if (window.DISABLE_MENU[item.ID] != undefined) continue;
 					if (!object.checkPermission(page)) continue;
 					await page.register();
@@ -296,6 +324,9 @@ const BackendMain = function() {
 					object.subMenu[page.parentPageID].push(subMenu);
 					object.menuDict[page.pageID] = {menu: subMenu, parent: page.parentPageID};
 				}
+			}
+			if (window.DISABLE_MENU[group] != undefined) {
+				menu.html.classList.add('hidden');
 			}
 		}
 		for (let i in EXTENSION_MENU_CONFIG) {
@@ -310,7 +341,6 @@ const BackendMain = function() {
 	this.appendTabFromPage = async function(page) {
 		if (page.parentTabConfig == undefined) return;
 		for (let item of page.parentTabConfig) {
-			// console.log(item);
 			if (object.tabExtension[item.parent] == undefined) object.tabExtension[item.parent] = []
 			item['ID'] = page.pageID
 			object.tabExtension[item.parent].push(item);
@@ -320,6 +350,7 @@ const BackendMain = function() {
 	this.checkPermission = function(page) {
 		if (GLOBAL.USER.role.indexOf('root') != -1) return true;
 		if (page.role.length == 0) return true;
+		if (page.permissions == undefined) return true;
 		const filteredArray = page.permissions.filter(value => GLOBAL.USER.permissions.includes(value));
 		if (filteredArray.length > 0) return true;
 		return false;
@@ -373,7 +404,9 @@ const BackendMain = function() {
 
 	this.appendHeader = async function(){
 		object.home.dom.logo.html('');
-		object.header = new DOMObject(TEMPLATE.Header, {title: TITLE});
+		if(HORIZONTAL_LOGO != undefined) horizontalLogo = HORIZONTAL_LOGO;
+		else horizontalLogo = '';
+		object.header = new DOMObject(TEMPLATE.Header, {title: TITLE, horizontalLogo: horizontalLogo});
 		object.home.dom.logo.append(object.header);
 		object.header.html.onclick = async function(){
 			await object.expandMenu();
@@ -434,7 +467,6 @@ const BackendMain = function() {
 
 	this.renderPersonalBar = async function(){
 		let personalBar = await AbstractPage.prototype.renderPersonalBar.call();
-		console.log(personalBar);
 	}
 
 	this.appendScheduleEventType = async function(eventType, callback) {

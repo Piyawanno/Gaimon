@@ -23,13 +23,15 @@ import logging, traceback, os, string, random, json, mimetypes
 class UserController:
 	def __init__(self, application):
 		from gaimon.core.AsyncApplication import AsyncApplication
+		from gaimon.core.StaticFileHandler import StaticFileHandler
 		self.application: AsyncApplication = application
+		self.static: StaticFileHandler = self.application.static
 		self.session: AsyncDBSessionBase = None
 		self.extension = self.application.getExtensionInfo()
 		self.entity: str = None
 		self.resourcePath = self.application.resourcePath
 		self.avatar = {}
-		self.storeAvatarFile = createFileStore(self.application, 'user/avatar/')
+		self.storeAvatarFile = createFileStore(self.application, 'user/avatar/', True)
 		self.path = "/user/avatar/"
 		self.notification = None
 		self.userHandler:UserHandler = self.application.userHandler
@@ -50,7 +52,7 @@ class UserController:
 	async def getUserGlobalByID(self, request: Request):
 		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), request.headers['entity'])
 		if user is None : return Error('User cannot be found.')
-		else : return Success({'firstName' : user.firstName, 'lastName' : user.lastName})
+		else : return Success({'id': request.json['id'], 'firstName' : user.firstName, 'lastName' : user.lastName, 'avatar': user.avatar})
 		
 	@GET('/user/global/avatar/get/<id>', role=['guest'])
 	async def getAvatarGlobal(self, request, id):
@@ -106,9 +108,9 @@ class UserController:
 
 	@GET('/user/permission/module/get', permission=[PT.READ])
 	async def getPermissionModule(self, request: Request):
-		results = await self.extension.getRole(self.entity)
-		results['gaimon'] = __GAIMON_ROLE__
-		return REST({'isSuccess': True, 'results': results})
+		result = await self.extension.getRole(request)
+		result['gaimon'] = __GAIMON_ROLE__
+		return REST({'isSuccess': True, 'result': result})
 
 	@POST('/user/autoComplete/get', permission=[PT.READ])
 	async def getUser(self, request: Request):
@@ -128,16 +130,6 @@ class UserController:
 			'label': fullName,
 			'result': result
 		})
-
-	async def saveAttachedFile(self, file, pathFile):
-		fileUpload = file[0].name.split('.')
-		letters = string.ascii_lowercase
-		fileUpload = file[0].name.split('.')
-		path = self.resourcePath + "file/" + pathFile
-		fileName = ''.join(random.choice(letters) for i in range(20))
-		fileName = fileName + "." + fileUpload[1]
-		await self.application.static.storeStaticFile(pathFile + fileName, file[0].body)
-		return pathFile + fileName
 
 	@GET('/user/avatar/get/<id>', role=['guest'])
 	async def getAvatar(self, request, id):
@@ -164,10 +156,8 @@ class UserController:
 		user:User = await self.userHandler.getUserByID(self.session, int(data['id']), request.headers['entity'])
 		if user is None: return Error('Data does not exist.')
 		if 'avatar' in request.files:
-			data['avatar'] = await self.saveAttachedFile(
-				request.files['avatar'],
-				self.path
-			)
+			avatar = await self.storeAvatarFile(request, 'avatar')
+			data['avatar'] = avatar[0][1] if len(avatar) else ""
 		user.avatar = data['avatar']
 		await self.userHandler.updateUser(self.session, user.toDict())
 		return Success()
@@ -188,8 +178,10 @@ class UserController:
 	async def insert(self, request: Request):
 		data = json.loads(request.form['data'][0])
 		if 'avatar' in request.files:
-			data['avatar'] = await self.saveAttachedFile(request.files['avatar'], self.path)
+			avatar = await self.storeAvatarFile(request, 'avatar')
+			data['avatar'] = avatar[0][1] if len(avatar) else ""
 		user = await self.userHandler.insertUser(self.session, data, request.headers['entity'])
+		await self.application.authen.checkUserInformation(self.session, user.id, True, self.entity)
 		try:
 			await self.checkNotificationClient()
 			await self.notification.call('/trigger/user', {})
@@ -202,30 +194,22 @@ class UserController:
 	@POST("/user/update", permission=[PT.WRITE, PT.UPDATE])
 	async def update(self, request: Request):
 		data = json.loads(request.form['data'][0])
-		if 'avatar' in request.files: 
+		isAvatar = False
+		user = await self.userHandler.getUserByID(self.session, data['id'], request.headers['entity'])
+		if user is None: return Error("User does not exist.")
+		if 'avatar' in request.files:
+			isAvatar = True
 			avatar = await self.storeAvatarFile(request, 'avatar')
 			data['avatar'] = avatar[0][1] if len(avatar) else ""
-		if data['avatarRemoved']: data['avatar'] = ''
+		if data['avatarRemoved'] or isAvatar:
+			await self.static.removeStaticShare(user.avatar)
+		if data['avatarRemoved'] :
+			data['avatar'] = ''
 		user = await self.userHandler.updateUser(self.session, data, request.headers['entity'])
-		if user is None: return Error("User does not exist.")
+		await self.application.authen.checkUserInformation(self.session, user.id, True, self.entity)
 		userDict = user.toTransportDict()
 		userDict['additional'] = data
 		return Success(userDict)
-
-	@GET('/user/avatar/image/<ID>', permission=[PT.READ], role=['guest'])
-	async def getAvatarImage(self, request, ID):
-		try:
-			ID = int(ID)
-		except:
-			return response.text("File cannot be found.", status=404)
-		user:User = await self.userHandler.getUserByID(self.session, ID, request.headers['entity'])
-		if user is None: return response.text("File cannot be found.", status=404)
-		if user.avatar is None or len(user.avatar) == 0:
-			return await response.file(f"{self.resourcePath}share/icon/logo_padding.png")		
-		path = f"{self.resourcePath}file/{user.avatar}"
-		if not os.path.isfile(path):
-			return await response.file(f"{self.resourcePath}share/icon/logo_padding.png")
-		return await response.file(path)
 
 	@POST("/user/option/getByIDList", permission=[PT.READ])
 	async def getUserOptionByIDList(self, request: Request):

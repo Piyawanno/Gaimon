@@ -227,6 +227,13 @@
 }
 
 @font-face {
+	font-family: 'Noto Sans Thai';
+	src: url('../font/NotoSansThai-VariableFont_wdth,wght.ttf');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
 	font-family: 'Monaco';
 	src: url('../font/Monaco.ttf');
 	font-weight: normal;

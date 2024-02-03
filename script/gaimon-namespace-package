@@ -1,0 +1,14 @@
+#!/usr/bin/python3
+
+import sys, argparse
+from gaimon.util.NameSpaceInitializer import NameSpaceInitializer
+
+__parser__ = argparse.ArgumentParser(description="Gaimon initialize package for namespace.")
+__parser__.add_argument("-n", "--namespace", help="Namespace of gaimon application.", required=True)
+__parser__.add_argument("-r", "--requirements", help="Path of requirements e.g requirements.txt", required=True)
+
+__option__ = __parser__.parse_args(sys.argv[1:])
+
+
+__initializer__ = NameSpaceInitializer(__option__.namespace)
+__initializer__.installPackage(__option__.requirements)

@@ -118,7 +118,7 @@
 	counter-increment: list-0;
   }
   .ql-editor ol li:before {
-	content: counter(list-0, decimal) '. ';
+	/* content: counter(list-0, decimal) '. '; */
   }
   .ql-editor ol li.ql-indent-1 {
 	counter-increment: list-1;
@@ -534,7 +534,8 @@
   }
   .ql-snow .ql-tooltip {
 	position: absolute;
-	transform: translateY(10px);
+	transform: translateY(10px) translateX(155px);
+	/* left: unset !important; */
   }
   .ql-snow .ql-tooltip a {
 	cursor: pointer;

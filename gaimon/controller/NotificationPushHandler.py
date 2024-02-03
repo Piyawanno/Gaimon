@@ -6,7 +6,7 @@ from gaimon.core.WebSocketRoute import ROUTE
 from sanic import Request, Websocket
 from typing import List, Dict
 
-import json, asyncio, time
+import json, asyncio, time, logging
 
 
 @ROUTE("/notification", ['user'])
@@ -31,7 +31,7 @@ class NotificationPushHandler(WebSocketHandler):
 				await future
 				self.serverID = None
 			except:
-				print(">>> Try to reconnect")
+				logging.info(">>> Try to reconnect")
 			await asyncio.sleep(5.0)
 			self.recheckUID()
 
@@ -46,7 +46,7 @@ class NotificationPushHandler(WebSocketHandler):
 
 	async def benchmarkWebSocket(self):
 		taskList: List[asyncio.Task] = []
-		print(">>> Starting Request Benchmark")
+		logging.info(">>> Starting Request Benchmark")
 		r = 100_000
 		m = 16
 		n = r * m
@@ -64,13 +64,13 @@ class NotificationPushHandler(WebSocketHandler):
 			await task
 
 		elapsed = time.time() - start
-		print(
+		logging.info(
 			f">>> Request Benchmark (WebSocket) Elapsed {elapsed:.3f}s {(n/elapsed):.3f} r/s"
 		)
 
 	async def benchmarkHTTP(self):
 		taskList: List[asyncio.Task] = []
-		print(">>> Starting Request Benchmark")
+		logging.info(">>> Starting Request Benchmark")
 		r = 1_000
 		m = 16
 		n = r * m
@@ -89,12 +89,12 @@ class NotificationPushHandler(WebSocketHandler):
 			await task
 
 		elapsed = time.time() - start
-		print(
+		logging.info(
 			f">>> Request Benchmark (HTTP) Elapsed {elapsed:.3f}s {(n/elapsed):.3f} r/s"
 		)
 
 	async def handleRegister(self, response: dict):
-		print(response)
+		logging.info(f">>> Register Notification Socket {str(response)}")
 		self.serverID = response['result']['socketID']
 		await self.registerUID()
 
@@ -117,7 +117,7 @@ class NotificationPushHandler(WebSocketHandler):
 		alive = {}
 		for socketID, socket in socketMap.items():
 			if WebSocketManagement.isClose(socket):
-				print(">>> Remove closed socket")
+				logging.info(">>> Remove closed socket")
 				self.removeSocket(socket)
 				continue
 			result = {

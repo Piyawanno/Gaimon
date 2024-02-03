@@ -102,6 +102,11 @@ input[type=color]{
     font-size: 1.1em;
 }
 
+.abstract_input_box .ql-editor *{
+	margin: 0;
+	font-family: var(--main-font-family);
+}
+
 .abstract_input_box.input_per_line_1 {
 	flex-basis: 100%;
 	max-width: 100%;
@@ -262,10 +267,11 @@ input[type=color]{
 .abstract_table td, .abstract_table th{
 	padding: 10px;	
 	box-sizing: border-box;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 	vertical-align: middle;
+	max-width: 400px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
 }
 
 .abstract_table td.hotLink{
@@ -486,13 +492,16 @@ input[type=color]{
 	width: 100%;
 	border: 1px solid;
 	padding: 7px 10px;
-	max-height: 31px;
+	min-height: 35px;
+	max-height: 35px;
 }
 
 .abstract_form_input input[type="checkbox"], .abstract_search_input input[type="checkbox"]{
 	width: 1em;
 	border: 1px solid;
 	padding: 5px 10px;
+	min-height: unset;
+	max-height: unset;
 }
 
 .abstract_form_input_check_box {
@@ -507,6 +516,8 @@ input[type=color]{
 	width: 100%;
 	border: 1px solid;
 	padding: 6px 10px;
+	min-height: 35px;
+	max-height: 35px;
 }
 
 .abstract_form_input textarea, .abstract_search_input textarea{
@@ -743,7 +754,8 @@ input[type=color]{
     border: 1px solid;
     border-color: #afc6c9;
 	border-radius: 10px;
-	height: 26px;
+	/* height: 26px; */
+	height: 100% !important;
 	width: 100%;
 	text-align: center;
 }
@@ -756,7 +768,13 @@ input[type=color]{
     text-align: left;
     line-height: 20px;
     padding: 7px 10px;
-    min-height: 31px;
+	min-height: 35px;
+    max-height: 35px;
+    box-sizing: border-box;
+    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .abstract_input_view.hotLink {
@@ -853,6 +871,8 @@ input[type=color]{
 	padding: 3px;
 	border-radius: 10px;
 	cursor: pointer;
+	aspect-ratio: 1;
+    align-items: center;
 }
 
 .abstract_input_svg_icon svg{
@@ -1285,20 +1305,16 @@ input[type=color]{
 .status_flag {
 	position: relative;
 }
-  
+
 .status_flag .tooltiptext {
 	visibility: hidden;
 	background-color: var(--main-sidebar-background-color);
 	color: #fff;
 	text-align: center;
-	/* padding: 5px 0; */
 	border-radius: 6px;
 	padding: 10px;
-   
 	position: absolute;
 	z-index: 10;
-
-	/* width: 120px; */
 	bottom: 100%;
 	left: 50%;
 	margin-left: -60px;
@@ -1386,6 +1402,10 @@ input[type=color]{
     /* display: block !important; */
 }
 
+.abstract_menu_container.tab_view{
+	margin-bottom: 10px;
+}
+
 .autocomplete_avatar {
 	width: 28px;
 	height: 28px;
@@ -1397,6 +1417,50 @@ input[type=color]{
 	height: 100%;
 	border-radius: 50%;
 }
+
+.abstract_form_avatar {
+	width: 100%;
+	padding:10px 10px 0 0 ;
+}
+
+.excel_container{
+	display: flex;
+	position: relative;
+}
+
+.excel_container .excel_content{
+	position: absolute;
+	opacity: 0;
+	visibility: hidden;
+	min-width: 100px;
+	min-height: 50px;
+	background: #fff;
+	right: 0px;
+	top: 32px;
+	transition: .3s all;
+	box-shadow: 0 1px 5px 0px rgba(0,0,0,0.2);
+	border-radius: 5px;
+}
+
+.excel_container:hover .excel_content{
+	visibility: visible;
+	opacity: 1;
+	z-index: 1;
+}
+
+.excel_container .excel_content .item{
+	min-width: 200px;
+    padding: 10px 15px;
+	display: flex;
+	gap: 10px;
+}
+
+.excel_container .excel_content .item:hover{
+    background: #f5f5f5;
+    cursor: pointer;
+}
+
+
 
 @keyframes abstract_status_label_animation {
 	from {

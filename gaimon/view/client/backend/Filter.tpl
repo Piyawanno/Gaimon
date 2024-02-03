@@ -1,5 +1,5 @@
 <div class="flex-column gap-10px width-100-percent">
-	<div class="flex gap-5px">
+	<div class="flex gap-5px" rel="parameter_box">
 		<div class="width-100-percent">
 			<select rel="parameter"></select>
 		</div>

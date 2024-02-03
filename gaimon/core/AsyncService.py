@@ -1,15 +1,29 @@
 from gaimon.core.Service import Service
 from gaimon.core.AsyncServicePermissionChecker import AsyncServicePermissionChecker
 from gaimon.core.Route import Route
+from gaimon.core.DBPoolLoader import DBPoolLoader
 
-import logging
+import logging, importlib
 
 
 class AsyncService(Service):
+	def __init__(self, config: dict, namespace: str = ''):
+		Service.__init__(self, config, namespace)
+		self.poolLoader: DBPoolLoader = None
+
 	def createApplication(self):
 		from sanic import Sanic
 		self.application = Sanic(self.__class__.__name__)
 		self.application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
+	
+	def setDBPoolLoader(self, modulePath: str=None) :
+		if modulePath is None :
+			self.poolLoader = DBPoolLoader(self.config['DB'])
+		else :
+			splitted = modulePath.split('.')
+			module = importlib.import_module('.'.join(splitted[:-1]))
+			poolClass = getattr(module, splitted[-1])
+			self.poolLoader = poolClass()
 
 	async def getHandler(self, name):
 		return super().getHandler(name)

@@ -8,10 +8,12 @@ const DocumentSimpleStatusManagement = function(main){
 	this.main = main;
 
 	this.getOperation = async function(config = {}){
-		let operation = [{
-			label: 'document status', ID: 'documentStatus', icon: ''
-		}];
+		// let operation = [{
+		// 	label: 'Document Status', ID: 'documentStatus', icon: ''
+		// }];
+		let operation = [];
 		if(config.hasAction) operation.push({label: 'Operation', ID: 'action', icon: 'DocumentStatus'});
+		if(config.hasPrint) operation.push({label: 'Print', ID: 'print', icon: 'Printer'});
 		return operation;
 	}
 
@@ -29,6 +31,7 @@ const DocumentSimpleStatusManagement = function(main){
 	this.setStatus = async function(record){
 		let data = record.record;
 		if(data.documentStatus == undefined) return;
+		if (record.dom.documentStatus == undefined) return;
 		if(data.documentStatus == DocumentSimpleStatus.DRAFT){
 			record.dom.documentStatus.html('DRAFT');
 			record.dom.documentStatus.style.color = '#000';
@@ -104,9 +107,11 @@ const DocumentSimpleStatusManagement = function(main){
 	}
 
 	this.initDraftEvent = async function(record, page){
-		record.dom.action.onclick = async function(){
-			page.renderView(page.model, {data: record.record});
-		}
+		if(record.dom.action){
+			record.dom.action.onclick = async function(){
+				page.renderView(page.model, {data: record.record});
+			}
+		}		
 		if(record.dom.print != undefined) record.dom.print.remove();
 	}
 }

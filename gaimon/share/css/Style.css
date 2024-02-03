@@ -122,7 +122,7 @@ div.error {
     border: 2px solid red !important;
 }
 
-.error {
+.error, .error_message{
     color: red !important;
 }
 
@@ -264,4 +264,12 @@ div.error {
     outline: none !important;
     box-shadow: none !important;
     visibility: hidden !important;
+}
+
+.tab-size-2cm5mm .ql-editor{
+	tab-size: 2.5cm !important;
+}
+
+.sarabun .ql-editor *{
+	font-family: 'Sarabun';
 }

@@ -97,7 +97,6 @@ class UserGroupController:
 		if not 'id' in data:
 			model = UserGroup()
 			model.fromDict(data)
-			print("data", data)
 			await self.session.insert(model)
 		else:
 			parameter = [int(data['id'])]
@@ -122,12 +121,10 @@ class UserGroupController:
 		for item in data['records']:
 			permission = UserGroupPermission()
 			permission.fromDict(item)
-			print("permission", permission)
 			permission.gid = model.id
-			print(permission.toDict())
 			permissions.append(permission)
 		await self.session.insertMultiple(permissions)
-		await self.authen.getRoleByGroupID(self.session, model.id, isForce=True)
+		await self.application.authen.triggerRole(self.session, self.entity)
 		return REST({'isSuccess': True})
 
 	@POST("/user/group/drop", permission=[PT.DROP])
@@ -147,6 +144,7 @@ class UserGroupController:
 		model: UserGroup = models[0]
 		model.isDrop = 1
 		await self.session.update(model)
+		await self.application.authen.triggerRole(self.session, self.entity)
 		return REST({'isSuccess': True})
 
 	@POST("/user/group/insert", permission=[PT.WRITE, PT.UPDATE])
@@ -171,7 +169,7 @@ class UserGroupController:
 			permission.gid = model.id
 			permissions.append(permission)
 		await self.session.insertMultiple(permissions)
-		await self.authen.getRoleByGroupID(self.session, model.id, isForce=True)
+		await self.application.authen.triggerRole(self.session, self.entity)
 		try:
 			await self.checkNotificationClient()
 			await self.notification.call('/trigger/user', {})
@@ -208,7 +206,7 @@ class UserGroupController:
 			permission.gid = model.id
 			permissions.append(permission)
 		await self.session.insertMultiple(permissions)
-		await self.authen.getRoleByGroupID(self.session, model.id, isForce=True)
+		await self.application.authen.triggerRole(self.session, self.entity)
 		try:
 			await self.checkNotificationClient()
 			await self.notification.call('/trigger/user', {})
@@ -226,6 +224,7 @@ class UserGroupController:
 		user = user[0]
 		user.gid = data['gid']
 		await self.session.update(user)
+		await self.application.authen.checkUserInformation(self.session, user.id, True, self.entity)
 		try:
 			await self.checkNotificationClient()
 			await self.notification.call('/trigger/user', {})

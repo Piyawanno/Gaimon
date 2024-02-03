@@ -41,6 +41,7 @@ const MyJobPage = function(main, parent) {
 		let menu = [
 			{'value': 'schedule', 'label': 'Schedule'},
 			{'value': 'calendar', 'label': 'Calendar'}
+			
 		]
 		let tabMenu = await object.renderTabMenu(menu);
 		let classList = tabMenu.getElementsByClassName('abstract_tab_menu');
@@ -65,7 +66,6 @@ const MyJobPage = function(main, parent) {
 
 	this.renderSchedule = async function() {
 		await object.schedule.appendSource('PersonalSchedule', object.loadSchedule, object.showEventDialog)
-
 		let calendar = await object.schedule.render(object.schedule.CALENDAR_VIEW.SCHEDULE_ONLY);
 		object.home.dom.table.html('');
 		object.home.dom.table.append(calendar);

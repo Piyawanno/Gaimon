@@ -5,6 +5,7 @@ from gaimon.core.ExtensionTree import ExtensionTree
 from gaimon.core.CommonExtensionInfoHandler import CommonExtensionInfoHandler
 from gaimon.util.PathUtil import conform
 
+from sanic import Request
 from typing import Dict, List, Set
 
 import importlib, os, json, logging, time
@@ -30,31 +31,31 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		self.tree = ExtensionTree()
 		self.tree.append('gaimon')
 	
-	async def getCSS(self, entity: str) -> Dict:
+	async def getCSS(self, request: Request) -> Dict:
 		return self.css
 
-	async def getJS(self, entity: str) -> Dict:
+	async def getJS(self, request: Request) -> Dict:
 		return self.script
 	
-	async def getPageName(self, entity: str) -> Dict:
+	async def getPageName(self, request: Request) -> Dict:
 		return self.scriptName
 	
-	async def getMenu(self, entity: str) -> Dict:
+	async def getMenu(self, request: Request) -> Dict:
 		return self.menu
 
-	async def getExtension(self, entity: str) -> Dict[str, Extension] :
+	async def getExtension(self, request: Request) -> Dict[str, Extension] :
 		return self.extension
 
-	async def getExtensionTree(self, entity: str) -> ExtensionTree :
+	async def getExtensionTree(self, request: Request) -> ExtensionTree :
 		return self.tree
 
-	async def getRole(self, entity: str) -> Dict[str, List[str]]:
+	async def getRole(self, request: Request) -> Dict[str, List[str]]:
 		return self.role
 
-	async def getExtensionRole(self, entity: str) -> set:
+	async def getExtensionRole(self, request: Request) -> set:
 		return self.extensionRole
 	
-	async def getPageExtension(self, entity: str) -> Dict[str, Set[str]]:
+	async def getPageExtension(self, request: Request) -> Dict[str, Set[str]]:
 		return self.pageExtension
 	
 	def checkPath(self):

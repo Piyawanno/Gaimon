@@ -29,7 +29,7 @@ const AbstractPage = function(main, parent) {
 		object.__proto__[i] = AbstractPage.prototype[i];
 	}
 
-	this.loadPermissions = function(extension) {
+	this.loadPermission = function(extension) {
 		object.permissions = [];
 		for (let i in object.role) {
 			if (object.permission.length == 0) object.permission = [PermissionType.READ, PermissionType.WRITE, PermissionType.UPDATE, PermissionType.DROP]

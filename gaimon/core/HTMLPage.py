@@ -51,7 +51,10 @@ class HTMLPage:
 			'utils/Protocol.js',
 			'utils/Utils.js',
 			'lib/mustache.min.js',
-			'lib/DOMObject.js'
+			'lib/DOMObject.js',
+			'lib/InputDOMObject.js',
+			'lib/InputGetterState.js',
+			'lib/InputSetterState.js',
 		]
 		
 		self.incompressibleJS = [
@@ -65,6 +68,7 @@ class HTMLPage:
 		self.hasManifest = False
 		self.appIcon = None
 		self.hasAppIcon = False
+		self.icon = None
 		self.favicon = 'share/icon/favicon.png'
 		self.meta = []
 
@@ -75,6 +79,10 @@ class HTMLPage:
 			'preloaded': None,
 		}
 
+		self.metaTitle = ''
+		self.metaDescription = ''
+		self.metaURL = ''
+		self.metaImage = ''
 		self.title = ''
 		self.body = ''
 	
@@ -155,9 +163,11 @@ class HTMLPage:
 		self.js.append('lib/Autocomplete.js')
 
 	def enableQuill(self):
-		self.js.append('lib/quill/quill.min.js')
+		# self.js.append('lib/quill/quill.min.js')
+		self.js.append('lib/quill/2.0.0/quill.js')
 		self.css.append('lib/quill/quill.core.css')
 		self.css.append('lib/quill/quill.snow.css')
+		self.css.append('lib/quill/2.0.0/quill.snow.css')
 
 	def enableCropper(self):
 		self.js.append('lib/cropper/cropper.min.js')
@@ -279,10 +289,13 @@ class HTMLPage:
 			COMPRESSOR[ID] = cssCompressor, jsCompressor
 
 		css = [i for i in cssCompressor.getContent()]
-		print(css)
 		css.extend([f"share/css/{i}" for i in self.incompressibleCSS])
 		absoluteJS.extend(self.getAbsoluteExtensionJS(self.extensionIncompressibleJS))
 		absoluteCSS = self.getAbsoluteExtensionCSS(self.extensionIncompressibleCSS)
+		if self.metaTitle == '': self.metaTitle = self.title
+		if self.metaDescription == '': self.metaDescription = self.title
+		if self.metaURL == '': self.metaURL = self.rootURL
+		if self.metaImage == '': self.metaImage = self.icon
 		parameter = {
 			'title': self.title,
 			'rootURL': self.rootURL,
@@ -294,6 +307,8 @@ class HTMLPage:
 			'internalJS': [i for i in jsCompressor.getContent()],
 			'header': self.header,
 			'favicon': self.favicon,
+			'horizontalLogo': self.horizontalLogo,
+			'icon': self.icon,
 			'extensionJS': [],
 			'extensionCSS': [],
 			'jsVar': self.getJSVar(),
@@ -301,7 +316,11 @@ class HTMLPage:
 			'manifest': self.manifest,
 			'hasAppIcon': self.hasAppIcon,
 			'appIcon': self.appIcon,
-			'gTagID': self.googleAnalyticsCode
+			'gTagID': self.googleAnalyticsCode,
+			'metaTitle': self.metaTitle,
+			'metaDescription': self.metaDescription,
+			'metaURL': self.metaURL,
+			'metaImage': self.metaImage
 		}
 		if self.isPreload:
 			parameter['preload'] = self.readPreload()
@@ -325,6 +344,10 @@ class HTMLPage:
 
 		extensionCSS = self.getExtensionCSS(self.extensionCSS)
 		extensionCSS.extend(self.getExtensionCSS(self.extensionIncompressibleCSS))
+		if self.metaTitle == '': self.metaTitle = self.title
+		if self.metaDescription == '': self.metaDescription = self.title
+		if self.metaURL == '': self.metaURL = self.rootURL
+		if self.metaImage == '': self.metaImage = f"{self.rootURL}{self.icon}"
 		parameter = {
 			'title': self.title,
 			'rootURL': self.rootURL,
@@ -343,7 +366,12 @@ class HTMLPage:
 			'manifest': self.manifest,
 			'hasAppIcon': self.hasAppIcon,
 			'appIcon': self.appIcon,
-			'gTagID': self.googleAnalyticsCode
+			'gTagID': self.googleAnalyticsCode,
+			'icon': self.icon,
+			'metaTitle': self.metaTitle,
+			'metaDescription': self.metaDescription,
+			'metaURL': self.metaURL,
+			'metaImage': self.metaImage
 		}
 		if self.isPreload:
 			parameter['preload'] = self.readPreload()

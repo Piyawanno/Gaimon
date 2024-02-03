@@ -1,9 +1,11 @@
 function renderInput(config){
 	let template = TEMPLATE.input[`${config.typeName}Input`];
+	config.rootURL = rootURL;
 	if(template == undefined){
 		console.log(config.typeName, config, "not found");
 	}
-	return new DOMObject(template, config);
+	let input = new InputDOMObject(template, config);
+	return input;
 }
 
 const AbstractPage = function(main, parent) {
@@ -23,6 +25,10 @@ const AbstractPage = function(main, parent) {
 	object.dynamicState = {};
 	object.viewStepMap = {}
 	object.viewStepSubMap = {};
+
+	object.viewTabMap = {}
+	object.viewTabSubMap = {};
+	
 	object.isModelPage = true;
 
 	object.table = new AbstractTable(this);
@@ -68,7 +74,7 @@ const AbstractPage = function(main, parent) {
 		}
 	}
 
-	this.loadPermissions = function(extension) {
+	this.loadPermission = function(extension) {
 		object.permissions = [];
 		for (let i in object.role) {
 			if (object.permission.length == 0) object.permission = [PermissionType.READ, PermissionType.WRITE, PermissionType.UPDATE, PermissionType.DROP]
@@ -112,8 +118,6 @@ const AbstractPage = function(main, parent) {
 	this.prepare = async function() {
 	}
 
-	
-
 	this.getMenu = async function(isSubMenu, label, icon, hasAdd = false) {
 		let object = this;
 		object.menu = await CREATE_MENU(object.pageID, label, icon, isSubMenu, false, hasAdd);
@@ -124,6 +128,10 @@ const AbstractPage = function(main, parent) {
 		await object.preload();
 		if (object.restProtocol == undefined) return;
 		if (state.state == 'form') await object.renderView(object.model, {isSetState: false, data: state.data, isView: state.isView}, 'Form');
+		if (state.state == 'locale_en_form'){
+			state.data.languageCode = 'en';
+			await object.renderLocaleForm(object.model, {isSetState: false, data: state.data, isView: state.isView});
+		}
 	}
 
 	this.registerState = async function(name, callback) {
@@ -179,6 +187,7 @@ const AbstractPage = function(main, parent) {
 	}
 
 	this.registerTabView = async function(group, step){
+		console.log(step);
 		if (main.viewPageMap == undefined) main.viewPageMap = {};
 		if (main.viewPageSubMap == undefined) main.viewPageSubMap = {};
 		if (main.viewPageMap[group] == undefined) {
@@ -193,7 +202,26 @@ const AbstractPage = function(main, parent) {
 		}
 		step.group = group;
 	}
-		
+	
+	this.registerTag = async function(group, step){
+
+	}
+
+	this.registerTab = async function(group, step){
+		if (main.viewTabMap == undefined) main.viewTabMap = {};
+		if (main.viewTabSubMap == undefined) main.viewTabSubMap = {};
+		if (main.viewTabMap[group] == undefined) {
+			main.viewTabMap[group] = []
+			main.viewTabSubMap[group] = {}
+		}
+		let uniqueID = `${step.pageID}_${step.render}`
+		if (main.viewTabSubMap[group][uniqueID] == undefined) {
+			main.viewTabMap[group].push(step);
+			main.viewTabSubMap[group][uniqueID] = step;
+			main.viewTabMap[group].sort((a, b) => a.order - b.order);
+		}
+		step.group = group;
+	}
 
 	this.registerStep = async function(group, step) {
 		if (main.viewStepMap == undefined) main.viewStepMap = {};
@@ -260,6 +288,12 @@ const AbstractPage = function(main, parent) {
 	}
 
 	this.appendTab = function(config) {
+		if (main.tabsByPageID == undefined) main.tabsByPageID = {};
+		if (main.tabsByPageID[object.pageID] == undefined) main.tabsByPageID[object.pageID] = object.tabs;
+		if (main.tabMapperByPageID == undefined) main.tabMapperByPageID = {};
+		if (main.tabMapperByPageID[object.pageID] == undefined) main.tabMapperByPageID[object.pageID] = object.tabMapper;
+		object.tabs = main.tabsByPageID[object.pageID];
+		object.tabMapper = main.tabMapperByPageID[object.pageID];
 		if (object.tabs.length == 0) {
 			if (object.isTabVisible) {
 				object.tabs.push(
@@ -377,8 +411,16 @@ const AbstractPage = function(main, parent) {
 			if (tab.classList.contains('highlightTab')) isChangeState = false;
 			SHOW_LOADING_DIALOG(async function() {
 				await page.onPrepareState();
-				await page.render({isRenderFromTab: true, tabPageID: object.pageID});
-				if (isChangeState) await page.setPageState({isRenderFromTab: true, tabPageID: object.pageID});
+				await page.render({
+					isRenderFromTab: true,
+					tabPageID: object.pageID
+				});
+				if (isChangeState){
+					await page.setPageState({
+						isRenderFromTab: true,
+						tabPageID: object.pageID
+					});
+				}
 			});
 			
 		}
@@ -431,16 +473,11 @@ const AbstractPage = function(main, parent) {
 
 	this.createDateFilter = async function(){
 		if(object.home == undefined) return;
-		let template = '<div class="flex gap-5px" rel="filter">';
-		template += '<div><input class="abstract_input" type="date" rel="startDate"></div>';
-		template += '<div class="flex-column-center">-</div>';
-		template += '<div><input class="abstract_input" type="date" rel="endDate"></div>';
-		template += '</div>';
-		let filterDate = new DOMObject(template);
+		console.log(TEMPLATE.DateFilter);
+		let filterDate = new DOMObject(TEMPLATE.DateFilter);
 		if (object.dateFilter == undefined) object.dateFilter = {}
 		filterDate.dom.startDate.onchange = async function(){
 			let limit = parseInt(object.home.dom.limit.value);
-			
 			SHOW_LOADING_DIALOG(async function(){
 				object.dateFilter.start = filterDate.dom.startDate.value;
 				object.dateFilter.end = filterDate.dom.endDate.value;

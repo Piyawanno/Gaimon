@@ -27,7 +27,7 @@ class UserHandler :
 		self.getOptionByIDList = createOptionByIDHandler(User)
 	
 	async def getUserByID(self, session: AsyncDBSessionBase, ID: int, entity:str) -> User:
-		return await self.selectByID(session, ID)
+		return await session.selectByID(User, ID)
 	
 	async def isUsernameExist(self, session: AsyncDBSessionBase, username: str, entity:str) -> bool:
 		count = await session.count(User, "WHERE username = ?", parameter=[username])

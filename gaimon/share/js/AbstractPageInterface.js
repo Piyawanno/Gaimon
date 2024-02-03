@@ -79,14 +79,18 @@ AbstractPage.prototype.render = async function(config) {
 	if(object.config.hasLimit == undefined) object.config.hasLimit = true;
 	if(object.config.hasTableView == undefined) object.config.hasTableView = true;
 	if(object.config.hasDateFilter == undefined) object.config.hasDateFilter = false;
+	if(object.config.hasExcel == undefined) object.config.hasExcel = false;
 	if(!CHECK_PERMISSION_USER(object.extension, object.role, ['WRITE'])) object.config.hasAdd = false;
 	object.home = new DOMObject(TEMPLATE.AbstractPage, {
 		name: object.title,
 		hasAdd: object.config.hasAdd,
 		hasFilter: object.config.hasFilter,
 		hasLimit: object.config.hasLimit,
-		hasTableView: object.config.hasTableView
+		hasTableView: object.config.hasTableView,
+		hasExcel: object.config.hasExcel
 	});
+	if (main.tabsByPageID[object.pageID] != undefined) object.tabs = main.tabsByPageID[object.pageID];
+	if (main.tabMapperByPageID[object.pageID] != undefined) object.tabMapper = main.tabMapperByPageID[object.pageID];
 	if (object.tabs.length > 0) {
 		await object.renderTabMenu();
 		let classList = object.home.dom.menuList.getElementsByClassName('abstract_tab_menu');
@@ -197,8 +201,8 @@ AbstractPage.prototype.renderLocalize = async function() {
 	
 }
 
-AbstractPage.prototype.initViewEvent = async function(view, config, viewType) {
-	return await this.view.initViewEvent(view, config, viewType);
+AbstractPage.prototype.initViewEvent = async function(view, config, viewType, checkEdit) {
+	return await this.view.initViewEvent(view, config, viewType, checkEdit);
 }
 
 AbstractPage.prototype.getViewFromExternal = async function(modelName, config, viewType = 'Form') {
@@ -247,12 +251,12 @@ AbstractPage.prototype.renderViewFromExternal = async function(modelName, config
 	return view;
 }
 
-AbstractPage.prototype.renderView = async function(modelName, config, viewType = 'Form') {
-	return await this.view.renderView(modelName, config, viewType);
+AbstractPage.prototype.renderView = async function(modelName, config, viewType = 'Form', checkEdit) {
+	return await this.view.renderView(modelName, config, viewType, checkEdit);
 }
 
-AbstractPage.prototype.renderBlankView = async function(config, viewType) {
-	return await this.view.renderBlankView(config, viewType);
+AbstractPage.prototype.renderBlankView = async function(config, viewType, checkEdit) {
+	return await this.view.renderBlankView(config, viewType, checkEdit);
 }
 
 AbstractPage.prototype.getSearchForm = async function(modelName, config) {
@@ -269,6 +273,14 @@ AbstractPage.prototype.getSearchDialog = async function(modelName, config) {
 
 AbstractPage.prototype.renderSearchDialog = async function(modelName, config) {
 	return await this.view.renderView(modelName, config, 'SearchDialog');
+}
+
+AbstractPage.prototype.getExportExcelDialog = async function(modelName, config) {
+	return await this.view.renderView(modelName, config, 'ExportExcelDialog');
+}
+
+AbstractPage.prototype.renderExportExcelDialog = async function(modelName, config) {
+	return await this.view.renderView(modelName, config, 'ExportExcelDialog');
 }
 
 AbstractPage.prototype.getForm = async function(modelName, config) {
@@ -375,4 +387,30 @@ AbstractPage.prototype.setActiveDialogTab = async function(modelName, config) {
 
 AbstractPage.prototype.validate = async function(view, data) {
 	return true
+}
+
+AbstractPage.prototype.downloadExcelTemplate = async function(){
+	let object = this;
+	if (object.restURL == undefined) return;
+}
+
+AbstractPage.prototype.importExcel = async function(excel){
+	let object = this;
+	if (object.restURL == undefined) return;
+	let formData = new FormData();
+	formData.append('excel', excel);
+	SHOW_LOADING_DIALOG(async function(){
+		await object.restProtocol.importExcel(formData);
+		SHOW_FINISHED_DIALOG('The import is complete.');
+	});	
+}
+
+AbstractPage.prototype.exportExcel = async function(data){
+	let object = this;
+	if (object.restURL == undefined) return;
+	// let data = {
+	// 	pageNumber: object.pageNumber,
+	// 	limit: limit,
+	// 	data : object.filter
+	// }
 }

@@ -64,4 +64,31 @@ const AbstractProtocol = function(main, restURL){
 		if (response.isSuccess) return response.result;
 		return result;
 	}
+
+	this.downloadExcelTemplate = async function(){
+		if (object.restURL == undefined) throw console.error("restURL is not exists.");
+		let result;
+		let response = await GET(`${object.restURL}/excel/template/download`);
+		if (response == undefined) return result;
+		if (response.isSuccess) return response.result;
+		return result;
+	}
+
+	this.importExcel = async function(data){
+		if (object.restURL == undefined) throw console.error("restURL is not exists.");
+		let result;
+		let response = await POST(`${object.restURL}/excel/import`, data);
+		if (response == undefined) return result;
+		if (response.isSuccess) return response.result;
+		return result;
+	}
+
+	this.exportExcel = async function(data){
+		if (object.restURL == undefined) throw console.error("restURL is not exists.");
+		let result;
+		let response = await POST(`${object.restURL}/excel/export`, data);
+		if (response == undefined) return result;
+		if (response.isSuccess) return response.result;
+		return result;
+	}
 }

@@ -180,7 +180,7 @@ class Extension:
 		destinationTime = os.path.getmtime(destination)
 		return sourceTime > destinationTime
 
-	def getInputExtension(self) -> InputExtension :
+	async def getInputExtension(self, modelMap: Dict[str, type]) -> InputExtension :
 		return {}
 	
 	def getJSPageTabExtension(self) -> TabExtension :

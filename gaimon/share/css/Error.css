@@ -4,3 +4,11 @@
 
 .error-message{
 }
+
+.error-message-list{
+	list-style-type: disc;
+}
+
+.error-message-header{
+	margin:20px 0;
+}

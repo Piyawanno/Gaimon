@@ -39,7 +39,7 @@ const Calendar = function() {
 	object.selectedWeek;
 	object.selectedTime;
 	object.event = [];
-	object.eventLoaderFuntion = [];
+	object.eventLoaderFunction = [];
 	object.sources = {};
 	object.CALENDAR_VIEW = {
 		ALL: 1,
@@ -91,14 +91,15 @@ const Calendar = function() {
 		startTime.resetTime();
 		await object.loadEvent(startTime.getTime() / 1000.0)
 		object.calendar.renderLocalize();
-		object.calendar.dom.calendarType.onchange();
+		await object.calendar.dom.calendarType.onchange();
+		await object.onRender();
 	}
 
 	this.loadEvent = async function(startTime) {
 		let events = [];
 		for (let sourceName in object.sources) {
 			let source = object.sources[sourceName];
-			let event = await source.loaderFuntion(startTime);
+			let event = await source.loaderFunction(startTime);
 			for (let item of event) {
 				item.sourceName = sourceName;
 			}
@@ -111,8 +112,8 @@ const Calendar = function() {
 		delete object.sources[sourceName]
 	}
 
-	this.appendSource = async function(sourceName, loaderFuntion, eventHanlderFuntion) {
-		object.sources[sourceName] = {loaderFuntion, eventHanlderFuntion}
+	this.appendSource = async function(sourceName, loaderFunction, eventHanlderFuntion) {
+		object.sources[sourceName] = {loaderFunction, eventHanlderFuntion}
 	}
 	
 
@@ -210,6 +211,11 @@ const Calendar = function() {
 			object.setSelectedDate(date);
 			await object.renderSchedule(object.selectedDate, object.selectedMonth, object.selectedYear);
 		}
+		await object.onRender();
+	}
+
+	this.onRender = async function() {
+
 	}
 
 	this.onBack = async function() {
@@ -250,6 +256,7 @@ const Calendar = function() {
 			object.setSelectedDate(date);
 			await object.renderSchedule(object.selectedDate, object.selectedMonth, object.selectedYear);
 		}
+		await object.onRender();
 	}
 
 	this.initEvent = async function() {
@@ -268,16 +275,16 @@ const Calendar = function() {
 		current.setMonth(month);
 		current.setFullYear(year);
 		
-		return object.monthlyLocale[LANGUAGE].format(current);
+		return object.monthlyLocale[localStorage.getItem("LANGUAGE")].format(current);
 	}
 
 	this.getAllWeekDay = function() {
 		let weekdays = [];
 		let sunday = (new Date()).getSunday();
-		weekdays.push(object.weekdayLocale[LANGUAGE].format(sunday));
+		weekdays.push(object.weekdayLocale[localStorage.getItem("LANGUAGE")].format(sunday));
 		for (let i in [...Array(6).keys()]) {
 			sunday.setDate(sunday.getDate() + 1);
-			weekdays.push(object.weekdayLocale[LANGUAGE].format(sunday));
+			weekdays.push(object.weekdayLocale[localStorage.getItem("LANGUAGE")].format(sunday));
 		}
 		return weekdays;
 	}
@@ -381,7 +388,7 @@ const Calendar = function() {
 		let month = startTime.getMonth();
 		let year = startTime.getFullYear();
 		if (object.monthly.dom[`event_${year}_${month}_${date}`]) {
-			event.time = object.timeLocale[LANGUAGE].format(startTime).toLowerCase()
+			event.time = object.timeLocale[localStorage.getItem("LANGUAGE")].format(startTime).toLowerCase()
 			if (event.monthlyTag == undefined) {
 				event.monthlyTag = new DOMObject(object.template.monthlyEvent, event);
 				await object.initEventTag(event.monthlyTag.html, event);
@@ -415,7 +422,7 @@ const Calendar = function() {
 		let result = [];
 		for (let i in [...Array(24).keys()]) {
 			date.setHours(parseInt(i) + 1);
-			result.push(object.timeLocale[LANGUAGE].format(date));
+			result.push(object.timeLocale[localStorage.getItem("LANGUAGE")].format(date));
 		}
 		return result;
 	}
@@ -483,7 +490,7 @@ const Calendar = function() {
 			let deltaHour = (event.endTime - event.startTime) / (60.0 * 60.0);
 			let minute = startTime.getMinutes();
 			let top = 48.0 * (parseInt(minute) / 60.0);
-			event.time = object.timeLocale[LANGUAGE].formatRange(startTime, endTime).toLowerCase()
+			event.time = object.timeLocale[localStorage.getItem("LANGUAGE")].formatRange(startTime, endTime).toLowerCase()
 			if (event.weeklyTag == undefined) {
 				event.weeklyTag = new DOMObject(object.template.weeklyEvent, event);
 				await object.initEventTag(event.weeklyTag.html, event);
@@ -507,8 +514,20 @@ const Calendar = function() {
 		current.setDate(date);
 		current.setMonth(month);
 		current.setFullYear(year);
-		
-		return object.dailyLocale[LANGUAGE].format(current);
+		let language = localStorage.getItem("LANGUAGE");
+		if(language == undefined){
+			if(LANGUAGE != undefined) language = LANGUAGE;
+			else language = 'en';
+			localStorage.setItem("LANGUAGE", language);
+		}
+		let locale = object.dailyLocale[language];
+		if(locale){
+			return locale.format(current);
+		}else{
+			localStorage.setItem("LANGUAGE", 'en');
+			let locale = object.dailyLocale['en'];
+			return locale.format(current);
+		}
 	}
 
 	this.renderDaily = async function(date, month, year) {
@@ -526,7 +545,7 @@ const Calendar = function() {
 		current.setHours(0, 0, 0, 0);
 		let isToday = false;
 		if (current.getTime() == selected.getTime()) isToday = true;
-		let day = object.weekdayLocale[LANGUAGE].format(selected)
+		let day = object.weekdayLocale[localStorage.getItem("LANGUAGE")].format(selected)
 		object.daily = new DOMObject(object.template.daily, {day: day, date: date, month: month, year: year, hour: hours, isToday: isToday});
 		object.calendar.dom.current.html(object.getDailyText(date, month, year));
 
@@ -556,7 +575,7 @@ const Calendar = function() {
 			let deltaHour = (event.endTime - event.startTime) / (60.0 * 60.0);
 			let minute = startTime.getMinutes();
 			let top = 48.0 * (parseInt(minute) / 60.0);
-			event.time = object.timeLocale[LANGUAGE].formatRange(startTime, endTime).toLowerCase()
+			event.time = object.timeLocale[localStorage.getItem("LANGUAGE")].formatRange(startTime, endTime).toLowerCase()
 			if (event.weeklyTag == undefined) {
 				event.weeklyTag = new DOMObject(object.template.weeklyEvent, event);
 				await object.initEventTag(event.weeklyTag.html, event);
@@ -632,8 +651,8 @@ const Calendar = function() {
 		let key = parseInt(selected.getTime() / 1000.0);
 		let isToday = false;
 		if (current.getTime() == selected.getTime()) isToday = true;
-		let weekdayText = object.weekdayLocale[LANGUAGE].format(selected).toUpperCase()
-		let monthText = object.monthLocale[LANGUAGE].format(selected).toUpperCase()
+		let weekdayText = object.weekdayLocale[localStorage.getItem("LANGUAGE")].format(selected).toUpperCase()
+		let monthText = object.monthLocale[localStorage.getItem("LANGUAGE")].format(selected).toUpperCase()
 		let dateText = [monthText, weekdayText].join(', ');
 		if (object.schedule.dateRow == undefined) object.schedule.dateRow = {};
 		if (object.schedule.dateRow[key] == undefined) {
@@ -665,7 +684,7 @@ const Calendar = function() {
 		if (event.endTime == null) event.endTime = event.startTime + (60.0 * 60.0);
 		let endTime = new Date(event.endTime * 1000.0);
 		let row = await object.appendScheduleDateRow(startTime.getDate(), startTime.getMonth(), startTime.getFullYear());
-		event.time = object.timeLocale[LANGUAGE].formatRange(startTime, endTime).toLowerCase()
+		event.time = object.timeLocale[localStorage.getItem("LANGUAGE")].formatRange(startTime, endTime).toLowerCase()
 		if (event.scheduleTag == undefined) {
 			event.scheduleTag = new DOMObject(object.template.scheduleEvent, event);
 			await object.initEventTag(event.scheduleTag.html, event);

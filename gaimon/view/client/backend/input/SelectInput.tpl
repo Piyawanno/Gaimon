@@ -4,7 +4,7 @@
 		{{#isRequired}}<div><label class="required">*</label></div>{{/isRequired}}
 	</div>
 	<div>
-		<select rel="{{{columnName}}}" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}} localize>
+		<select rel="{{{columnName}}}" {{#isRequired}}required{{/isRequired}} {{#config.isView}}disabled{{/config.isView}} {{^isEditable}}disabled{{/isEditable}} localize>
 			{{^isFilter}}<option rel="defaultValue_{{{columnName}}}" value="-1" localize>None</option>{{/isFilter}}
 			{{#isFilter}}<option value="-1" localize>All</option>{{/isFilter}}
 			{{#option}}
@@ -12,5 +12,5 @@
 			{{/option}}
 		</select>
 	</div>
-	<div class="error text-align-center hidden" rel="{{{columnName}}}_error"></div>
+	<div class="error_message text-align-center hidden" rel="{{{columnName}}}_error"></div>
 </div>

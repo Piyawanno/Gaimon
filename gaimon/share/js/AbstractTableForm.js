@@ -8,6 +8,7 @@ const AbstractTableForm = function(page) {
 			input[i].inputPerLine = 1;
 			if (input[i].config == undefined) input[i].config = {};
 			input[i].config.isView = isView;
+			input[i].config.isTableForm = true;
 			let rawInput = renderInput(input[i]);
 			if (rawInput.dom.labelDIV != undefined) rawInput.dom.labelDIV.remove();
 			input[i].input = rawInput.html.outerHTML;
@@ -23,7 +24,6 @@ const AbstractTableForm = function(page) {
 			table.records = records;
 			view.html.remove();
 			if (view.onDelete != undefined && config.data != undefined) await view.onDelete(config.data);
-			// if (view.onDelete != undefined) await view.onDelete(config.data);
 		});
 	}
 
@@ -31,11 +31,10 @@ const AbstractTableForm = function(page) {
 		config.isUpdate = false;
 		if (config.data != undefined) config.isUpdate = true;
 		if (input == undefined) input = await object.page.getCompleteInputData(modelName);
-		let {exceptURL, autoCompleteMap, fileMatrixMap, imageMap, inputs} = await object.page.util.prepareInput(modelName, input);
-		await object.prepareTableInput(input, config.isView)
-		// let options = {'tbody': input};
+		let {exceptURL, autoCompleteMap, fileMatrixMap, imageMap, fileMap, inputs} = await object.page.util.prepareInput(modelName, input);
+		await object.prepareTableInput(input, config.isView);
 		config.tbody = input;
-		let view = new DOMObject(TEMPLATE.TableFormBody, config);
+		let view = new InputDOMObject(TEMPLATE.TableFormBody, config);
 		view.modelName = modelName;
 		view.uid =`${randomString(10)}_${Date.now()}`;
 		await object.page.tableView.renderOperation(view, TEMPLATE.TableOperationRecord, config);
@@ -47,6 +46,7 @@ const AbstractTableForm = function(page) {
 		await object.page.util.setAutoCompleteMap(view, autoCompleteMap);
 		await object.page.util.setFileMatrixMap(view, fileMatrixMap);
 		await object.page.util.setImageMap(view, imageMap);
+		await object.page.util.setFileMap(view, fileMap);
 		await object.page.util.setPrerequisiteInput(modelName, exceptURL, view, config.data);
 
 		let columnLinkMap = {};
@@ -69,8 +69,6 @@ const AbstractTableForm = function(page) {
 					}
 				}
 			}
-			
-			// view
 		}
 		
 		if(config.hasDelete){
@@ -92,5 +90,4 @@ const AbstractTableForm = function(page) {
 		if(config.isView) view.readonly();
 		return view;
 	}
-	
 }

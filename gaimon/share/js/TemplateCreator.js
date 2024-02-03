@@ -73,7 +73,7 @@ const TemplateCreator = function(main, page) {
 
 	this.getOperation = async function(){
 		let operation = [{
-			label: 'default', ID: 'default', icon: ''
+			label: 'Default', ID: 'default', icon: ''
 		}]
 		return operation;
 	}

@@ -7,23 +7,67 @@ from gaimon.model.PermissionType import PermissionType
 from gaimon.core.HTMLPage import HTMLPage
 from xerial.ColumnType import ColumnType
 from xerial.input.InputType import InputType
+from xerial.CurrencyColumn import CurrencyData
 
+from typing import List
 from packaging.version import Version
-
-from sanic import response
+from sanic import response, Request
 from gaimon.core.RESTResponse import RESTResponse 
 
 import os, json, struct, time, pystache
 
 __SALT_TIME_LIMIT__ = 300.0
 
-__BACKEND_JS__ = [
+__SARFUNKEL_JS__: List[str] = [
+	'sarfunkel/util/VersionParser.js',
+	'sarfunkel/util/BaseProtocol.js',
+	'sarfunkel/ViewType.js',
+
+	'sarfunkel/component/SVGIcon.js',
+	'sarfunkel/component/ImageIcon.js',
+	'sarfunkel/component/Button.js',
+	'sarfunkel/component/Avatar.js',
+	'sarfunkel/component/TableOperation.js',
+	'sarfunkel/component/TableRecordOperation.js',
+
+	'sarfunkel/view/DetailView.js',
+	'sarfunkel/view/TableView.js',
+	'sarfunkel/view/TableViewMode.js',
+	'sarfunkel/view/TableRowView.js',
+	'sarfunkel/view/TableHeaderView.js',
+	'sarfunkel/view/TableFilterView.js',
+	'sarfunkel/view/PaginationView.js',
+	'sarfunkel/view/FormGroupView.js',
+	'sarfunkel/view/FormView.js',
+	'sarfunkel/view/PageMenuView.js',
+	'sarfunkel/view/MenuView.js',
+	'sarfunkel/view/SubMenuView.js',
+
+	'sarfunkel/InputMetaData.js',
+	'sarfunkel/input/NumberInput.js',
+	'sarfunkel/input/TextInput.js',
+	'sarfunkel/input/ReferenceSelectInput.js',
+	
+	'sarfunkel/ColumnMetaData.js',	
+	'sarfunkel/column/IntegerColumn.js',
+	'sarfunkel/column/StringColumn.js',
+
+	'sarfunkel/ModelMetaData.js',
+	'sarfunkel/ModelPage.js',
+]
+
+__BACKEND_JS__: List[str] = [
 	'utils/Utils.js',
 	'utils/GaimonSocket.js',
 	'utils/GaimonSocketRegister.js',
 	'utils/DateUtils.js',
+	'utils/ColumnValueUtils.js',
+	'utils/EventUtils.js',
 	'lib/html5-qrcode.js',
 	'lib/Autocomplete.js',
+	'lib/InputDOMObject.js',
+	'lib/InputGetterState.js',
+	'lib/InputSetterState.js',
 	'BackendMain.js',
 	'Authentication.js',
 	'AbstractPage.js',
@@ -37,12 +81,17 @@ __BACKEND_JS__ = [
 	'AbstractView.js',
 	'AbstractTableView.js',
 	'AbstractProtocol.js',
+	'ViewCreatorState.js',
+	'ViewEventState.js',
+	'TablePaginationRenderState.js',
+	'TableRecordRenderState.js',
 	'PersonalBar.js',
 	'Notification.js',
 	'MyAccount.js',
 	'StatusBar.js',
 	'Calendar.js',
 	'Handbook.js',
+	'CurrencyData.js',
 	'DynamicLayoutCreator.js',
 	'TemplateCreator.js',
 	'TemplateLabelCreator.js',
@@ -69,7 +118,7 @@ __BACKEND_JS__ = [
 	'protocol/TemplateCreatorProtocol.js'
 ]
 
-__BACKEND_CSS__ = [
+__BACKEND_CSS__: List[str] = [
 	'backend/BackendMain.css',
 	'backend/BackendForm.css',
 	'backend/BackendInfo.css',
@@ -84,6 +133,7 @@ __BACKEND_CSS__ = [
 	'backend/VisualBlockCreator.css',
 	'README.css',
 	'Step.css',
+	'Error.css',
 	'Switch.css',
 	'AdvanceSwitch.css',
 	'Flex.css',
@@ -92,7 +142,7 @@ __BACKEND_CSS__ = [
 	'DefaultTheme.css'
 ]
 
-__INCOMPRESSIBLE_CSS__ = [
+__INCOMPRESSIBLE_CSS__: List[str] = [
 	'FontFamily.css',
 ]
 
@@ -111,14 +161,17 @@ class BackendController:
 		try:
 			self.icon = application.icon
 			self.fullTitle = application.fullTitle
+			self.favicon = application.favicon
+			self.horizontalLogo = application.horizontalLogo
 		except:
 			pass
+		__BACKEND_JS__.extend(__SARFUNKEL_JS__)
 		setattr(self.application, 'loginURL', self.application.rootURL + 'backend')
 
 	@GET("/", role=['guest'], isHome=True)
 	async def index(self, request, *argument, **option):
 		if self.application.homeMethod is None:
-			raise response.text('NOT FOUND', status=404)
+			return response.text('NOT FOUND', status=404)
 		uid = request.ctx.session['uid']
 		home = self.application.config['home']
 		encoded = home.encode().hex()
@@ -140,31 +193,42 @@ class BackendController:
 		page.setRequest(request)
 		page.reset()
 		page.title = self.title + " - BACKEND"
-		await self.setJS(page)
-		await self.setCSS(page)
-		await self.setMenu(page)
-		await self.setJSVar(page)
+		await self.setJS(page, request)
+		await self.setCSS(page, request)
+		await self.setMenu(page, request)
+		await self.setJSVar(page, request)
+		await self.setFavIcon(page, request)
+		await self.setHorizontalLogo(page, request)
 		template = self.theme.getTemplate('Backend.tpl')
 		page.body = self.renderer.render(template, {'rootURI': page.rootURL}, )
 		rendered = page.render(ID='backend')
 		__CACHED_PAGE__[key] = rendered
 		return response.html(rendered)
-		
+	
+	async def setFavIcon(self, page: HTMLPage, request: Request):
+		if len(self.favicon) == 0: return
+		page.favicon = self.favicon
 
-	async def setJS(self, page: HTMLPage):
+	async def setHorizontalLogo(self, page: HTMLPage, request: Request):
+		if len(self.horizontalLogo) == 0: return
+		page.horizontalLogo = self.horizontalLogo
+
+	async def setJS(self, page: HTMLPage, request: Request):
 		page.enableAllAddOns()
 		page.js.extend(__BACKEND_JS__)
 		if not 'TITLE' in page.jsVar:
 			page.jsVar['TITLE'] = self.title
+		if not 'HORIZONTAL_LOGO' in page.jsVar:
+			page.jsVar['HORIZONTAL_LOGO'] = self.horizontalLogo
 		if not 'JS_EXTENSION' in page.jsVar:
 			page.jsVar['JS_EXTENSION'] = {}
-		page.extensionJS.update(await self.extension.getJS(self.entity))
+		page.extensionJS.update(await self.extension.getJS(request))
 		
 		if not 'PAGE_EXTENSION' in page.jsVar:
 			page.jsVar['PAGE_EXTENSION'] = {}
 		
 		pageExtension = page.jsVar['PAGE_EXTENSION']
-		pageExtensionConfig = await self.extension.getPageExtension(self.entity)
+		pageExtensionConfig = await self.extension.getPageExtension(request)
 		for name, extensionSet in pageExtensionConfig.items():
 			if name in pageExtension :
 				pageExtension[name].union(extensionSet)
@@ -172,14 +236,14 @@ class BackendController:
 				pageExtension[name] = extensionSet
 		page.jsVar['PAGE_EXTENSION'] = {k:list(v) for k,v in pageExtension.items()}
 
-	async def setCSS(self, page: HTMLPage):
+	async def setCSS(self, page: HTMLPage, request: Request):
 		page.extendCSS(__BACKEND_CSS__)
 		page.extendIncompressibleCSS(__INCOMPRESSIBLE_CSS__)
-		extensionCSS = await self.extension.getCSS(self.entity)
+		extensionCSS = await self.extension.getCSS(request)
 		page.extensionCSS.update(extensionCSS)
 
-	async def setMenu(self, page):
-		await self.setExtensionMenu(page)
+	async def setMenu(self, page, request: Request):
+		await self.setExtensionMenu(page, request)
 		menu = self.application.config.get('menu', {})
 		disable = menu.get('disable', [])
 		entity = await self.application.configHandler.getEntityConfig(self.entity)
@@ -189,22 +253,22 @@ class BackendController:
 		page.jsVar['DISABLE_MENU'] = {i: i for i in disable}
 		page.jsVar['DEFAULT_MENU'] = menu.get('default', "")
 
-	async def setExtensionMenu(self, page: HTMLPage):
+	async def setExtensionMenu(self, page: HTMLPage, request: Request):
 		if not 'MENU' in page.jsVar: page.jsVar['MENU'] = {}
 		extensionMenu: Dict[str, List] = {}
 		extensionMenuConfig: Dict[str, Dict] = {}
-		menuConfig = await self.extension.getMenu(self.entity)
+		menuConfig = await self.extension.getMenu(request)
 		for extension, menuList in menuConfig.items() :
 			page.jsVar['MENU'][extension] = menuList
 			if not extension in page.jsVar['JS_EXTENSION']:
 				page.jsVar['JS_EXTENSION'][extension] = {}
 			for item in menuList :
 				if 'group' in item:
-					item['group']['extension'] = extension
+					groupExtension = item['group'].get("extension", extension)
+					item['group']['extension'] = groupExtension
 					try :
 						ID = item['group']['ID']
 					except :
-						print(item)
 						continue
 					page.jsVar['JS_EXTENSION'][extension][ID] = f"{ID}.js"
 					if not 'child' in item: continue
@@ -212,13 +276,11 @@ class BackendController:
 						extensionMenu[item['group']['ID']] = []
 						extensionMenuConfig[item['group']['ID']] = item['group']
 					groupID = item['group']['ID']
-					# if groupID != 'General':
-					# 	page.extendJS([f"{groupID}.js"], extension)
 					for subMenu in item['child']:
 						subMenu['extension'] = extension
+						subMenu['groupExtension'] = groupExtension
 						page.jsVar['JS_EXTENSION'][extension][
 							subMenu['ID']] = "%s.js" % (subMenu['ID'])
-						# page.extendJS(["%s.js" % (subMenu['ID'])], extension)
 					extensionMenu[item['group']['ID']].extend(item['child'])
 				else:
 					item['extension'] = extension
@@ -235,10 +297,10 @@ class BackendController:
 		])
 
 		if not 'EXTENSION' in page.jsVar: page.jsVar['EXTENSION'] = {}
-		pageName = await self.extension.getPageName(self.entity)
+		pageName = await self.extension.getPageName(request)
 		page.jsVar['EXTENSION'].update(pageName)
 
-	async def setJSVar(self, page):
+	async def setJSVar(self, page, request: Request):
 		page.jsVar['PermissionType'] = {
 			i: PermissionType.__members__[i].value for i in PermissionType.__members__
 		}
@@ -267,6 +329,8 @@ class BackendController:
 
 		config = await self.application.configHandler.getEntityConfig(self.entity)
 		page.jsVar["EntityConfig"] = config
+  
+		page.jsVar['CURRENCY_DATA_ORIGINAL'] = CurrencyData().toDict()
 
 	def sortExtensionMenu(self, extensionMenuConfig: List):
 		for item in extensionMenuConfig:
@@ -277,16 +341,16 @@ class BackendController:
 		return extensionMenuConfig
 
 	@GET("/backend/extension/enabled/get", role=['guest'])
-	async def getEnabledExtension(self, request):
+	async def getEnabledExtension(self, request: Request):
 		results = [{
 			'label': extension,
 			'value': extension
-		} for extension in await self.extension.getJS(self.entity)]
+		} for extension in await self.extension.getJS(request)]
 		return RESTResponse({'isSuccess': True, 'results': results}, ensure_ascii=False)
 
 	@GET("/backend/role/by/extension/get/<extension>", role=['guest'])
-	async def getRoleByExtension(self, request, extension):
-		roleMap = await self.extension.getRole(self.entity)
+	async def getRoleByExtension(self, request: Request, extension):
+		roleMap = await self.extension.getRole(request)
 		if not extension in roleMap :
 			return RESTResponse({
 				'isSuccess': False,
@@ -419,12 +483,12 @@ class BackendController:
 				file = f'backend/Backend{role}.css'
 				if (file not in page.css): page.css.append(file)
 
-	async def getUserRole(self, request):
+	async def getUserRole(self, request: Request):
 		result = {}
 		if 'role' not in request.ctx.session:
 			return result
 		if 'root' in request.ctx.session['role']:
-			extensionRole = await self.extension.getExtensionRole(self.entity)
+			extensionRole = await self.extension.getExtensionRole(request)
 			for k in extensionRole :
 				result[k] = ['Create', 'Read', 'Update', 'Delete']
 			return result
@@ -446,3 +510,12 @@ class BackendController:
 			user.salt = salt.hex()
 			user.isRoot = 1
 			await self.session.insert(user)
+	
+	def loadSarfukel(self):
+		path = os.path.abspath(f'{self.resourcePath}share/js/sarfunkel')
+		l = len(os.path.abspath(f'{self.resourcePath}share/js/'))
+		for root, dirs, files in os.walk(path):
+			for i in files :
+				if i[-3:] == '.js':
+					__SARFUNKEL_JS__.append(f'{root[l+1:]}/{i}')
+		__BACKEND_JS__.extend(__SARFUNKEL_JS__)

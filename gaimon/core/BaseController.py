@@ -5,7 +5,7 @@ from gaimon.core.Route import POST, GET, ROLE
 from gaimon.model.PermissionType import PermissionType as PT
 from gaimon.util.RequestUtil import (
 	createSelectHandler, createCountHandler, createOptionHandler,
-	createInsertHandler, createUpdateHandler, createDropHandler,
+	createInsertHandler, createInsertWithFileHandler, createUpdateHandler, createUpdateWithFileHandler, createDropHandler,
 	createInsertMultipleHandler, createOptionByIDHandler, createSelectByIDHandler, 
 	createSelectByAttributeHandler, calculatePage
 )
@@ -131,7 +131,7 @@ class BaseController:
 		self.resourcePath = self.application.resourcePath
 		self.renderer = pystache.Renderer()
 		self.title = self.application.title
-		if not self.modelClass is None:
+		if self.modelClass is not None:
 			self.initHandler(self.modelClass)
 
 	def initHandler(self, modelClass):
@@ -141,9 +141,9 @@ class BaseController:
 		self.count = createCountHandler(modelClass)
 		self.handleGetOption = createOptionHandler(modelClass)
 		self.handleGetOptionByID = createOptionByIDHandler(modelClass)
-		self.handleInsert = createInsertHandler(modelClass)
+		self.handleInsert = createInsertWithFileHandler(self.application, modelClass)
 		self.handleInsertMultiple = createInsertMultipleHandler(modelClass)
-		self.handleUpdate = createUpdateHandler(modelClass)
+		self.handleUpdate = createUpdateWithFileHandler(self.application, modelClass)
 		self.handleDrop = createDropHandler(modelClass)
 
 	async def _getAll(self, request):
@@ -180,7 +180,11 @@ class BaseController:
 		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 
 	async def _insert(self, request, hasFeedback=True):
-		inserted = await self.handleInsert(self.session, request.json)
+		if getattr(request, 'form', None) is not None and 'data' in request.form: 
+			data = json.loads(request.form['data'][0])
+		else: 
+			data = request.json
+		inserted = await self.handleInsert(self.session, data, request)
 		if hasFeedback:
 			result = inserted.toDict()
 		else :
@@ -188,7 +192,11 @@ class BaseController:
 		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 	
 	async def _insertMultiple(self, request, hasFeedback=True):
-		insertedList = await self.handleInsertMultiple(self.session, request.json)
+		if getattr(request, 'form', None) is not None and 'data' in request.form: 
+			data = json.loads(request.form['data'][0])
+		else: 
+			data = request.json
+		insertedList = await self.handleInsertMultiple(self.session, data)
 		if hasFeedback:
 			result = [i.toDict() for i in insertedList]
 		else :
@@ -196,7 +204,11 @@ class BaseController:
 		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 
 	async def _update(self, request, hasFeedback=True):
-		record = await self.handleUpdate(self.session, request.json)
+		if getattr(request, 'form', None) is not None and 'data' in request.form: 
+			data = json.loads(request.form['data'][0])
+		else: 
+			data = request.json
+		record = await self.handleUpdate(self.session, data, request)
 		if not hasFeedback :
 			return REST({'isSuccess': True, 'result': {}})
 		else :
@@ -212,7 +224,11 @@ class BaseController:
 				}, ensure_ascii=False)
 
 	async def _drop(self, request, hasFeedback=True):
-		record = await self.handleDrop(self.session, request.json)
+		if getattr(request, 'form', None) is not None and 'data' in request.form: 
+			data = json.loads(request.form['data'][0])
+		else: 
+			data = request.json
+		record = await self.handleDrop(self.session, data)
 		if not hasFeedback :
 			return REST({'isSuccess': True, 'result': {}})
 		else :

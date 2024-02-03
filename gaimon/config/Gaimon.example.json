@@ -29,7 +29,6 @@
 	"isPreload" : 0,
 	"timeOut" : 60,
 	"processNumber": -1,
-	"title" : "TITLE",
 	"authentication" : {
 		"facebook" : {
 			"enable" : false,
@@ -47,8 +46,11 @@
 		},
 		"migration" : ""
 	},
+	"title" : "TITLE",
 	"fullTitle": "FULL TITLE",
 	"icon" : "IMAGE PATH",
+	"favicon" : "IMAGE PATH",
+	"horizontalLogo" : "IMAGE PATH" ,
 	"email": {
 		"email": "",
 		"password": ""

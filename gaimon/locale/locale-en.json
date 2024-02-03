@@ -228,5 +228,16 @@
 	"Flow" : "Flow",
 	"Title" : "Title",
 	"Event" : "Event",
-	"Operator" : "Operator"
+	"Operator" : "Operator",
+	"Invoice / Tax Invoice" : "Invoice / Tax Invoice",
+	"READY" : "READY",
+	"MAINTENANCE" : "MAINTENANCE",
+	"Picture" : "Picture",
+	"Material Receive" : "Material Receive",
+	"Material Return" : "Material Return",
+	"Previewer" : "Previewer",
+	"Original" : "Original",
+	"Total" : "Total",
+	"Version" : "Version",
+	"Default" : "Default"
 }

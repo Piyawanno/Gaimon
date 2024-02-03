@@ -40,9 +40,9 @@ Record.enableDefaultBackup()
 
 if sys.platform == 'win32':
 	# TODO Define path
-	__CONFIG_ROOT__ = ''
+	CONFIG_ROOT = ''
 else:
-	__CONFIG_ROOT__ = '/etc/gaimon'
+	CONFIG_ROOT = '/etc/gaimon'
 
 def processRouteEmpty(route:Route) :
 	return route
@@ -88,6 +88,8 @@ class AsyncApplication(Application):
 		self.theme = ThemeHandler(config['theme'], self.resourcePath, self.extension)
 		self.title = config['title']
 		self.icon = config.get('icon', '')
+		self.favicon = config.get('favicon', '')
+		self.horizontalLogo = config.get('horizontalLogo', '/share/icon/ximple_dark.png')
 		self.fullTitle = config.get('fullTitle', self.title)
 		self.session = None
 		self.httpSession = Session()
@@ -154,7 +156,7 @@ class AsyncApplication(Application):
 				print(traceback.format_exc())
 
 	def startMainLoop(self, loop):
-		pass
+		self.loop = loop
 
 	def startWorkerLoop(self, loop: asyncio.BaseEventLoop):
 		if self.logFlusher is not None:
@@ -170,7 +172,7 @@ class AsyncApplication(Application):
 	async def load(self):
 		self.connectionCount = 0
 		await self.connect()
-		self.authen = Authentication(self.session, self.redis)
+		self.authen = Authentication(self)
 		self.extension.checkPath()
 		await self.readModelModification()
 		for i in self.config['extension']:
@@ -181,25 +183,25 @@ class AsyncApplication(Application):
 		for i in self.config['extension']:
 			await self.extension.prepare(self.session)
 		await self.theme.load()
-		self.extendInput()
+		await self.extendInput()
 		self.extendJSPageTab()
 
 		for i in self.startSubroutine:
 			await i(self, self.session)
 	
-	def extendInput(self) :
+	async def extendInput(self) :
 		from gaimon.core.Extension import InputExtension
 		extended:InputExtension = {}
 		for extension in self.extension.extension.values() :
-			extendedInput = extension.getInputExtension()
+			extendedInput = await extension.getInputExtension(self.session.model)
 			for modelName, inputList in extendedInput.items() :
 				currentList = extended.get(modelName, [])
 				if len(currentList) == 0 : extended[modelName] = currentList
 				currentList.extend(inputList)
 		
 		extendedModel:InputExtension = {}
-		for name, modelClass in self.session.model.items() :
-			for name, column in modelClass.meta :
+		for modelClass in self.session.model.values() :
+			for _, column in modelClass.meta :
 				for parent in column.parentModel :
 					currentList = extendedModel.get(parent.__name__, [])
 					if len(currentList) == 0 : extendedModel[parent.__name__] = currentList
@@ -247,7 +249,9 @@ class AsyncApplication(Application):
 		self.sessionPool.model = self.model.copy()
 		await self.checkModelModification(self.session)
 		await self.session.createTable()
-		await self.dynamicHandler.checkModel(True)
+		dynamicModels = await self.dynamicHandler.checkModel(True, self.session, "main")
+		[self.session.appendModel(i) for i in dynamicModels]
+		self.sessionPool.model = self.session.model.copy()
 		self.session.checkModelLinking()
 
 	async def readModelModification(self):
@@ -284,6 +288,11 @@ class AsyncApplication(Application):
 			f"{splitted[0]}.{splitted[1]}"
 		)
 		client = AsyncServiceClient(config[splitted[2]])
+		return client
+	
+	async def getServiceClientByExtension(self, extension: str, service: str) -> AsyncServiceClient:
+		config = await self.configHandler.getExtensionConfig(extension)
+		client = AsyncServiceClient(config[service])
 		return client
 
 	def map(self, controllerList, processRoute:Callable=processRouteEmpty):
@@ -446,7 +455,7 @@ class AsyncApplication(Application):
 			logFlusherClass = getattr(self, 'logFlusherClass', LogFlusher)
 			self.logFlusher = logFlusherClass(self.config, self)
 			logConfig = LOGGING_CONFIG.copy()
-			path = f'{__CONFIG_ROOT__}/Log.json'
+			path = f'{CONFIG_ROOT}/Log.json'
 			if os.path.isfile(path):
 				with open(path) as fd:
 					logConfig.update(json.load(fd))

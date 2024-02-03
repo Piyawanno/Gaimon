@@ -16,7 +16,7 @@ const UserManagementPage = function(main, parent) {
 	}
 
 	this.getMenu = async function(isSubMenu) {
-		object.menu = await CREATE_MENU(object.pageID, 'User', 'User', isSubMenu);
+		object.menu = await CREATE_MENU(object.pageID, 'User', 'User', isSubMenu, false, true);
 		return object.menu;
 	}
 
@@ -27,7 +27,15 @@ const UserManagementPage = function(main, parent) {
 	}
 
 	this.renderState = async function(state) {
-		if (state.state == 'form') await object.renderView('User', {isSetState: false, data: state.data, inputs: state.inputs, isView: state.isView});
+		if (state.state == 'form'){
+			let config = {
+				isSetState: false,
+				data: state.data,
+				inputs: state.inputs,
+				isView: state.isView
+			};
+			await object.renderView('User', config);
+		}
 	}
 
 	this.getData = async function(limit){
@@ -40,11 +48,9 @@ const UserManagementPage = function(main, parent) {
 			config.data = await main.protocol.user.getUserByID({id: config.data.id});
 		}
 		let view = await AbstractPage.prototype.renderView.call(this, modelName, config, viewType);
-		if(config.data && config.data.driver){
-			view.setData(config.data.driver);
-		}
 		view.onSubmit = async function() {
 			let result = await AbstractPage.prototype.submit.call(this, view);
+			if(!result.isPass) return;
 			let data = result.data;
 			if (view.id != undefined) {
 				if (data.passwordHash.length > 0 || data.confirm_passwordHash.length > 0) {
@@ -60,11 +66,10 @@ const UserManagementPage = function(main, parent) {
 				data.id = view.id;
 			}
 			delete data.avatar;
-			let formData = new FormData();
-			if(view.dom.avatar.files.length) formData = result.file;
+			let formData = result.file;
+			// if(view.dom.avatar.files.length) formData = result.file;
 			result.data.avatarRemoved = view.dom.avatar.removed;
 			formData.append('data', JSON.stringify(data));
-			// await object.getFile(formData, view.dom.avatar, 'avatar');
 			let handle = ('id' in data) ? main.protocol.user.update : main.protocol.user.insert;
 			let response = await handle(formData);
 			if (response.isSuccess) view.close();
@@ -72,14 +77,6 @@ const UserManagementPage = function(main, parent) {
 	}
 
 	this.renderUser = async function(limit = 10){
-		// let data = {
-		// 	pageNumber: object.pageNumber,
-		// 	limit: limit
-		// }
-		// let results = await main.protocol.user.getAllUser(data);
-		// results.hasView = true;
-		// let table = await object.renderTable('User', results);
-		// console.log(table);
 		object.filter.isDrop = 0;
 		object.limit = limit;
 		let data = {
@@ -93,7 +90,9 @@ const UserManagementPage = function(main, parent) {
 			hasView: true,
 		}
 		let table = await object.renderTableView(object.model, option, main.tableViewType);
-		if(table.dom.thead.salaryList_th) table.dom.thead.salaryList_th.style.width = '0';
+		if(table.dom.thead && table.dom.thead.salaryList_th){
+			table.dom.thead.salaryList_th.style.width = '0';
+		}
 		table.onCreateRecord = async function(record) {
 			let id = record.id;
 			if(!record.dom.salaryList) return;

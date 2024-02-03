@@ -93,7 +93,7 @@ class PermissionChecker:
 		if 'root' in role: return True
 		await self.checkStateSession(state)
 		permissions = await self.authen.getRoleByGroupID(
-			state.session, state.request.ctx.session['gid']
+			state.request.ctx.session['gid'], state.entity
 		)
 		state.request.ctx.session['permission'] = permissions
 		permissions = set(permissions)
@@ -189,6 +189,7 @@ class PermissionChecker:
 
 	async def setSession(self, request: Request, credential: str = None, entity: str = 'main'):
 		request.ctx.session['uid'] = -1
+		request.ctx.session['isRoot'] = False
 		request.ctx.session['role'] = ['guest']
 		request.ctx.session['gid'] = -1
 		request.ctx.session['permissions'] = []
@@ -204,8 +205,14 @@ class PermissionChecker:
 			result = await self.authen.checkToken(token)
 			if result is not None:
 				request.ctx.session['uid'] = result['uid']
-				role = set()
-				if not result['role'] is None: role = set(filter(lambda a: not a is None, result['role']))
+				user = await self.authen.getUserByID(result['uid'])
+				if not user is None:
+					role = set(await self.authen.getRoleByGroupID(user['gid'], entity))
+				else:
+					role = set()
+				if user['isRoot']: 
+					role.add('root')
+					request.ctx.session['isRoot'] = True
 				role.add('user')
 				request.ctx.session['role'] = list(role)
 				request.ctx.session['gid'] = result['gid']
@@ -264,12 +271,14 @@ class PermissionChecker:
 			logging.error(state.errorMessage)
 
 	async def callPreProcess(self, state:RequestState) :
-		if self.preProcessor is None : return True
+		if self.preProcessor is None : return
 		for processor in self.preProcessor :
 			decorator = processor.getDecorator(self.application)
 			if processor.hasDBSession :
 				await self.checkStateSession(state)
 				decorator.session = state.session
+			decorator.theme = state.controller.theme
+			decorator.entity = state.entity
 			callee = getattr(decorator, processor.callable.__name__)
 			await callee(
 				state.request, *state.argument, **state.option
@@ -277,13 +286,14 @@ class PermissionChecker:
 			processor.releaseDecorator(decorator)
 	
 	async def callPostProcess(self, state:RequestState) :
-		if self.postProcessor is None : return True
+		if self.postProcessor is None : return
 		for processor in self.postProcessor :
 			decorator = processor.getDecorator(self.application)
 			if processor.hasDBSession :
 				await self.checkStateSession(state)
 				decorator.session = state.session
 			decorator.theme = state.controller.theme
+			decorator.entity = state.entity
 			callee = getattr(decorator, processor.callable.__name__)
 			state.result = await callee(
 				state.request, state.result, *state.argument, **state.option

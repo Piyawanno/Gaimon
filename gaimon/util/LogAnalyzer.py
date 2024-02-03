@@ -68,7 +68,6 @@ class LogAnalyzer:
 		bookCountItem = sorted([(k, v) for k, v in bookCount.items()], key=lambda x : x[1], reverse=True)
 		for id, n in bookCountItem :
 			bookName = bookMap.get(id, None)
-			print('-', bookName, ':', n)
 
 	def getTopMenu(
 		self,
