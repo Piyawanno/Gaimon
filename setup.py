@@ -73,6 +73,7 @@ class GaimonSetup :
 			'gaimon-namespace-init',
 			'gaimon-namespace-package',
 			'gaimon-code-format',
+			'gaimon-checkout',
 		]
 
 		self.extensionScript = [

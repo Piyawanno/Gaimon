@@ -1,0 +1,59 @@
+#!/usr/bin/python3
+
+import argparse
+import sys
+
+__parser__ = argparse.ArgumentParser(description="Managing database schema and data rollback for Gaimon.")
+__parser__.add_argument(
+    "-l",
+    "--list",
+    help="Log the frozen modification list table-wise/version-wise/model-wise."
+)
+__parser__.add_argument(
+    "-a",
+    "--analyze",
+    help="Analyze latest modification.createCheckout, and log all the changes that have conflicts or need more actions."
+)
+__parser__.add_argument(
+    "",
+    "--checkout",
+    help="Checkout the latest modification.createCheckout.",
+    choices=['skip', 'force']
+)
+
+__option__ = __parser__.parse_args(sys.argv[1:])
+__config__ = None
+
+if __option__.list:
+    """
+    1. Read from <freeze> file -> Get versions for each Record
+    2. For each Record, Call Record.getScopedModification -> Get list of class Modification
+    3. Log (format TBD)
+    """
+    pass
+elif __option__.analyze:
+    """
+    1. Read from <freeze> file -> Get versions for each Record
+    2. Call Record.analyzeModifications -> Get list of class ModificationException
+    3. Log (format TBD)
+    """
+    pass
+elif __option__.checkout:
+    """
+    Preconditions:
+    1. (Soft) User has to confirm the changes/warning logged in analyze.
+    2. (Soft) User might skip some actions, they able to run analyze again.
+    3. (Hard) Record.createCheckout should add to the code in BEFORE this command. NOT others.
+        - We should warn user something like "By running this command, you
+            (1) already have the createCheckout code in place,
+            (2) have confirmed the changes,
+            (3) have skipped the actions, if any,
+    ---
+    0. Confirmation prompt
+    1. Read from <freeze> file -> Get versions for each Record
+    2. Call to perform actual checkout
+    """
+    pass
+else:
+    __parser__.print_help()
+    sys.exit(1)
