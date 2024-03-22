@@ -8,7 +8,7 @@ def copy_models_with_timestamp(root_folder):
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
-    version = datetime.now().strftime("%Y%m%d%H%M%S")
+    version = datetime.now().strftime("%Y/%m/%d")
     version_folder = os.path.join(destination_folder, f"version_{version}")
     os.makedirs(version_folder)
 
