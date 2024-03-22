@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import argparse
 from datetime import datetime
 
 def copy_models_with_timestamp(root_folder):
@@ -48,5 +49,7 @@ def copy_models_with_timestamp(root_folder):
 
 
 if __name__ == "__main__":
-    folder_path = ""
-    copy_models_with_timestamp(folder_path)
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('folder_path', type=str, help='The path to the folder')
+    args = parser.parse_args()
+    copy_models_with_timestamp(args.folder_path)
