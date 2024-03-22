@@ -33,7 +33,6 @@ def copy_models_with_timestamp(root_folder):
                         destination_module_folder, new_filename
                     )
                     shutil.copy2(file_path, destination_file_path)
-                    print(f"Copied and renamed {file_path} to {destination_file_path}")
                 else:
                     # Copy the file without renaming if it's not a .py file
                     destination_file_path = os.path.join(
