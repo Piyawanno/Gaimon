@@ -34,12 +34,6 @@ def copy_models_with_timestamp(root_folder):
                         destination_module_folder, new_filename
                     )
                     shutil.copy2(file_path, destination_file_path)
-                else:
-                    destination_file_path = os.path.join(
-                        destination_module_folder, filename
-                    )
-                    shutil.copy2(file_path, destination_file_path)
-
             print(
                 f"Models from {module_name} copied successfully to {destination_module_folder}."
             )
