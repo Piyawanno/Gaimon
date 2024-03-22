@@ -27,17 +27,14 @@ def copy_models_with_timestamp(root_folder):
             for filename in os.listdir(models_folder):
                 file_path = os.path.join(models_folder, filename)
                 if os.path.isdir(file_path):
-                    # Skip directories or implement directory handling logic
                     continue
                 if filename.endswith(".py"):
-                    # Change the .py extension to .txt for the copied file
                     new_filename = filename[:-3] + ".txt"
                     destination_file_path = os.path.join(
                         destination_module_folder, new_filename
                     )
                     shutil.copy2(file_path, destination_file_path)
                 else:
-                    # Copy the file without renaming if it's not a .py file
                     destination_file_path = os.path.join(
                         destination_module_folder, filename
                     )
