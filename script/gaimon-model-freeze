@@ -1,0 +1,51 @@
+import os
+import shutil
+from datetime import datetime
+
+def copy_models_with_timestamp(root_folder):
+    destination_folder = os.path.join(root_folder, "freeze-model")
+
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
+
+    version = datetime.now().strftime("%Y%m%d%H%M%S")
+    version_folder = os.path.join(destination_folder, f"version_{version}")
+    os.makedirs(version_folder)
+
+    for root, dirs, files in os.walk(root_folder):
+        if "model" in dirs:
+            module_name = os.path.basename(root)
+            models_folder = os.path.join(root, "model")
+
+            destination_module_folder = os.path.join(version_folder, module_name)
+            if not os.path.exists(destination_module_folder):
+                os.makedirs(destination_module_folder)
+
+            for filename in os.listdir(models_folder):
+                file_path = os.path.join(models_folder, filename)
+                if os.path.isdir(file_path):
+                    # Skip directories or implement directory handling logic
+                    continue
+                if filename.endswith(".py"):
+                    # Change the .py extension to .txt for the copied file
+                    new_filename = filename[:-3] + ".txt"
+                    destination_file_path = os.path.join(
+                        destination_module_folder, new_filename
+                    )
+                    shutil.copy2(file_path, destination_file_path)
+                    print(f"Copied and renamed {file_path} to {destination_file_path}")
+                else:
+                    # Copy the file without renaming if it's not a .py file
+                    destination_file_path = os.path.join(
+                        destination_module_folder, filename
+                    )
+                    shutil.copy2(file_path, destination_file_path)
+
+            print(
+                f"Models from {module_name} copied successfully to {destination_module_folder}."
+            )
+
+
+if __name__ == "__main__":
+    folder_path = ""
+    copy_models_with_timestamp(folder_path)
