@@ -35,7 +35,7 @@ def copy_models_with_timestamp(root_folder):
                     )
                     shutil.copy2(file_path, destination_file_path)
             print(
-                f"Models from {module_name} copied successfully to {destination_module_folder}."
+                f"Models from {module_name} copied successfully to {destination_module_folder}"
             )
 
 
