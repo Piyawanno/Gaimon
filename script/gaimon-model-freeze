@@ -3,41 +3,56 @@
 import os
 import shutil
 import argparse
+import json
 from datetime import datetime
+import re
+
+def parse_version_from_model(file_path):
+    with open(file_path, "r") as file:
+        content = file.read()
+    versions = re.findall(r'self.createModification\("(\d+)"\)', content)
+    return max(versions, default="1")
 
 def copy_models_with_timestamp(root_folder):
     destination_folder = os.path.join(root_folder, "freeze-model")
-
+    
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
 
     version = datetime.now().strftime("%Y/%m/%d/%H:%M:%S")
-    version_folder = os.path.join(destination_folder, f"{version}")
+    version_folder = os.path.join(destination_folder, version)
     os.makedirs(version_folder)
+
+    extensions_versions = {}
 
     for root, dirs, files in os.walk(root_folder):
         if "model" in dirs:
             module_name = os.path.basename(root)
             models_folder = os.path.join(root, "model")
-
             destination_module_folder = os.path.join(version_folder, module_name)
             if not os.path.exists(destination_module_folder):
                 os.makedirs(destination_module_folder)
+            
+            model_versions = {}
 
             for filename in os.listdir(models_folder):
                 file_path = os.path.join(models_folder, filename)
                 if os.path.isdir(file_path) or os.stat(file_path).st_size == 0:
                     continue
                 if filename.endswith(".py"):
+                    version = parse_version_from_model(file_path)
                     new_filename = filename[:-3] + ".txt"
-                    destination_file_path = os.path.join(
-                        destination_module_folder, new_filename
-                    )
+                    destination_file_path = os.path.join(destination_module_folder, new_filename)
                     shutil.copy2(file_path, destination_file_path)
-            print(
-                f"Models from {module_name} copied successfully to {destination_module_folder}"
-            )
+                    model_versions[filename[:-3]] = version
+            
+            extensions_versions[module_name] = model_versions
+            print(f"Models from {module_name} copied successfully to {destination_module_folder}")
 
+    # Create JSON file(s) for extension versions
+    for extension, versions in extensions_versions.items():
+        with open(os.path.join(version_folder, f"{extension}_versions.json"), "w") as json_file:
+            json.dump(versions, json_file, indent=4)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some integers.')
