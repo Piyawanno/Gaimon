@@ -53,9 +53,8 @@ def copy_models_with_timestamp(root_folder):
             extensions_versions[module_name] = model_versions
             print(f"Models from {module_name} copied successfully to {destination_module_folder}")
 
-    # Create JSON file(s) for extension versions
     for extension, versions in extensions_versions.items():
-        with open(os.path.join(version_folder, f"{extension}_versions.json"), "w") as json_file:
+        with open(os.path.join(version_folder, extension, "version.json"), "w") as json_file:
             json.dump(versions, json_file, indent=4)
 
 if __name__ == "__main__":
