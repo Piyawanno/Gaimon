@@ -10,8 +10,12 @@ import re
 def parse_version_from_model(file_path):
     with open(file_path, "r") as file:
         content = file.read()
-    versions = re.findall(r'self.createModification\("(\d+)"\)', content)
-    return max(versions, default="1")
+    modification_versions = re.findall(r'self.createModification\("(\d+)"\)', content)
+    checkout_versions = re.findall(r'modificationVersion="(\d+)"', content)
+    all_versions = modification_versions + checkout_versions
+    all_versions_int = [int(v) for v in all_versions if v.isdigit()]
+    max_version = max(all_versions_int, default=0)
+    return str(max_version + 1)
 
 def copy_models_with_timestamp(root_folder):
     destination_folder = os.path.join(root_folder, "freeze-model")
