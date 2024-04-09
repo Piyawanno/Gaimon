@@ -57,8 +57,10 @@ After entering PostgreSQL-CLI, database and user can be created :
 
 ```SQL
 CREATE DATABASE gaimon;
-CREATE USER gaimonuser WITH PASSWORD 'MY_SERCRET_PASSWORD';
+CREATE USER gaimonuser WITH PASSWORD 'MY_SECRET_PASSWORD';
 GRANT ALL PRIVILEGES ON DATABASE gaimon to gaimonuser;
+\c gaimon
+GRANT ALL ON SCHEMA public TO gaimonuser;
 ```
 
 In the above SQL command, the database with the name `gaimon`, user with

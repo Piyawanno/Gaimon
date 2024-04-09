@@ -1,0 +1,2 @@
+class FloatColumn extends ColumnMetaData{
+}

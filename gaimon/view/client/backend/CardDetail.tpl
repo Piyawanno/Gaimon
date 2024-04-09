@@ -2,7 +2,7 @@
 	<div>
 		<div class="abstract_card_avatar" rel="avatar">
 		</div>
-		<div class="abstract_card_detail_content">
+		<div class="abstract_card_detail_content" rel="content">
 		{{#tbody}}
 		<div class="flex space-between abstract_card_content">
 			<div class="abstract_card_label_left" localize>{{{label}}}</div>

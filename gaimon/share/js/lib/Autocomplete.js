@@ -9,23 +9,42 @@ let Autocomplete = function() {
 	object.searchKeys = [];
 	object.template = '';
 	object.parameter = {};
+	object.isTag = false;
+	object.isInitEvent = false;
+
+	object.currentTagValues = [];
+	object.currentTagValueMap = {};
+
+	object.tag = undefined;
+	object.tagContainer = undefined;
 
 	object.data;
 	object.callback;
 
 	this.init = function(tag, config) {
+		object.create(tag);
+		object.setConfig(config)
+	}
+
+	this.create = function(tag) {
+		object.tag = tag;
+		object.autocompleteTag = document.createElement("DIV");
+		object.autocompleteTag.setAttribute("class", "autocomplete-items");
+		// let body = document.getElementsByTagName('body')[0];
+		// body.appendChild(object.autocompleteTag);
+		object.tag.parentElement.appendChild(object.autocompleteTag);
+	}
+	
+	this.setConfig = function(config) {
 		if (config != undefined) {
 			if (config.isFetch != undefined) object.isFetch = config.isFetch;
 			if (config.limit != undefined) object.limit = config.limit;
 			if (config.searchKeys != undefined) object.searchKeys = config.searchKeys;
 			if (config.template != undefined) object.template = config.template;
 			if (config.parameter != undefined) object.parameter = config.parameter;
+			if (config.isTag != undefined) object.isTag = config.isTag;
 		}
-		object.tag = tag;
-		object.autocompleteTag = document.createElement("DIV");
-		object.autocompleteTag.setAttribute("class", "autocomplete-items");
-		let body = document.getElementsByTagName('body')[0];
-		body.appendChild(object.autocompleteTag);
+		if (object.template == undefined || object.template.length == 0) object.template = "{{label}}";
 		if (object.isFetch) object.autocomplete = object.autocompleteFetch;
 		else object.autocomplete = object.autocompleteLocal;
 	}
@@ -35,8 +54,89 @@ let Autocomplete = function() {
 		object.callback = callback;
 	}
 
+	this.clear = function() {
+		if (object.tag) {
+			if (object.isTag) {
+				object.tag.currentValue = undefined;
+				object.tag.value = '';
+				object.currentTagValues = [];
+				object.currentTagValueMap = {};
+				object.tagContainer.innerHTML = "";
+			} else {
+				object.tag.currentValue = undefined;
+				object.tag.value = '';	
+			}
+		}
+	}
+
 	this.getRenderedTemplate = function(value) {
 		return AbstractInputUtil.prototype.getRenderedTemplate(value, object.template);
+	}
+
+	this.renderTag = async function(data, value, callback) {
+		let isExists = true;
+		if (object.currentTagValueMap[value.value] == undefined) {
+			object.currentTagValueMap[value.value] = value;
+			object.currentTagValues.push(value);
+			isExists = false;
+		}
+		let isObject = typeof(value) == 'object';
+		let valueLabel = "";
+		if (isObject && object.template.length > 0) {
+			valueLabel = Mustache.render(object.template, value);
+		} else if (isObject) {
+			valueLabel = value.label != undefined ? value.label: value;
+		} else {
+			valueLabel= value;
+		}
+		if (object.tagItemTemplate && !isExists) {
+			let tagItem = Mustache.render(object.tagItemTemplate, value);
+			let div = document.createElement('div');
+			div.innerHTML = tagItem;
+			let item = div.firstChild;
+			let button = item.getElementsByClassName("delete")[0];
+			object.tagContainer.appendChild(item);
+			button.onclick = async function() {
+				delete object.currentTagValueMap[value.value];
+				let index = object.currentTagValues.indexOf(value);
+				if (index != -1) {
+					object.currentTagValues.splice(index, 1);
+				}
+				item.remove();
+			}
+		}
+		if (callback != undefined) {
+			let result = value;
+			if (isObject) {
+				result = JSON.parse(JSON.stringify(value));
+				if (object.template.length > 0) result.template = Mustache.render(object.template, value);
+			}
+			callback(result, data);
+		}
+		if(object.tag.onchange) object.tag.onchange();
+		object.closeAllLists();
+	}
+
+	this.renderLabel = async function(data, value, callback) {
+		let isObject = typeof(value) == 'object';
+		if (isObject && object.template.length > 0) {
+			object.tag.value = Mustache.render(object.template, value);
+			object.tag.currentValue = value;
+		} else if (isObject) {
+			object.tag.value = value.label != undefined ? value.label: value;
+		} else {
+			object.tag.value = value;
+		}
+		if (callback != undefined) {
+			let result = value;
+			if (isObject) {
+				result = JSON.parse(JSON.stringify(value));
+				if (object.template.length > 0) result.template = Mustache.render(object.template, value);
+			}
+			callback(result, data);
+		}
+		if(object.tag.onchange) object.tag.onchange();
+		object.closeAllLists();
 	}
 
 	this.renderFoundValue = function(data, key, value, callback) {
@@ -49,33 +149,18 @@ let Autocomplete = function() {
 			if(typeof rendered == 'string') tag.innerHTML = rendered;
 			else tag.appendChild(rendered.html);
 		} else {
-			tag.innerHTML = value;
+			tag.innerHTML = value.label != undefined ? value.label: value;
 		}
 		let inputValue = value;
 		if (isObject) inputValue = JSON.stringify(value);
 		if (isArray) tag.innerHTML += "<input type='hidden' value='" + inputValue + "'>";
 		else tag.innerHTML += "<input type='hidden' value='" + key + "'>";
 		tag.addEventListener("click", function(e) {
-			object.tag.currentValue = tag.getElementsByTagName("input")[0].value;
-			object.tag.value = tag.getElementsByTagName("input")[0].value;			
-			if (isObject && object.template.length > 0) {
-				object.tag.value = Mustache.render(object.template, value);
-				object.tag.currentValue = value;
+			if (object.isTag) {
+				object.renderTag(data, value, callback);
+			} else {
+				object.renderLabel(data, value, callback);
 			}
-			if (callback != undefined) {
-				let result = tag.getElementsByTagName("input")[0].value;
-				if (isObject) {
-					result = JSON.parse(result);
-					if (object.template.length > 0) {
-						result.template = Mustache.render(object.template, value);
-					}
-				}
-				callback(result, data);
-			}
-			if(object.tag.onchange) {
-				object.tag.onchange();
-			}
-			object.closeAllLists();
 		});
 		object.autocompleteTag.appendChild(tag);
 	}
@@ -112,12 +197,15 @@ let Autocomplete = function() {
 	}
 
 	this.autocompleteLocal = function() {
+		if (object.isInitEvent) return;
 		object.tag.addEventListener("input", function(e) {
 			let rect = object.tag.getBoundingClientRect();
 			object.autocompleteTag.style.top = rect.bottom + "px";
 			object.autocompleteTag.style.left = rect.left + "px";
 			object.autocompleteTag.style.right = rect.right + "px";
 			object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
+			let fontSize = window.getComputedStyle(object.tag).fontSize;
+			object.autocompleteTag.style.fontSize = fontSize;
 			object.autocompleteTag.innerHTML = '';
 			let val = object.tag.value;
 			object.closeAllLists();
@@ -130,6 +218,8 @@ let Autocomplete = function() {
 			object.autocompleteTag.style.left = rect.left + "px";
 			object.autocompleteTag.style.right = rect.right + "px";
 			object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
+			let fontSize = window.getComputedStyle(object.tag).fontSize;
+			object.autocompleteTag.style.fontSize = fontSize;
 			object.autocompleteTag.innerHTML = '';
 			let val = object.tag.value;
 			object.closeAllLists();
@@ -137,15 +227,19 @@ let Autocomplete = function() {
 			object.filter(object.data, val, object.callback);
 		});
 		object.setKeyDown();
+		object.isInitEvent = true;
 	}
 
 	this.autocompleteFetch = function() {
+		if (object.isInitEvent) return;
 		object.tag.addEventListener("input", async function(e) {
 			let rect = object.tag.getBoundingClientRect();
 			object.autocompleteTag.style.top = rect.bottom + "px";
 			object.autocompleteTag.style.left = rect.left + "px";
 			object.autocompleteTag.style.right = rect.right + "px";
 			object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
+			let fontSize = window.getComputedStyle(object.tag).fontSize;
+			object.autocompleteTag.style.fontSize = fontSize;
 			object.autocompleteTag.innerHTML = '';
 			let val = object.tag.value;
 			object.closeAllLists();
@@ -185,6 +279,8 @@ let Autocomplete = function() {
 			object.autocompleteTag.style.left = rect.left + "px";
 			object.autocompleteTag.style.right = rect.right + "px";
 			object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
+			let fontSize = window.getComputedStyle(object.tag).fontSize;
+			object.autocompleteTag.style.fontSize = fontSize;
 			object.autocompleteTag.innerHTML = '';
 			let val = object.tag.value;
 			object.closeAllLists();
@@ -222,6 +318,7 @@ let Autocomplete = function() {
 			}
 		});
 		object.setKeyDown();
+		object.isInitEvent = true;
 	}
 
 	this.fetch = async function(val) {

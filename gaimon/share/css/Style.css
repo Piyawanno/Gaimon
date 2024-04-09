@@ -157,6 +157,7 @@ div.error {
 	right: 0;
     overflow-y: auto;
     max-height: 225px;
+	overflow-x: hidden;
 }
 
 /* .autocomplete-items div {

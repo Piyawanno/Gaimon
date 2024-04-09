@@ -167,13 +167,13 @@ AbstractInputUtil.prototype.createSideIcon = async function(groupedInput){
 	for(let group of groupedInput){
 		if (group.isGroup) {
 			for (let input of group.input) {
-				if(input.sideIcon != null){
-					input.SVG = await CREATE_SVG_ICON(input.sideIcon);
+				if(input.sideIcon != null && Array.isArray(input.sideIcon) && input.sideIcon.length > 0){
+					input.SVG = await CREATE_SVG_ICON(input.sideIcon[0].icon);
 				}
 			}
 		}
-		if(group.sideIcon != null){
-			group.SVG = await CREATE_SVG_ICON(group.sideIcon);
+		if(group.sideIcon != null && Array.isArray(group.sideIcon) && group.sideIcon.length > 0){
+			group.SVG = await CREATE_SVG_ICON(group.sideIcon[0].icon);
 		}
 	}
 }
@@ -549,6 +549,7 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 		prerequisite.childInput[inputs[i].detail.columnName] = inputs[i];
 	}
 	prerequisite.onchange = async function(isForceFetch=false) {
+		console.log(this.value)
 		if (this.value == undefined) return;
 		if (this.value == '') return;
 		for (let index in prerequisite.childInput) {
@@ -560,6 +561,8 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 			if (prerequisite.fetched[detail.columnName] == undefined){
 				prerequisite.fetched[detail.columnName] = {};
 			}
+			console.log(prerequisite.fetched[detail.columnName])
+			console.log(prerequisite.fetched[detail.columnName][this.value])
 			if (prerequisite.fetched[detail.columnName][this.value] == undefined || isForceFetch) {
 				let response;
 				if (this.currentValue == undefined){
@@ -851,7 +854,10 @@ AbstractInputUtil.prototype.setImageMap = async function(view, imageMap) {
 				this.classList.remove('disabled');
 				view.dom[`${i}_originalButton`].classList.add('disabled');
 			}
-		}else view.dom[`${i}_croppedButton`].remove();
+		}else if (view.dom[`${i}_croppedButton`]) {
+			console.log(view.dom[`${i}_croppedButton`]);
+			// view.dom[`${i}_croppedButton`].remove();
+		}
 		view.dom[`${i}_previwerCancel`].onclick = async function(){
 			view.dom[`${i}_previewer`].hide();
 		}
@@ -980,7 +986,7 @@ AbstractInputUtil.prototype.getRenderedTemplate = function(value, template) {
 		}
 		let avatarTemplate = `<div class="flex gap-10px">
 			<div class="autocomplete_avatar" rel="avatarContainer"></div>
-			<div class="flex center">{{{preRendered}}}</div>
+			<div class="flex-column-center">{{{preRendered}}}</div>
 		</div>`;
 		let rendered = new InputDOMObject(avatarTemplate, {preRendered});
 		rendered.dom.avatarContainer.appendChild(image);

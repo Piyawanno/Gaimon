@@ -18,7 +18,7 @@ if len(__namespace__) : setSystemPath(__namespace__)
 __gaimon__ = GaimonApplication(__config__, __namespace__)
 application = __gaimon__.application
 
-if __name__ == '__main__' :
+if __name__ == '__main__': 
 	if __option__.daemon :
 		__config__['isDevelop'] = 0
 		daemonize('gaimon', __option__.daemon, __gaimon__.run, __namespace__)

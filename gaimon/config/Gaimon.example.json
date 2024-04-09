@@ -9,6 +9,7 @@
 	"theme" : null,
 	"isDomainCheck" : 0,
 	"domain" : "",
+	"language" : "th",
 	"country" : "th",
 	"extension" : [
 	],
@@ -48,9 +49,9 @@
 	},
 	"title" : "TITLE",
 	"fullTitle": "FULL TITLE",
-	"icon" : "IMAGE PATH",
-	"favicon" : "IMAGE PATH",
-	"horizontalLogo" : "IMAGE PATH" ,
+	"icon" : "",
+	"favicon" : "",
+	"horizontalLogo" : "" ,
 	"email": {
 		"email": "",
 		"password": ""

@@ -38,13 +38,21 @@ class BaseProtocol{
 		return await this.callGET('get/option');
 	}
 
+	async getAutocomplete(data) {
+		return await this.callPost('autocomplete/get', data)
+	}
+
+	async getAutocompleteByReference(data) {
+		return await this.callPost('autocomplete/get/by/reference', data)
+	}
+
 	async getAll(filter, limit, pageNumber, orderBy='id', isDecreasing=false){
-		let parameter = {limit, offset, pageNumber, isDecreasing};
+		let parameter = {limit, pageNumber, orderBy, isDecreasing};
 		parameter.data = filter;
 		return await this.callPost('get/all', parameter);
 	}
 
 	async delete(id){
-		return await this.callPOST('drop', {id});
+		return await this.callPost('drop', {id});
 	}
 }

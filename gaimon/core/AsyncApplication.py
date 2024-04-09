@@ -27,13 +27,13 @@ from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from xerial.Record import Record
 
 from multiprocessing import cpu_count
-from typing import List, Union, Dict, Callable
+from typing import List, Dict, Callable
 from sanic import Sanic
-from sanic_session import Session, AIORedisSessionInterface
+from sanic_session import Session, RedisSessionInterface
 from packaging.version import Version
 
-import os, sys, aioredis, logging, aiofiles, json, gaimon.model
-import psutil, time, asyncio, importlib, traceback
+import os, sys, logging, json, psutil, asyncio, importlib, traceback
+import redis.asyncio as redis
 
 
 Record.enableDefaultBackup()
@@ -87,6 +87,7 @@ class AsyncApplication(Application):
 		)
 		self.theme = ThemeHandler(config['theme'], self.resourcePath, self.extension)
 		self.title = config['title']
+		self.config['language'] = config.get('language', 'th')
 		self.icon = config.get('icon', '')
 		self.favicon = config.get('favicon', '')
 		self.horizontalLogo = config.get('horizontalLogo', '/share/icon/ximple_dark.png')
@@ -229,10 +230,13 @@ class AsyncApplication(Application):
 		redisURL = f"redis://{redisConfig['host']}:{redisConfig['port']}"
 		if 'db' in redisConfig:
 			redisURL = f'{redisURL}/{redisConfig["db"]}'
-		self.redis = aioredis.from_url(redisURL, decode_responses=True)
+		self.redisPool = redis.ConnectionPool.from_url(redisURL, decode_responses=True)
+		self.redis = redis.Redis(connection_pool=self.redisPool, decode_responses=True)
+		async def getConnection():
+			return redis.Redis(connection_pool=self.redisPool)
 		self.httpSession.init_app(
 			self.application,
-			interface=AIORedisSessionInterface(self.redis)
+			interface=RedisSessionInterface(getConnection)
 		)
 		self.sessionPool = AsyncDBSessionPool(self.config["DB"])
 		logging.info(">>> Connecting Database")
@@ -257,8 +261,8 @@ class AsyncApplication(Application):
 	async def readModelModification(self):
 		path = f'{self.resourcePath}/ModelVersion.json'
 		if os.path.isfile(path):
-			async with aiofiles.open(path, 'rt') as fd:
-				raw = await fd.read()
+			with open(path, 'rt') as fd:
+				raw = fd.read()
 			try:
 				modelVersion = json.loads(raw)
 			except:
@@ -296,8 +300,10 @@ class AsyncApplication(Application):
 		return client
 
 	def map(self, controllerList, processRoute:Callable=processRouteEmpty):
+		self.mappedController = {}
 		for controller in controllerList:
-			isMapped = getattr(controller.__class__, '__is_mapped__', False)
+			# isMapped = getattr(controller.__class__, '__is_mapped__', False)
+			isMapped = self.mappedController.get(controller.__class__, False)
 			if  isMapped :
 				print(f"*** Warning {controller.__class__.__name__} is already mapped.")
 				continue
@@ -325,7 +331,8 @@ class AsyncApplication(Application):
 					self.routeSocket(controller, attributeName, route)
 				else:
 					self.routeRegular(controller, attributeName, route)
-			controller.__class__.__is_mapped__ = True
+			# controller.__class__.__is_mapped__ = True
+			self.mappedController[controller.__class__] = True
 		self.replaceRoute()
 
 	def replaceRoute(self) :

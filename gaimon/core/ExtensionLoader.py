@@ -25,6 +25,8 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		self.menu = {}
 		self.scriptName = {}
 		self.pageExtension: Dict[str, Set[str]] = {}
+		self.componentComposer: Set[str] = set()
+		self.componentCreator: Set[str] = set()
 		self.startSubroutine = []
 		self.configuration = {}
 		self.loadedController = set()
@@ -57,6 +59,13 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 	
 	async def getPageExtension(self, request: Request) -> Dict[str, Set[str]]:
 		return self.pageExtension
+
+	async def getModelPageComponent(self, request: Request) -> Set[str]:
+		print(104, id(self), self.componentComposer)
+		return {
+			'composer': list(self.componentComposer),
+			'creator': list(self.componentCreator),
+		}
 	
 	def checkPath(self):
 		path = [
@@ -194,6 +203,15 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 						self.pageExtension[name] = set(extensionList)
 					else :
 						self.pageExtension[name].union(set(extensionList))
+			
+			if 'component' in configuration['backend'] :
+				composer = configuration["backend"]['component'].get('composer', None)
+				if composer is not None:
+					self.componentComposer = self.componentComposer.union(set(composer))
+				creator = configuration["backend"]['component'].get('creator', None)
+				if creator is not None:
+					self.componentCreator = self.componentCreator.union(set(creator))
+
 			self.extensionRole.union(set(configuration['role']))
 		else:
 			raise EnvironmentError(

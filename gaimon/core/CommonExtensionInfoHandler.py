@@ -30,3 +30,6 @@ class CommonExtensionInfoHandler:
 	
 	async def getPageExtension(self, request: Request) -> Dict[str, Set[str]]:
 		raise NotImplementedError
+	
+	async def getModelPageComponent(self, request: Request) -> Set[str]:
+		raise NotImplementedError

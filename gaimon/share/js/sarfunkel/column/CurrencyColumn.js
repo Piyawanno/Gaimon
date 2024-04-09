@@ -1,0 +1,2 @@
+class CurrencyColumn extends ColumnMetaData{
+}

@@ -115,7 +115,12 @@ const DocumentStatusManagement = function(main){
 		form.dom.operation.prepend(button);
 		button.dom.reject.onclick = async function(){
 			form.documentStatusEnum = DocumentStatus.INTERNAL_REJECTED;
-			page.submit(form, isForm);
+			console.log(form.onSubmit);
+			if(form.onSubmit != undefined){
+				form.onSubmit(form);
+			}else{
+				page.submit(form, isForm);
+			}
 		}
 	}
 
@@ -164,7 +169,11 @@ const DocumentStatusManagement = function(main){
 				form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
 			}
 			if(documentStatus == undefined) form.documentStatusEnum = DocumentStatus.INTERNAL_APPROVED;
-			page.submit(form, isForm);
+			if(form.onSubmit != undefined){
+				form.onSubmit(form);
+			}else{
+				page.submit(form, isForm);
+			}
 		}
 	}
 	
@@ -179,7 +188,11 @@ const DocumentStatusManagement = function(main){
 		form.dom.operation.prepend(button);
 		button.dom.notApprove.onclick = async function(){
 			form.documentStatusEnum = DocumentStatus.CUSTOMER_NOT_APPROVED;
-			page.submit(form, isForm);
+			if(form.onSubmit != undefined){
+				form.onSubmit(form);
+			}else{
+				page.submit(form, isForm);
+			}
 		}
 	}
 
@@ -208,7 +221,11 @@ const DocumentStatusManagement = function(main){
 		form.dom.otherOperation.prepend(button);
 		button.dom.close.onclick = async function(){
 			form.documentStatusEnum = DocumentStatus.CLOSE;
-			page.submit(form, isForm);
+			if(form.onSubmit != undefined){
+				form.onSubmit(form);
+			}else{
+				page.submit(form, isForm);
+			}
 		}
 	}
 	
@@ -222,7 +239,11 @@ const DocumentStatusManagement = function(main){
 		form.dom.otherOperation.prepend(button);
 		button.dom.hold.onclick = async function(){
 			form.documentStatusEnum = DocumentStatus.HOLD;
-			page.submit(form, isForm);
+			if(form.onSubmit != undefined){
+				form.onSubmit(form);
+			}else{
+				page.submit(form, isForm);
+			}
 		}
 	}
 
@@ -236,7 +257,11 @@ const DocumentStatusManagement = function(main){
 		form.dom.otherOperation.prepend(button);
 		button.dom.cancel.onclick = async function(){
 			form.documentStatusEnum = DocumentStatus.CANCEL;
-			page.submit(form, isForm);
+			if(form.onSubmit != undefined){
+				form.onSubmit(form);
+			}else{
+				page.submit(form, isForm);
+			}
 		}
 	}
 
@@ -250,7 +275,11 @@ const DocumentStatusManagement = function(main){
 		form.dom.otherOperation.prepend(button);
 		button.dom.partiallyCancel.onclick = async function(){
 			form.documentStatusEnum = DocumentStatus.PARTIALLY_CANCEL;
-			page.submit(form, isForm);
+			if(form.onSubmit != undefined){
+				form.onSubmit(form);
+			}else{
+				page.submit(form, isForm);
+			}
 		}
 	}
 

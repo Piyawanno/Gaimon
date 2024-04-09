@@ -13,7 +13,7 @@ const LoginPage = function() {
 		if (title == undefined) title = TITLE;
 		object.body = document.querySelector('body');
 		object.body.innerHTML = '';
-		object.home = new DOMObject(TEMPLATE.Login, {
+		object.home = new InputDOMObject(TEMPLATE.Login, {
 			'title': TITLE,
 			'authentication': authentication
 		});
@@ -21,11 +21,11 @@ const LoginPage = function() {
 			object.external = new ExternalLoginProtocol();
 			object.external.initialize();
 		}
-		object.home = new DOMObject(TEMPLATE.Login, {'title': title});
+		object.home = new InputDOMObject(TEMPLATE.Login, {'title': title});
 		if (object.hasRenderFunction) {
 			object.home = await object.renderFunction(title);
 		} else {
-			object.home = new DOMObject(TEMPLATE.Login, {'title': title, 'icon': LOGO, 'rootURL': rootURL});
+			object.home = new InputDOMObject(TEMPLATE.Login, {'title': title, 'icon': LOGO, 'rootURL': rootURL});
 		}
 		object.body.appendChild(object.home.html);
 		// await object.resizeIcon();

@@ -226,20 +226,27 @@ async function GET_CURRENT_PAGE(event) {
 	return page
 }
 
+async function RENDER_SARFUNKEL_STATE(event) {
+	if (event == undefined) event = history;
+	let query = new URLSearchParams(window.location.search);
+	let pageID = query.get('p');
+	let page = main.pageIDDict[pageID];
+	// if (page == undefined) window.location.pathname = window.location.pathname;
+	if (page == undefined) return;
+	await page.renderByURL(query);
+}
+
 async function RENDER_STATE(event) {
 	if (event == undefined) event = history;
 	let query = new URLSearchParams(window.location.search);
 	let state = event.state;
+	if (query.get('sfk') != null) return await RENDER_SARFUNKEL_STATE(event);
 	let pageID = query.get('pageID');
 	if (pageID != null) {
 		state = query.get('state');
 		state= JSON.parse(state.b64decode());
 	}
 	let pageName = query.get('p');
-	// if (pageName != null) {
-	// 	state = localStorage.getItem(pageName);
-	// 	state = JSON.parse(state);
-	// }
 	if ((pageName == null && pageID == null) || state == null) {
 		if (main.homeMenu != undefined) {
 			await main.homeMenu.dom.menu.click();
@@ -249,8 +256,10 @@ async function RENDER_STATE(event) {
 		return;
 	}
 	let page = main.pageIDDict[state.PAGE];
-	if (page == undefined) return;
-	console.log(state);
+	if (page == undefined) {
+		REDIRECT('backend');
+		return;
+	}
 	await RENDER_NAVIGATOR(state);
 	if (state.isInit != undefined && state.isInit) {
 		let isSubMenu = false;
@@ -321,6 +330,18 @@ async function GET_STATE_URL(page, data) {
 	return window.location.pathname + `?pageID=${page.pageID}&title=${page.title}&state=${state}`;
 	// return rootURL + `?pageID=${page.pageID}&title=${page.title}&state=${state}`;
 	// return rootURL + `?p=${url}`;
+}
+
+function PUSH_SARFUNKEL_STATE(url) {
+	let current = window.location.search;
+	if (url == current) return;
+	history.pushState(undefined, '', window.location.pathname+url);
+}
+
+function REPLACE_SARFUNKEL_STATE(url) {
+	let current = window.location.search;
+	if (url == current) return;
+	history.replaceState(undefined, '', window.location.pathname+url);
 }
 
 async function PUSH_STATE(page, data, url) {
@@ -433,7 +454,6 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd=false,
 			await page.setPageState();
 			SHOW_LOADING_DIALOG(async function(){
 				await page.onPrepareState();
-				console.log(page.render);
 				await page.render();
 			});
 			main.home.dom.subMenuContainer.hide();
@@ -477,6 +497,16 @@ async function CREATE_MENU(pageID, name, icon, isSubMenu, isImage, hasAdd=false,
 }
 
 async function RENDER_NAVIGATOR(config){
+	let isSetNavigator = true;
+	if(config != undefined && main.pageIDDict[config.PAGE]){
+		if(main.pageIDDict[config.PAGE].isSetNavigator == undefined) main.pageIDDict[config.PAGE].isSetNavigator = true;
+		isSetNavigator = main.pageIDDict[config.PAGE].isSetNavigator;
+		if(!isSetNavigator){
+			let navigator = main.personalBar.home.dom.navigator;
+			navigator.html('');
+			return;
+		}
+	}
 	let state = history.state;
 	if (config != undefined) state = config;
 	if (main.personalBar != undefined && state != undefined && state.PAGE_NAME != undefined) {
@@ -1083,6 +1113,19 @@ String.prototype.hashCode = function() {
 	}
 	return hash;
 }
+
+Object.id = function(o) {
+	if (window.OBJECT_ID == undefined) window.OBJECT_ID = 0;
+	if ( typeof o.__unique__ != "undefined" ) {
+		return o.__unique__;
+	}
+	Object.defineProperty(o, "__unique__", {
+		value: ++window.OBJECT_ID,
+		enumerable: false,
+		writable: false
+	});
+	return o.__unique__;
+};
 
 // Element.prototype._addEventListener = Element.prototype.addEventListener;
 // Element.prototype.addEventListener = function(a, b, c) {

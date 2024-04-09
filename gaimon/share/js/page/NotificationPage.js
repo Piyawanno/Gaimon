@@ -20,7 +20,7 @@ const NotificationPage = function(main, parent) {
 	this.isIconInit = false;
 
 	this.initEvent = async function(){
-		object.home.dom.add.hide();
+		if(object.home.dom.add) object.home.dom.add.hide();
 		object.filterForm = await object.renderSearchForm(object.model);
 		object.home.dom.search.onclick = async function(){
 			object.home.dom.filter.show();

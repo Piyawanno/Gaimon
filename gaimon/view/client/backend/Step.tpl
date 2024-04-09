@@ -1,1 +1,1 @@
-<li><div class="abstract_step" rel="step_{{{name}}}">{{{name}}}</div></li>
+<li><div class="abstract_step" rel="step_{{{name}}}" localize>{{{name}}}</div></li>

@@ -28,6 +28,8 @@ class NotificationService(AsyncService):
 	def setHandler(self):
 		self.appendHandler(NotificationHandler)
 		self.resourcePath = self.config['resourcePath']
+		if self.namespace is not None and len(self.namespace):
+			self.resourcePath = f"{self.resourcePath}/namespace/{self.namespace}"
 		self.managementMap: Dict[str, NotificationManagement] = {}
 		self.sendTask: List[Task] = []
 		self.loadManagement()
@@ -42,10 +44,13 @@ class NotificationService(AsyncService):
 		entity: str = None if parameter is None else parameter.get('entity', None)
 		if hasDBSession :
 			handler.session = await self.pool.getSession()
+   
+			if entity is not None and handler.session.vendor == Vendor.POSTGRESQL:
+				if entity != 'main':
+					handler.session.setSchema(entity)
 		else :
 			handler.session = None
-		if entity is not None and handler.session.vendor == Vendor.POSTGRESQL:
-			handler.session.setSchema(entity)
+    
 		handler.management = await self.getManagement(parameter)
  
 	async def getManagement(self, parameter: dict) -> NotificationManagement:
@@ -53,10 +58,14 @@ class NotificationService(AsyncService):
 		management = self.managementMap.get(entity, None)
 		if management is None :
 			resourcePath = f"{self.resourcePath}/notification"
+			print('getManagement resourcePath', resourcePath)
 			if not os.path.isdir(resourcePath): os.makedirs(resourcePath)
 			management = NotificationManagement(self.config, self.resourcePath, entity)
 			session = await self.pool.getSession()
 			management.entity = entity
+			if entity is not None and session.vendor == Vendor.POSTGRESQL:
+				if entity != 'main':
+					session.setSchema(entity)
 			management.checkPath()
 			management.loadUnsent()
 			await management.prepareUser(session)
@@ -97,6 +106,7 @@ class NotificationService(AsyncService):
 
 	def loadManagement(self):
 		resourcePath = f"{self.resourcePath}/notification"
+		print('loadManagement resourcePath', resourcePath)
 		if not os.path.isdir(resourcePath): os.makedirs(resourcePath)
 		for i in os.listdir(resourcePath):
 			path = f"{resourcePath}/{i}"

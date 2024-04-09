@@ -1,6 +1,8 @@
 <div class="notification_container hidden" rel="container">
-	<div rel="listContainer"></div>
+	<div class="notification_chevron"></div>
+	<div class="notificaiton_topic" localize>Notifications</div>
+	<div class="listContainer" rel="listContainer"></div>
 	<div>
-		<div rel="button" class="abstract_button">See more</a>
+		<div rel="button" class="notificaiton_button" localize>Show all notifications</a>
 	</div>
 </div>

@@ -25,6 +25,7 @@
 			<div rel="buttonList"></div>
 		</div>
 		<div class="abstract_form_input" rel="form"></div>
+		<div class="abstract_form_input" rel="additional_form"></div>
 		<div class="flex gap-5px flex-end" rel="operation"></div>
 	</div>
 </div>

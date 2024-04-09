@@ -8,6 +8,7 @@ class InputMetaData{
 		this.default = config.default;
 		this.inputPerLine = config.inputPerLine;
 		this.isReferenced = false;
+		this.isTagReferenced = false;
 		
 		this.help = config.help;
 		this.isAdvanceForm = config.isAdvanceForm;
@@ -26,41 +27,85 @@ class InputMetaData{
 		this.order = column.order;
 		this.message = null;
 
+		this.prerequisite = null;
+
 		this.input = null;
 		this.cell = null;
+		this.formCell = null;
 		this.detail = null;
+		this.filterInput = null;
+		this.rawSideIcon = config.sideIcon;
+		this.formSideIconList = [];
+		this.formSideIconMap = {};
+		this.dialogSideIconList = [];
+		this.dialogSideIconMap = {};
 	}
 
 	enable(){
 		this.isEnabled = true;
 		if(this.input != null) this.input.html.show();
 		if(this.cell != null) this.cell.html.show();
+		if(this.formCell != null) this.formCell.html.show();
+		if(this.filterInput != null) this.filterInput.html.show();
 	}
 
 	disable(){
 		this.isEnabled = false;
 		if(this.input != null) this.input.html.hide();
 		if(this.cell != null) this.cell.html.hide();
+		if(this.formCell != null) this.formCell.html.hide();
+		if(this.filterInput != null) this.filterInput.html.hide();
 	}
 
-	enableEdit(){
+	enableEdit(inputForm){
 		this.isEditable = true;
-		if(this.input != null) this.input.disabled = false;
+		if (inputForm == undefined) {
+			if(this.input != null) this.input.dom[this.columnName].disabled = false;
+			if(this.formCell != null) this.formCell.dom[this.columnName].disabled = false;
+			if(this.filterInput != null) this.filterInput.dom[this.columnName].disabled = false;
+		} else {
+			inputForm.dom[this.columnName].disabled = false;
+		}
 	}
 
-	disableEdit(){
+	disableEdit(inputForm){
 		this.isEditable = false;
-		if(this.input != null) this.input.disabled = true;
+		if (inputForm == undefined) {
+			if(this.input != null) this.input.dom[this.columnName].disabled = true;
+			if(this.formCell != null) this.formCell.dom[this.columnName].disabled = true;
+			if(this.filterInput != null) this.filterInput.dom[this.columnName].disabled = true;
+		} else {
+			inputForm.dom[this.columnName].disabled = true;
+		}
 	}
 
 	async renderForm(record){
 		if(this.input == null){
-			this.input = new DOMObject('', {});
+			this.input = new DOMObject('<div></div>', {});
+		}
+		return this.input;
+	}
+
+	async renderDialogForm(record){
+		if(this.input == null){
+			this.input = new DOMObject('<div></div>', {});
 		}
 		return this.input;
 	}
 
 	async renderCell(record, reference){
+		let cell = new DOMObject('<td></td>', {});
+		return cell;
+	}
+
+	async renderCardRow(record, reference) {
+		let parameter = {...this};
+		let cell = new DOMObject(TEMPLATE.CardRow, parameter);
+		if(record) this.setTableValue(cell, record, reference);
+		return cell;
+	}
+
+	async renderFormCell(record, reference){
 		let cell = new DOMObject('', {});
 		return cell;
 	}
@@ -75,6 +120,11 @@ class InputMetaData{
 		return input;
 	}
 
+	async renderTableFilter(record, reference) {
+		let input = new DOMObject('<div></div>', {});
+		return input;
+	}
+
 	async renderDetail(record, reference){
 		if(this.detail == null){
 			this.detail = new DOMObject('', {});
@@ -82,33 +132,86 @@ class InputMetaData{
 		return this.detail;
 	}
 
-	getFormValue(form, data, message){
-		let input = this.input.dom[this.columnName];
+	getFormValue(form, inputForm, data, file, message, isShowError){
+		if (isShowError == undefined) isShowError = true;
+		let input = inputForm.dom[this.columnName];
 		let result = input != undefined? input.value: null;
 		this.isPass = true;
-		data[this.columnName] = result;
+		data[this.columnName] = this.column.inputToJSON(result);
 		if(this.isRequired && (result == null || result.length == 0)){
-			input.classList.add('error');
-			message.push(`Required field "${this.label}" is not set.`);
+			if (isShowError) {
+				input.classList.add('error');
+				message.push(`Required field "${this.label}" is not set.`);
+			}
 			this.isPass = false;
 			return false;
 		}else{
+			input.classList.remove('error');
 			return true;
 		}
 	}
 
-	setFormValue(record){
+	setFormValue(inputForm, record){
 		if(record != undefined){
 			let attribute = record[this.columnName];
-			let input = this.input.dom[this.columnName];
+			let input = inputForm.dom[this.columnName];
 			if(attribute != undefined && input != undefined){
-				input.value = attribute;
+				input.value = this.column.toInput(attribute);
+				if (this.prerequisite != null) this.callPrerequisite(this, inputForm);
 			}
 		}
 	}
 
-	checkEditable(){
-		let input = this.input.dom[this.columnName];
+	clearFormValue(inputForm) {
+		let input = inputForm.dom[this.columnName];
+		if(input != undefined){
+			input.value = '';
+		}
+	}
+
+	setDetailValue(detail, record, reference) {
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			let item = detail.dom[this.columnName];
+			if(attribute != undefined && item != undefined){
+				if (attribute.length == 0) attribute = '-';
+				item.innerHTML = this.column.toDisplay(attribute);
+			}
+		}
+	}
+
+	setTableValue(cell, record, reference){
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			let item = cell.dom[this.columnName];
+			if(attribute != undefined && item != undefined){
+				item.innerHTML = this.column.toDisplay(attribute);
+			}
+		}
+	}
+
+	setCardValue(cell, record, reference){
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			let item = cell.dom[this.columnName];
+			if(attribute != undefined && item != undefined){
+				item.innerHTML = this.column.toDisplay(attribute);
+			}
+		}
+	}
+
+	setTableFormValue(cell, record){
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			let formCell = cell.dom[this.columnName];
+			if(attribute != undefined && formCell != undefined){
+				formCell.value = this.column.toInput(attribute);
+			}
+		}
+	}
+
+	checkEditable(inputForm){
+		let input = inputForm.dom[this.columnName];
 		if(input != undefined){
 			input.disabled = !this.isEditable;
 			if(this.isEnabled) input.show();
@@ -116,29 +219,149 @@ class InputMetaData{
 		}
 	}
 
-	setInputPerLine(){
-		if(this.input != null){
-			this.input.html.classList.add(`input_per_line_${this.inputPerLine}`);
+	checkTableFormEditable(cell){
+		let formCell = cell.dom[this.columnName];
+		if(formCell != undefined){
+			formCell.disabled = !this.isEditable;
+			if(this.isEnabled) formCell.show();
+			else formCell.hide();
+		}
+	}
+
+	setInputPerLine(input, inputPerLine){
+		if (inputPerLine == undefined) inputPerLine = this.inputPerLine;
+		if(input != null){
+			input.html.classList.add(`input_per_line_${inputPerLine}`);
 		}
 	}
 
 	setOption(select, option){
 		select.innerHTML = '';
-		select.html(`<option value="-1">None</option>`);
+		select.html(`<option value="-1">null</option>`);
 		for(let data of option){
 			select.append(`<option value="${data.value}">${data.label}</option>`);
 		}
 	}
 
-	onRender(){
-		let input = this.input.dom[this.columnName];
+	setFormEvent() {
+
+	}
+
+	setTableFormEvent() {
+
+	}
+
+	callPrerequisite(input, dom) {
+		if (this.prerequisite == null) return;
+		for (let item of this.prerequisite) {
+			if (item.input.handlePrerequisite) item.input.handlePrerequisite.bind(item.input)(input, dom, item.dom);
+		}
+	}
+
+	setPrerequisite(input, dom) {
+		let prerequisite = input.config.prerequisite;
+		if (prerequisite == null) return;
+		let splitted = prerequisite.split('.');
+		input.prerequisiteColumn = splitted[1];
+		let parent = this.meta.inputMap[splitted[1]];
+		if (parent == undefined) return;
+		if (parent.prerequisite == null) parent.prerequisite = [];
+		parent.prerequisite.push({input: input, dom: dom});
+	}
+
+	onRender(inputForm){
+		if (inputForm == undefined) return;
+		let input = inputForm.dom[this.columnName];
 		if(input){
 			input.value = '';
 			this.message = '';
 		}
-		let error = this.input.dom[`${this.columnName}_error`];
+		let error = inputForm.dom[`${this.columnName}_error`];
 		if(error){
 			error.hide();
 		}
+	}
+
+	createFormSideIcon(input){
+		this.sideIconList = [];
+		this.sideIconMap = {};
+		for(let icon of this.rawSideIcon){
+			let renderClass = (Function(`return ${icon.renderClass}`))();
+			if(!renderClass) continue;
+			let sideIcon = new renderClass(icon.name, icon.icon, icon.order, this, input);
+			this.appendFormSideIcon(sideIcon);
+		}
+	}
+
+	appendFormSideIcon(sideIcon){
+		if (this.formSideIconMap[sideIcon.name] == undefined) {
+			this.formSideIconList.push(sideIcon);
+			this.formSideIconMap[sideIcon.name] = sideIcon;
+		}
+	}
+
+	appendDialogSideIcon(sideIcon){
+		if (this.dialogSideIconMap[sideIcon.name] == undefined) {
+			this.dialogSideIconList.push(sideIcon);
+			this.dialogSideIconMap[sideIcon.name] = sideIcon;
+		}
+	}
+
+	async renderFormSideIcon(record){
+		this.formSideIconList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		let rendered = [];
+		for(let icon of this.formSideIconList){
+			rendered.push(await icon.render(record));
+		}
+		return rendered;
+	}
+
+	async renderDialogSideIcon(record){
+		this.dialogSideIconList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		let rendered = [];
+		for(let icon of this.dialogSideIconList){
+			rendered.push(await icon.render(record));
+		}
+		return rendered;
+	}
+
+	async setFormSideIcon(inputForm, record) {
+		let sideIconList = await this.renderFormSideIcon(record);
+		console.log(inputForm, sideIconList);
+		for (let sideIcon of sideIconList) {
+			inputForm.dom.sideIconContainer.appendChild(sideIcon.html);
+		}
+	}
+
+	async setDialogSideIcon(inputForm, record) {
+		if (this.column.foreignModelName != null && this.column.foreignColumn != null) {
+			this.addIcon = new AddSideIcon('add', 'Add', '1.0', this, inputForm);
+			this.appendDialogSideIcon(this.addIcon);
+		}
+		let sideIconList = await this.renderDialogSideIcon(record);
+		for (let sideIcon of sideIconList) {
+			inputForm.dom.sideIconContainer.appendChild(sideIcon.html);
+		}
+	}
+
+	setFormEvent(input) {
+	}
+
+	async setFormSideIcon(input, record) {
+		this.createFormSideIcon(input);
+		if (this.formSideIconMap['add'] == undefined) {
+			if (this.column.foreignModelName != null && this.column.foreignColumn != null) {
+				this.addIcon = new AddSideIcon('add', 'Add', '1.0', this, input);
+				this.appendFormSideIcon(this.addIcon);
+			}
+		}
+		let sideIconList = await this.renderFormSideIcon(record);
+		for (let sideIcon of sideIconList) {
+			input.dom.sideIconContainer.appendChild(sideIcon.html);
+		}
+	}
+
+	async fetch(input, id) {
+
 	}
 }

@@ -60,7 +60,6 @@ class ThemeHandler :
 					elif root in self.extensionIcon :
 						self.setExtensionIcon(key, content)
 					elif root in self.extensionPath :
-						print(root, subKey, path)
 						if subKey in self.extensionPath :
 							self.setExtensionClient(key, content)
 						else :
@@ -134,7 +133,6 @@ class ThemeHandler :
 			if i not in current : current[i] = {}
 			current = current[i]
 		current[name] = content
-		print(self.extensionTemplate)
 	
 	def setExtensionIcon(self, key:str, content:str) :
 		splitted = key.split(os.sep)

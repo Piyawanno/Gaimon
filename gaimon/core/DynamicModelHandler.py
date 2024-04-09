@@ -1,3 +1,4 @@
+import traceback
 from xerial.DBSessionBase import DBSessionBase
 from xerial.DBSessionPool import DBSessionPool
 from xerial.ModelClassGenerator import ModelClassGenerator
@@ -26,10 +27,11 @@ class DynamicModelHandler:
 
 	async def checkModel(self, isCreateTable: bool = False, session: DBSessionBase = None, entity: str="main"):
 		if session is None: session = self.session
-		start = time.time()
 		self.modelList: List[DynamicModel] = await session.select(DynamicModel, "")
 		result = []
 		for model in self.modelList:
+			model.modelName = model.modelName.strip()
+			if len(model.modelName) == 0: continue
 			if model.attributeList == None: continue
 			model.attributeList = json.loads(model.attributeList)
 			modelClass = self.generator.append(model.modelName, model.attributeList)
@@ -37,7 +39,11 @@ class DynamicModelHandler:
 			MetaDataExtractor.checkBackup(modelClass)
 			session.appendModel(modelClass)
 			result.append(modelClass)
-		if isCreateTable: await session.createTable()
+		if isCreateTable: 
+			try:
+				await session.createTable()
+			except:
+				print(traceback.format_exc())
 		self.sessionPool.model = session.model
 		return result
 

@@ -508,3 +508,9 @@ tr > th, tr > td {
 .petition-finish-row{
     background-color: #a5d6a7;
 }
+
+
+.table_sort_icon {
+	height: 24px;
+	width: 24px;
+}

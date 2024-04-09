@@ -1,4 +1,4 @@
-<td rel="{{{ID}}}_td" style="vertical-align:middle;width:0;">
+<td class="text_top" rel="{{{ID}}}_td" style="vertical-align:middle;width:0;">
 	<div class="flex center">
 		<div class="abstract_operation_button {{{cssClass}}}" rel="{{{ID}}}">
 			{{#isLabel}}

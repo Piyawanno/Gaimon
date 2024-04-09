@@ -134,6 +134,7 @@ class NotificationHandler:
 		perPage = parameter['perPage']
 		storage = self.management.storageMap[NotificationType.INTERNAL]
 		notificationList = storage.getPage(uid, page, perPage)
+		notificationList = notificationList[::-1]
 		return {'isSuccess': True, 'notification': [i.toDict() for i in notificationList]}
 
 	@POST('/search', hasDBSession=False)

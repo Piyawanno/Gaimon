@@ -441,7 +441,7 @@ const VisualBlockCreator = function() {
 			data: data,
 			title: '',
 			inputs: inputList,
-			inputPerLine: 2});
+			inputPerLine: 3});
 		// return new DOMObject(form.dom.form.html);
 		// return form.dom.form;
 		form.html = form.dom.form;

@@ -42,15 +42,13 @@ class AsyncService(Service):
 
 	async def prepare(self):
 		print("*** Warning : AsyncService.prepare is not implemented.")
-		print(">>> AsyncService.load should define attribute for all processes.")
+		print(">>> AsyncService.prepare should define attribute for all processes.")
 		print(">>> Other pre-defined environment can be implemented also in this method.")
 		print(">>> This method will be called before processes are forked")
 
 	async def load(self):
 		print("*** Warning : AsyncService.load is not implemented.")
-		print(
-			">>> AsyncService.load should define its specific attribute for each process e.g. DB connection."
-		)
+		print(">>> AsyncService.load should define its specific attribute for each process e.g. DB connection.")
 		print(">>> This method will be called after processes are forked")
 
 	async def reconnect(self):
@@ -58,9 +56,7 @@ class AsyncService(Service):
 
 	async def close(self):
 		print("*** Warning : AsyncService.close is not implemented.")
-		print(
-			">>> AsyncService.load should define its specific attribute for each process e.g. DB close."
-		)
+		print(">>> AsyncService.close should define its specific attribute for each process e.g. DB close.")
 		print(">>> This method will be called by terminating each process")
 
 	def run(self):
@@ -80,20 +76,20 @@ class AsyncService(Service):
 			)
 
 		@self.application.listener('main_process_start')
-		async def prepare(application, loop):
+		async def prepareListener(application, loop):
 			self.initLoop(loop)
 			await self.prepare()
 
 		@self.application.listener('after_server_start')
-		async def load(application, loop):
+		async def loadListener(application, loop):
 			await self.load()
 
 		@self.application.listener('after_server_start')
-		async def reconnect(application, loop):
+		async def reconnectListener(application, loop):
 			await self.reconnect()
 
 		@self.application.listener('after_server_stop')
-		async def close(application, loop):
+		async def closeListener(application, loop):
 			await self.close()
 
 		self.application.run(

@@ -1,0 +1,2 @@
+class TimeIntervalColumn extends ColumnMetaData{
+}

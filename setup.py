@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, sys, site, getpass, setuptools
+import os, sys, site, getpass
 from pathlib import Path
 
 __help__ = """Gaimon setup script :
@@ -131,6 +131,7 @@ class GaimonSetup :
 			self.createWheel()
 	
 	def createWheel(self) :
+		import setuptools
 		with open("README.md", encoding="utf-8") as fd :
 			description = fd.read()
 		
@@ -183,7 +184,7 @@ class GaimonSetup :
 		os.system(command)
 
 	def setupAPT(self, packageList) :
-		command = 'apt-get install %s'%(" ".join(packageList))
+		command = 'apt-get install -y %s'%(" ".join(packageList))
 		print(command)
 		os.system(command)
 

@@ -1,0 +1,2 @@
+class DateColumn extends ColumnMetaData{
+}

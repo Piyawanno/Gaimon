@@ -50,19 +50,6 @@
 			gtag('config', '{{gTagID}}');
 		</script>
 		{{/gTagID}}
-		
-		{{#absoluteJS}}
-		<script type="text/javascript" src="{{.}}"></script>
-		{{/absoluteJS}}
-		
-		{{#internalJS}}
-		<script type="text/javascript" src="{{rootURL}}{{.}}"></script>
-		{{/internalJS}}
-		
-		{{#extensionJS}}
-		<script type="text/javascript" src="{{rootURL}}share/{{name}}/js/{{source}}"></script>
-		{{/extensionJS}}
-		
 
 		{{#absoluteCSS}}
 		<link rel="stylesheet" type="text/css" href="{{.}}" />
@@ -75,6 +62,18 @@
 		{{#extensionCSS}}
 		<link rel="stylesheet" type="text/css" href="{{rootURL}}share/{{name}}/css/{{source}}" />
 		{{/extensionCSS}}
+		
+		{{#absoluteJS}}
+		<script type="text/javascript" src="{{.}}"></script>
+		{{/absoluteJS}}
+		
+		{{#internalJS}}
+		<script type="text/javascript" src="{{rootURL}}{{.}}"></script>
+		{{/internalJS}}
+		
+		{{#extensionJS}}
+		<script type="text/javascript" src="{{rootURL}}share/{{name}}/js/{{source}}"></script>
+		{{/extensionJS}}
 		
 		{{#header}}
 		{{.}}

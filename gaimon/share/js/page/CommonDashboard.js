@@ -527,6 +527,7 @@ const CommonDashboard = function(main, parent) {
 			let filter = await view.getFilter();
 			let formatter = new Intl.NumberFormat(LANGUAGE, {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2});
 			if (view.fetched == undefined) view.fetched = await view.fetchProtocol(filter);
+
 			view.dom.value.innerHTML = formatter.format(view.fetched[config.key].originValue);
 
 			let numberFormatConfig = {notation:"compact", minimumFractionDigits: 2, maximumFractionDigits: 2, style: "currency", currency: view.fetched[config.key].originCurrency};
@@ -543,6 +544,7 @@ const CommonDashboard = function(main, parent) {
 				}
 				
 				view.dom.value.innerHTML = result;
+
 				view.dom.percent.innerHTML = formatter.format(view.fetched[config.percentKey]);
 				if (config.unit != undefined) {
 					view.dom.currency.innerHTML = config.unit
@@ -555,6 +557,8 @@ const CommonDashboard = function(main, parent) {
 			} else {
 				currencyFormatter = new Intl.NumberFormat(LANGUAGE, numberFormatConfig);
 				result = currencyFormatter.formatToParts(view.fetched[config.key].originValue);
+				console.log(view.fetched[config.key]);
+				view.dom.fullNumber.innerHTML = view.fetched[config.key].originCurrency+' '+view.fetched[config.key].originValue;
 				for (let item of result) {
 					if (item.type == "currency") {
 						view.dom.currency.innerHTML = item.value;
@@ -602,6 +606,10 @@ const CommonDashboard = function(main, parent) {
 				view.dom.down.hide();
 				view.dom.up.hide();
 				view.html.style.borderRight = `20px solid #039BE5`;
+				
+				// view.dom.fullNumber.classList.add('equal');
+				// view.dom.fullNumber.classList.remove('down');
+				// view.dom.fullNumber.classList.remove('up');
 			} else if (isIncrease) {
 				view.dom.comparatorBox.classList.remove('equal');
 				view.dom.comparatorBox.classList.remove('down');
@@ -610,6 +618,10 @@ const CommonDashboard = function(main, parent) {
 				view.dom.down.hide();
 				view.dom.up.show();
 				view.html.style.borderRight = `20px solid var(--main-sidebar-menu-button-selected-background-color)`;
+			
+				// view.dom.fullNumber.classList.remove('equal');
+				// view.dom.fullNumber.classList.remove('down');
+				// view.dom.fullNumber.classList.add('up');
 			} else {
 				view.dom.comparatorBox.classList.remove('equal');
 				view.dom.comparatorBox.classList.add('down');
@@ -618,6 +630,10 @@ const CommonDashboard = function(main, parent) {
 				view.dom.down.show();
 				view.dom.up.hide();
 				view.html.style.borderRight = `20px solid #ff474e`;
+
+				// view.dom.fullNumber.classList.remove('equal');
+				// view.dom.fullNumber.classList.add('down');
+				// view.dom.fullNumber.classList.remove('up');
 			}
 			
 		}

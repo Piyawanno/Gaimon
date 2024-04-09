@@ -1,4 +1,4 @@
 <div class="notification_list_item" rel="notificationItem">
-	<div>{{{ notification.icon }}}</div>
-	<div class="flex center">{{{ notification.info.message }}}</div>
+	<div class="flex">{{{ notification.icon }}}</div>
+	<div class="flex">{{{ notification.info.message }}}</div>
 </div>

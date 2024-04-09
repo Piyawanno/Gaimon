@@ -49,6 +49,8 @@ const BackendMain = function() {
 	object.protocol.utility = new UtilityProtocol(this);
 	object.protocol.schedule = new PersonalScheduleProtocol(this);
 
+	object.overlayBadge = [];
+
 	object.personalBar = new PersonalBar(this);
 	object.statusBar = new StatusBar(this);
 
@@ -70,6 +72,7 @@ const BackendMain = function() {
 			return;
 		}
 		GLOBAL.USER = result.results;
+		await object.getENUM();
 		await object.prepareExtension();
 		await INIT_STATE();
 		await object.render();
@@ -92,6 +95,16 @@ const BackendMain = function() {
 		let language = localStorage.getItem('LANGUAGE');
 		if (language != undefined && language != 'en') {
 			object.personalBar.setLanguage(language);
+		}
+	}
+
+	this.getENUM = async function(){
+		let ENUM = await GET('enum/get');
+		if(ENUM){
+			for(let i in ENUM.result){
+				if(window[i]) continue;
+				window[i] = ENUM.result[i];
+			}
 		}
 	}
 
@@ -138,6 +151,36 @@ const BackendMain = function() {
 		}
 	}
 
+	this.createComponent = async function(){
+		object.componentComposer = [];
+		for(let composerName of COMPONENT.composer){
+			try{
+				let composer = eval(`new ${composerName}()`);
+				composer.isCreated = false;
+				await composer.onCreate(object.pageIDDict);
+				composer.isCreated = true;
+				object.componentComposer.push(composer);
+			}catch(error){
+				console.error(error);
+			}
+		}
+		object.componentCreator = [];
+		for(let creatorName of COMPONENT.creator){
+			try{
+				let creator = eval(`new ${creatorName}(object)`);
+				creator.isCreated = false;
+				await creator.onCreate();
+				creator.isCreated = true;
+				if(creator.pageID){
+					object.pageIDDict[creator.pageID] = creator;
+				}
+				object.componentCreator.push(creator);
+			}catch(error){
+				console.error(error);
+			}
+		}
+	}
+
 	this.renderMenu = async function() {
 		object.subMenu = {};
 		object.menuDict = {};
@@ -145,9 +188,10 @@ const BackendMain = function() {
 		object.home.dom.menuBar.html('');
 		if (isMobile()) await object.initMobile();
 		else await object.initDesktop();
-		object.tabExtension = []
+		object.tabExtension = [];
 		await object.renderGaimonMenu();
 		await object.renderExtensionMenu();
+		await object.createComponent();
 		let tabs = await object.protocol.utility.getJSPageTabExtension();
 		for (let pageID in tabs) {
 			if (object.tabExtension[pageID] == undefined) object.tabExtension[pageID] = []
@@ -171,7 +215,9 @@ const BackendMain = function() {
 		for (let pageID in main.pageIDDict) {
 			let page = main.pageIDDict[pageID];
 			if(page.onCreate){
-				await page.onCreate();
+				if (page.isCreated == undefined) page.isCreated = false;
+				if (!page.isCreated) await page.onCreate();
+				page.isCreated = true;
 			}
 		}
 
@@ -183,6 +229,7 @@ const BackendMain = function() {
 			let parent = main.pageIDDict[pageID];
 			for (let item of object.tabExtension[pageID]) {
 				if (main.pageIDDict[item.ID] == undefined) continue;
+				if (parent.appendTab == undefined) continue;
 				parent.appendTab(
 					{
 						page: main.pageIDDict[item.ID],
@@ -282,6 +329,7 @@ const BackendMain = function() {
 			}
 			let parent = object.extensionMenu[group];
 			if (!parent.isGenerate) {
+				object.pageIDDict[parent.pageID] = parent;
 				let extension = menuConfig.extension;
 				parent.loadPermission(extension);
 				parent.extension = extension;
@@ -307,6 +355,7 @@ const BackendMain = function() {
 					let extension = item.extension;
 					let scriptName = item.ID;
 					let page = await AbstractPage.prototype.create(scriptName, this, parent);
+					object.pageIDDict[page.pageID] = page;
 					object.extendPage(page);
 					page.extension = extension;
 					page.loadPermission(extension);
@@ -487,5 +536,49 @@ const BackendMain = function() {
 			let extension = eval(`new ${i}(object)`);
 			extension.extend(page);
 		}
+	}
+
+	this.appendOverlayBadge = function(badge) {
+		main.home.dom.modalBadge.append(badge);
+	}
+
+	this.showOverlay = async function(){
+		main.home.dom.container.style.width = 'calc(100% - 350px)';
+		main.home.dom.overlay.show();
+	}
+
+	this.hideOverlay = async function(){
+		main.home.dom.container.style.width = '';
+		main.home.dom.overlay.hide();
+	}
+
+	this.appendDialog = function(view){
+		if(!this.currentDialog){
+			this.rootDialog = new DialogContainer(this, null);
+			this.currentDialog = this.rootDialog;
+		}else{
+			this.currentDialog.appendChild(this.currentDialog);
+		}
+		this.currentDialog.setView(view);
+		this.currentDialog.render().then(view => {
+			main.home.dom.dialog.html('');
+			main.home.dom.dialog.appendChild(view.html);
+		});
+		return this.currentDialog;
+	}
+
+	this.closeDialog = function(){
+		if(!this.currentDialog) return;
+		if (this.currentDialog.parent) {
+			this.currentDialog = this.currentDialog.parent;
+			this.currentDialog.render().then(view => {
+				main.home.dom.dialog.html('');
+				main.home.dom.dialog.appendChild(view.html);
+			});
+		} else {
+			this.currentDialog = undefined;
+			this.home.dom.dialog.html('');
+		}
+		return this.currentDialog;
 	}
 }

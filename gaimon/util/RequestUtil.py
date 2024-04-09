@@ -46,8 +46,8 @@ def processLimitOffset(request) -> Tuple[int, int] :
 	return limit, offset
 
 def processStringClause(state:ClauseState) :
-	state.clause.append(f'{state.key} LIKE ?')
-	state.parameter.append(f'%{state.value}%')
+	state.clause.append(f'LOWER({state.key}) LIKE ?')
+	state.parameter.append(f'%{state.value.lower()}%')
 
 def processFractionClause(state:ClauseState) :
 	state.clause.append(f'{state.key} = ?')
@@ -72,6 +72,7 @@ def processEachClause(request, modelClass) -> Tuple[List[str], List[Any]] :
 	clause = []
 	parameter = []
 	data = request.get('data', request)
+	if data is None: data = {}
 	state = ClauseState(None, None, None, clause, parameter)
 	for state.key, state.value in data.items():
 		state.meta = metaMap.get(state.key, None)
@@ -102,6 +103,7 @@ def createSelectHandler(modelClass: type, isRelated=False):
 	async def handleSelect(session: AsyncDBSessionBase, data: dict):
 		data = copy.copy(data)
 		item = data.get('data', data)
+		if item is None: item = {}
 		item['isDrop'] = 0
 		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
 		orderBy = data.get('orderBy', 'id')
@@ -174,6 +176,7 @@ def createCountHandler(modelClass: type):
 	async def handleSelect(session: AsyncDBSessionBase, data: dict):
 		data = copy.copy(data)
 		item = data.get('data', data)
+		if item is None: item = {}
 		item['isDrop'] = 0
 		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
 		count = await session.count(modelClass, clause, parameter=parameter)
@@ -203,7 +206,7 @@ def createOptionByIDHandler(modelClass: type):
 			dropClause = 'AND isDrop=0'
 		else:
 			dropClause = ''
-
+		if len(IDList) == 0: return {}
 		IDList = [int(i) for i in IDList]
 		IDclause = ",".join(len(IDList)*'?')
 		clause = f"WHERE {modelClass.primary} IN ({IDclause}) {dropClause}"
@@ -211,6 +214,47 @@ def createOptionByIDHandler(modelClass: type):
 		return {i.id: i.toOption() for i in fetched}
 
 	return handleOption
+
+def createAutocompleteHandler(modelClass: type):
+	async def handleAutocomplete(session: AsyncDBSessionBase, data: dict):
+		data = copy.copy(data)
+		wildcard = data.get('name', '')
+		limit = int(data.get('limit', 10))
+		representativeMeta = modelClass.representativeMeta
+		if representativeMeta is None: return []
+		columns = []
+		for key in getattr(modelClass, 'metaMap', {}):
+			meta = modelClass.metaMap[key]
+			if isinstance(meta, StringColumn):
+				columns.append(meta.name)
+		columnsClause = " OR ".join([f"{i} LIKE ?" for i in columns])
+		columnName = representativeMeta.name
+		clause = "WHERE isDrop = 0"
+		parameter = []
+		if len(wildcard):
+			clause = f"WHERE {columnsClause} AND isDrop = 0"
+			parameter = [wildcard+'%' for i in columns]
+		items = await session.select(modelClass, clause, parameter=parameter, limit=limit)
+		return [{'id': item.id, 'value': item.id, 'label': getattr(item, columnName, '')} for item in items]
+	return handleAutocomplete
+
+def createAutocompleteByReferenceHandler(modelClass: type):
+	async def handleAutocompleteByReference(session: AsyncDBSessionBase, data: dict):
+		data = copy.copy(data)
+		representativeMeta = modelClass.representativeMeta
+		if representativeMeta is None: return []
+		columnName = representativeMeta.name
+		reference = data.get('reference', '')
+		referenceColumn = getattr(modelClass, '__REFERENCE__', 'id')
+		items = await session.select(modelClass, f"WHERE {referenceColumn} = {reference}", limit=1)
+		result = {}
+		if len(items):
+			item = items[0]
+			result['id'] = item.id
+			result['value'] = item.id
+			result['label'] = getattr(item, columnName, '')
+		return result
+	return handleAutocompleteByReference
 
 def createIngestHandler(modelClass: type):
 	async def handleIngest(session: AsyncDBSessionBase, data: dict):
@@ -472,11 +516,10 @@ def createFileStore(application, path:str, isShare:bool=False) :
 		else :
 			raise ValueError('File is invalid.')
 		for file in fileList :
-			fileUpload = file.name.split('.')
 			letters = string.ascii_lowercase
-			fileUpload = file.name.split('.')
+			fileUpload = file.name.split('.')[-1]
 			fileName = ''.join(random.choice(letters) for i in range(20))
-			fileName = fileName + "." + fileUpload[1]
+			fileName = fileName + "." + fileUpload
 			await store(path+fileName, file.body)
 			pathList.append([file.name, path + fileName])
 		return pathList

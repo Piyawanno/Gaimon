@@ -14,7 +14,7 @@ const PermissionRoleManagementPage = function(main, parent) {
 		}
 	]
 
-	object.role = ['Role'];
+	this.role = ['Role'];
 
 	this.prepare = async function() {
 	}
@@ -47,8 +47,12 @@ const PermissionRoleManagementPage = function(main, parent) {
 	}
 
 	this.renderRoleForm = async function(modelName, config = {}, viewType = 'Form') {
-		config.title = 'Add Permission Role';
-		if (config.data) config.title = 'Edit Permission Role';
+		config.prefixTitle = 'Add'
+		config.title = 'Permission Role';
+		if (config.data) {
+			config.prefixTitle = 'Edit'
+			config.title = 'Permission Role';
+		}
 		let disableEdit = ()=>{return false};
 		let form = await AbstractPage.prototype.renderView.call(this, modelName, config, viewType, disableEdit);
 		form.dom.form.tables = [];

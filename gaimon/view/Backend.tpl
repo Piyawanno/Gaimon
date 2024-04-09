@@ -6,6 +6,9 @@
 		GLOBAL.AUTHEN.checkLogin();
 		TEMPLATE = await getMustacheTemplate('backend');
 		TEMPLATE.get = GET_TEMPLATE;
+		let language = localStorage.getItem('LANGUAGE');
+		if (language == null) LANGUAGE = 'en';
+		else LANGUAGE = language;
 		LOCALE = await getLocale(LANGUAGE, LANGUAGE);
 		main = new BackendMain();
 		await main.init();

@@ -339,6 +339,7 @@ const AbstractTableView = function(page) {
 			} else if (object.page.home && object.page.home.dom.limit) {
 				limit = parseInt(object.page.home.dom.limit.value);
 			}
+			if(!limit) limit = 10;
 			if (table.pagination) {
 				let pageNumber = parseInt(table.pagination.dom.pageNumber.placeholder.split('/')[0]);
 				offset = (pageNumber - 1) * limit;

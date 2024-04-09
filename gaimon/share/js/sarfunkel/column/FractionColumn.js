@@ -1,0 +1,3 @@
+class FractionColumn extends ColumnMetaData{
+	
+}

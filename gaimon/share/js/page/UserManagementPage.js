@@ -9,7 +9,8 @@ const UserManagementPage = function(main, parent) {
 	this.tab = 'user';
 	this.filter = {};
 
-	object.role = ['User'];
+	this.role = ['User'];
+	this.permission = [PermissionType.WRITE];
 
 	this.prepare = async function() {
 		object.handbook = new Handbook(object.main, object); 

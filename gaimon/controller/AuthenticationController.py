@@ -1,5 +1,6 @@
 from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from gaimon.core.EmailSender import EmailSender
+from gaimon.core.HTMLPage import HTMLPage
 from gaimon.core.Route import GET, POST
 from gaimon.model.User import User
 from gaimon.model.PasswordRenew import PasswordRenew
@@ -8,11 +9,12 @@ from gaimon.core.RESTResponse import (
 	SuccessRESTResponse as Success,
 )
 from sanic import response, Request
-from aioredis import Redis
 from datetime import datetime
 from typing import List
 
 import struct, time, pystache, re, string, random, logging
+import redis.asyncio as redis
+
 
 __SALT_TIME_LIMIT__ = 300.0
 __CACHED_PAGE__ = {}
@@ -52,6 +54,7 @@ class AuthenticationController:
 		if email is not None: self.emailSender = EmailSender(email)
 		else: self.emailSender = None
 		self.icon = self.application.icon
+		self.favicon = self.application.favicon
 		self.fullTitle = self.application.fullTitle
 
 	@POST("/authentication/login/check", role=['guest'])
@@ -89,18 +92,19 @@ class AuthenticationController:
 		username = request.json['username']
 		userList = await self.session.select(
 			User,
-			"WHERE lower(username)=lower(?) OR lower(username)=lower(?) ORDER BY id DESC",
+			"WHERE lower(username)=lower(?) OR lower(email)=lower(?) ORDER BY id DESC",
 			parameter=[username, username],
 			limit=1
 		)
+		from pprint import pprint
 		if len(userList):
 			if userList[0].username.lower() == username.lower() or userList[0].email.lower() == username.lower():
 				return RESTResponse({"isSuccess": True, "salt": userList[0].salt})
 			else:
 				return RESTResponse({
 					"isSuccess": False,
-					"message": "User %s cannot be found." % (username)
-				})
+						"message": "User %s cannot be found." % (username)
+					})
 		else:
 			return RESTResponse({
 				"isSuccess": False,
@@ -130,7 +134,9 @@ class AuthenticationController:
 		self.page.setRequest(request)
 		self.page.reset()
 		self.page.title = f"{self.title} - LOGIN"
+		await self.setFavIcon(self.page)
 		self.page.enableCrypto()
+		self.page.enableLogIn()
 		self.page.extendJS(__JS__)
 		self.page.extendIncompressibleCSS(__INCOMPRESSIBLE_CSS__)
 		self.page.extendCSS(__CSS__)
@@ -249,11 +255,8 @@ class AuthenticationController:
 			return RESTResponse({"isSuccess": False, "message": "Email is not exist."})
 		user = users[0]
 		key = self.randomString(20)
-		# TODO : Tobacco URL
-		# url = f"{self.application.rootURL}tobacco/user/reset/password/{key}"
 		url = f"{self.application.rootURL}authentication/user/reset/password/{key}"
-		print('-------', url)
-		conn: Redis = self.application.redis
+		conn: redis.Redis = self.application.redis
 		await conn.hset(self.RESET_PASSWORD_KEY, key, user.id)
 		self.sendResetPasswordEmail(user.email, url)
 		return RESTResponse({"isSuccess": True})
@@ -297,7 +300,6 @@ class AuthenticationController:
 	async def checkLogInPermission(self, request):
 		data = request.json
 		username = data['username']
-		# clause = "WHERE username=? ORDER BY id DESC"
 		userList = await self.session.select(
 			User,
 			"WHERE lower(username)=lower(?) OR lower(username)=lower(?) ORDER BY id DESC",
@@ -388,6 +390,7 @@ class AuthenticationController:
 		self.page.reset()
 		self.page.enableCrypto()
 		self.page.title = f"{self.title} - Renew Password"
+		await self.setFavIcon(self.page)
 		self.page.css.append('Login.css')
 		self.page.js.append('utils/Utils.js')
 		self.page.js.append('Authentication.js')
@@ -416,6 +419,7 @@ class AuthenticationController:
 		self.page.reset()
 		self.page.enableCrypto()
 		self.page.title = f"{self.title} - Renew Password"
+		await self.setFavIcon(self.page)
 		self.page.css.append('Login.css')
 		self.page.css.append('AlertDialog.css')
 		self.page.js.append('utils/Utils.js')
@@ -436,3 +440,7 @@ class AuthenticationController:
 		}
 		self.page.body = self.renderer.render(template, data)
 		return response.html(self.page.render())
+	
+	async def setFavIcon(self, page: HTMLPage):
+		if len(self.favicon) == 0: return
+		page.favicon = self.favicon

@@ -10,7 +10,7 @@
 	{{/hasAvatar}}
 	{{#thead}}
 	{{#isTable}}
-	<th rel="{{{columnName}}}_th" {{#isStatus}}style="width:0;"{{/isStatus}} class="{{#isNumber}}text-align-right{{/isNumber}} {{#isStatus}}text-align-center{{/isStatus}} {{#isHidden}}hidden{{/isHidden}}" localize>{{{label}}}</th>
+	<th rel="{{{columnName}}}_th" {{#isStatus}}style="width:0 !important;min-width:0 !important;"{{/isStatus}} class="{{#isNumber}}text-align-right{{/isNumber}} {{#isStatus}}text-align-center{{/isStatus}} {{#isHidden}}hidden{{/isHidden}}" localize>{{{label}}}</th>
 	{{/isTable}}
 	{{/thead}}
 </tr>

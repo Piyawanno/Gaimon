@@ -114,9 +114,18 @@ fieldset {
 }
 
 .mainContainer {
-	width: 100%;
+	/* width: 100%;
 	transition: .2s;
-	overflow-y: auto;
+	overflow-y: auto; */
+
+	width: 100%;
+    transition: .2s;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 100vh;
+    height: 100vh;
+	background: #ECEFF1;
 }
 
 .menuGroup a {

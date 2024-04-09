@@ -10,6 +10,7 @@
 			<div class="abstract_input_view" rel="{{{columnName}}}_view"></div>
 			{{/config.isView}}
 		</div>
+		<div class="side_icon_container" rel="sideIconContainer">
 		{{#SVG}}
 			{{#isSVG}}
 			<div class="abstract_input_svg_icon {{{cssClass}}}" rel="{{{columnName}}}_icon">
@@ -22,6 +23,7 @@
 			</div>
 			{{/isSVG}}
 		{{/SVG}}
+		</div>
 	</div>
 	<div class="flex gap-5px hidden" style="flex-wrap: wrap;" rel="{{{columnName}}}_container"></div>
 	<div class="error text-align-center hidden" rel="{{{columnName}}}_error"></div>

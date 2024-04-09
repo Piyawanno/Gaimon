@@ -209,5 +209,20 @@
 	"Precision" : "精確",
 	"End Date" : "End Date",
 	"Version" : "版本",
-	"Default" : "預設"
+	"Default" : "預設",
+	"Attachment" : "依戀",
+	"erpbase" : "基本訊息",
+	"UnitCategory" : "單位類別",
+	"Owner" : "擁有者",
+	"ExternalEntity" : "外部實體",
+	"sale" : "銷售",
+	"ReturningNote" : "退貨單",
+	"DeliveryNote" : "送貨單",
+	"SaleOrder" : "銷售訂單",
+	"SaleProduct" : "銷售產品",
+	"orgstruct" : "組織",
+	"DepartmentPersonnelPosition" : "部門人員職務",
+	"stock" : "庫存",
+	"ProductionStock" : "生產庫存",
+	"ShelfDimension" : ""
 }

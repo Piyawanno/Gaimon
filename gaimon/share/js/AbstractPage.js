@@ -103,6 +103,7 @@ const AbstractPage = function(main, parent) {
 	}
 
 	this.onPrepareState = async function() {
+		main.home.dom.tabContainer.classList.add('hidden');
 		await object.preload();
 		await object.prepare();
 		await object.initStep();
@@ -165,7 +166,7 @@ const AbstractPage = function(main, parent) {
 	this.changeState = async function(data, url, page = undefined) {
 		let object = this;
 		if (page != undefined) object = page;
-		data.isLegacy = false;
+		if(data.isLegacy == undefined) data.isLegacy = false;
 		await PUSH_STATE(object, data, url);
 	}
 
@@ -187,7 +188,6 @@ const AbstractPage = function(main, parent) {
 	}
 
 	this.registerTabView = async function(group, step){
-		console.log(step);
 		if (main.viewPageMap == undefined) main.viewPageMap = {};
 		if (main.viewPageSubMap == undefined) main.viewPageSubMap = {};
 		if (main.viewPageMap[group] == undefined) {
