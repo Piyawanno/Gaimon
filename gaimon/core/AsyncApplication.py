@@ -88,7 +88,7 @@ class AsyncApplication(Application):
 		self.theme = ThemeHandler(config['theme'], self.resourcePath, self.extension)
 		self.title = config['title']
 		self.config['language'] = config.get('language', 'th')
-		self.icon = config.get('icon', '')
+		self.icon = config.get('icon', '/share/icon/logo.png')
 		self.favicon = config.get('favicon', '')
 		self.horizontalLogo = config.get('horizontalLogo', '/share/icon/ximple_dark.png')
 		self.fullTitle = config.get('fullTitle', self.title)
@@ -170,9 +170,9 @@ class AsyncApplication(Application):
 			task = loop.create_task(self.monitor.startLoop())
 			self.taskList.append(task)
 
-	async def load(self):
+	async def load(self, loop):
 		self.connectionCount = 0
-		await self.connect()
+		await self.connect(loop)
 		self.authen = Authentication(self)
 		self.extension.checkPath()
 		await self.readModelModification()
@@ -225,7 +225,7 @@ class AsyncApplication(Application):
 	def registerStart(self, subroutine):
 		self.startSubroutine.append(subroutine)
 
-	async def connect(self):
+	async def connect(self, loop):
 		redisConfig = self.config['redis']
 		redisURL = f"redis://{redisConfig['host']}:{redisConfig['port']}"
 		if 'db' in redisConfig:
@@ -238,13 +238,20 @@ class AsyncApplication(Application):
 			self.application,
 			interface=RedisSessionInterface(getConnection)
 		)
+		# from sanic_session import AIORedisSessionInterface
+		# import aioredis
+		# self.redis = aioredis.from_url(redisURL, decode_responses=True)
+		# self.httpSession.init_app(
+		# 	self.application,
+		# 	interface=AIORedisSessionInterface(self.redis)
+		# )
 		self.sessionPool = AsyncDBSessionPool(self.config["DB"])
 		logging.info(">>> Connecting Database")
 		await self.sessionPool.createConnection()
 		self.session = await self.sessionPool.getSession()
 
-	async def reconnect(self):
-		await self.connect()
+	async def reconnect(self, loop):
+		await self.connect(loop)
 		self.websocket.startLoop()
 
 	async def initORM(self):
@@ -522,14 +529,14 @@ class AsyncApplication(Application):
 
 		@self.application.main_process_start
 		async def prepare(application, loop):
-			await self.load()
+			await self.load(loop)
 			await self.setSequence()
 			self.startMainLoop(loop)
 			await self.close()
 
 		@self.application.after_server_start
 		async def reconnect(application, loop):
-			await self.reconnect()
+			await self.reconnect(loop)
 			await self.getSequence()
 			logging.info(
 				f"Process {os.getpid()} ID={self.applicationID} memory : {int(psutil.Process().memory_info().rss / (1024 * 1024))}MB"

@@ -260,7 +260,11 @@ async function RENDER_STATE(event) {
 		REDIRECT('backend');
 		return;
 	}
-	await RENDER_NAVIGATOR(state);
+	try {
+		await RENDER_NAVIGATOR(state);
+	} catch (error) {
+		console.error(error);
+	}
 	if (state.isInit != undefined && state.isInit) {
 		let isSubMenu = false;
 		let menuDetail = main.menuDict[page.pageID];

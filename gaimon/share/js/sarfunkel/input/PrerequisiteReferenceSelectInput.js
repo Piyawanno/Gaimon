@@ -34,15 +34,66 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 	setFormValue(inputForm, record){
 		let object = this;
 		if(record != undefined){
+			let prerequisite = record[this.config.prerequisiteColumn];
 			let attribute = record[this.columnName];
 			let input = inputForm.dom[this.columnName];
 			if(attribute != undefined && input != undefined){
-				this.getPrerequisiteOption(attribute).then(isSuccess => {
+				this.getPrerequisiteOption(prerequisite).then(isSuccess => {
 					if (isSuccess) object.enableEdit(inputForm);
 					else this.disableEdit(inputForm);
 					object.setOption(inputForm.dom[object.columnName], object.option);
 					if (object.prerequisite != null) object.callPrerequisite(object, inputForm);
+					let value = object.optionMap[object.currentRecord[object.columnName]].value;
+					input.value = value;
 				});
+			}
+		}
+	}
+
+	setDetailValue(detail, record, reference) {
+		let object = this;
+		if(record != undefined){
+			let prerequisite = record[this.config.prerequisiteColumn];
+			let attribute = record[this.columnName];
+			let input = detail.dom[this.columnName];
+			if(attribute != undefined && input != undefined){
+				this.getPrerequisiteOption(prerequisite).then(isSuccess => {
+					if (isSuccess) object.enableEdit(detail);
+					else this.disableEdit(detail);
+					let label = object.optionMap[record[object.columnName]].label;
+					input.innerHTML = label;
+				});
+			}
+		}
+	}
+
+	setTableValue(cell, record){
+		let object = this;
+		if(record != undefined){
+			let prerequisite = record[this.config.prerequisiteColumn];
+			let attribute = record[this.columnName];
+			let input = cell.dom[this.columnName];
+			if(attribute != undefined && input != undefined){
+				this.getPrerequisiteOption(prerequisite).then(isSuccess => {
+					if (isSuccess) object.enableEdit(cell);
+					else this.disableEdit(cell);
+					input.innerHTML = object.optionMap[attribute].label;
+					if (object.optionMap[attribute]?.avatar?.url) {
+						cell.dom.avatar.onerror = function() {
+							this.src = object.optionMap[attribute]?.avatar?.default;
+						}
+						cell.dom.avatar.src = object.optionMap[attribute]?.avatar?.url;
+					} else {
+						if (object.optionMap[attribute]?.avatar?.default) {
+							cell.dom.avatar.src = object.optionMap[attribute]?.avatar?.default;
+						} else {
+							cell.dom.avatar.src = "share/icon/logo_padding.png";
+							cell.dom.avatarContainer.hide();
+						}
+						
+					}
+				});
+				
 			}
 		}
 	}
@@ -54,6 +105,10 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 		if (isSuccess) this.enableEdit(inputForm);
 		else this.disableEdit(inputForm);
 		this.setOption(this.input.dom[this.columnName], this.option);
+		if (this.currentRecord) {
+			let value = this.optionMap[this.currentRecord[this.columnName]].value;
+			inputForm.dom[this.columnName].value = value;
+		}
 	}
 
 	async getPrerequisiteOption(value){

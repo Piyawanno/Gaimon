@@ -96,6 +96,11 @@ let InputGetterState = function(parent, isShowOnly, isShowError, isVerifyHidden)
 				return;
 			}
 		}
+		if (input.type == 'checkbox' || input.type == 'radio') {
+			for(let i in input.tag){
+				if(input.tag[i].offsetParent == null) isHidden = true;
+			}
+		}
 		if (!isHidden) object.isVerify = false;
 		if (isHidden && object.isVerifyHidden) object.isVerify = false;
 	}

@@ -310,13 +310,16 @@ class GaimonSetup :
 				print(command)
 				os.system(command)
 	
-if __name__ == '__main__' :
+def run():
 	from argparse import RawTextHelpFormatter
 	import argparse
 	parser = argparse.ArgumentParser(description=__help__, formatter_class=RawTextHelpFormatter)
 	parser.add_argument("operation", help="Operation of setup", choices=['setup', 'install', 'link', 'bdist_wheel'])
 	parser.add_argument("-p", "--platform", help="Platform for installation of base environment.", choices=['oracle', 'centos', 'debian10', 'ubuntu20.04'])
 	option = parser.parse_args(sys.argv[1:])
-	if option.platform is None : option.platform = 'ubuntu20.04'
+	if option.platform is None: option.platform = 'ubuntu20.04'
+	if option.operation is None: option.operation = 'build'
 	setup = GaimonSetup()
 	setup.operate(option.operation, option.platform)
+
+if __name__ == '__main__': run()

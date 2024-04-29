@@ -224,5 +224,15 @@
 	"DepartmentPersonnelPosition" : "部門人員職務",
 	"stock" : "庫存",
 	"ProductionStock" : "生產庫存",
-	"ShelfDimension" : ""
+	"ShelfDimension" : "擱板尺寸",
+	"Alert" : "警報",
+	"The inputs are invalid:" : "輸入無效：",
+	"StockPackage" : "包裝",
+	"StockReconcile" : "調和",
+	"StockLog" : "日誌",
+	"SupplierStock" : "供應商物料庫存",
+	"StockPackageCapacity" : "包裝能力",
+	"StockItemCategory" : "材質類別",
+	"CustomerStock" : "成品庫存",
+	"machine" : "機器"
 }

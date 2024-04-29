@@ -28,11 +28,33 @@ let Autocomplete = function() {
 
 	this.create = function(tag) {
 		object.tag = tag;
-		object.autocompleteTag = document.createElement("DIV");
-		object.autocompleteTag.setAttribute("class", "autocomplete-items");
-		// let body = document.getElementsByTagName('body')[0];
-		// body.appendChild(object.autocompleteTag);
-		object.tag.parentElement.appendChild(object.autocompleteTag);
+		let label = object.tag.getAttribute("label");
+		let template = `
+		<div rel="modal">
+			<div rel="container">
+				<div rel="title" style="font-weight: bold;" localize>{{label}}</div>
+				<input rel="input" type="text">
+				<div rel="autocompleteTag" class="autocomplete-items"></div>
+			</div>
+		</div>
+		`
+		let dom = new DOMObject(template, {label});
+		object.modal = dom.dom.modal;
+		object.container = dom.dom.container;
+		object.title = dom.dom.title;
+		object.input = dom.dom.input;
+		object.autocompleteTag = dom.dom.autocompleteTag;
+		
+		object.modal.style.height = "100vh";
+		object.modal.style.width = "100vw";
+		object.modal.style.position = "fixed";
+		object.modal.style.top = "0px";
+		object.modal.style.left = "0px";
+		object.modal.style.zIndex = "2";
+		object.modal.style.background = "rgb(135 135 135 / 50%)";
+		object.modal.style.backdropFilter = "blur(8px) brightness(100%) saturate(50%)";
+		object.modal.classList.add("hidden");
+		object.tag.parentElement.appendChild(object.modal);
 	}
 	
 	this.setConfig = function(config) {
@@ -161,6 +183,7 @@ let Autocomplete = function() {
 			} else {
 				object.renderLabel(data, value, callback);
 			}
+			object.modal.classList.add('hidden');
 		});
 		object.autocompleteTag.appendChild(tag);
 	}
@@ -196,35 +219,50 @@ let Autocomplete = function() {
 		}
 	}
 
+	this.setPosition = function() {
+		// let rect = object.tag.getBoundingClientRect();
+		// object.autocompleteTag.style.top = rect.bottom + "px";
+		// object.autocompleteTag.style.left = rect.left + "px";
+		// object.autocompleteTag.style.right = rect.right + "px";
+		// object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
+
+		object.modal.classList.remove("hidden");
+
+		let rect = object.tag.getBoundingClientRect();
+		object.container.style.position = 'fixed';
+		object.container.style.borderRadius = "10px";
+		object.container.style.top = isMobile() ? "10%": "20%";
+		object.container.style.left = isMobile() ? "10%": "20%";
+		object.container.style.right = isMobile() ? "10%": "20%";
+		object.container.style.boxShadow = "var(--box-shadow)";
+		object.container.style.background = "#ffffff";
+		object.container.style.padding = "20px";
+		object.container.style.display = "flex";
+		object.container.style.flexDirection = "column";
+		object.container.style.gap = "10px";
+		object.autocompleteTag.style.maxHeight = isMobile() ? "70vh": "55vh";
+		object.input.focus();
+
+
+		let fontSize = window.getComputedStyle(object.tag).fontSize;
+		object.autocompleteTag.style.fontSize = fontSize;
+	}
+
 	this.autocompleteLocal = function() {
 		if (object.isInitEvent) return;
-		object.tag.addEventListener("input", function(e) {
-			let rect = object.tag.getBoundingClientRect();
-			object.autocompleteTag.style.top = rect.bottom + "px";
-			object.autocompleteTag.style.left = rect.left + "px";
-			object.autocompleteTag.style.right = rect.right + "px";
-			object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
-			let fontSize = window.getComputedStyle(object.tag).fontSize;
-			object.autocompleteTag.style.fontSize = fontSize;
+		function trigger() {
+			object.setPosition();
 			object.autocompleteTag.innerHTML = '';
 			let val = object.tag.value;
 			object.closeAllLists();
 			object.currentFocus = -1;
 			object.filter(object.data, val, object.callback);
+		}
+		object.tag.addEventListener("input", function(e) {
+			trigger();
 		});
 		object.tag.addEventListener("click", function(e) {
-			let rect = object.tag.getBoundingClientRect();
-			object.autocompleteTag.style.top = rect.bottom + "px";
-			object.autocompleteTag.style.left = rect.left + "px";
-			object.autocompleteTag.style.right = rect.right + "px";
-			object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
-			let fontSize = window.getComputedStyle(object.tag).fontSize;
-			object.autocompleteTag.style.fontSize = fontSize;
-			object.autocompleteTag.innerHTML = '';
-			let val = object.tag.value;
-			object.closeAllLists();
-			object.currentFocus = -1;
-			object.filter(object.data, val, object.callback);
+			trigger();
 		});
 		object.setKeyDown();
 		object.isInitEvent = true;
@@ -232,16 +270,10 @@ let Autocomplete = function() {
 
 	this.autocompleteFetch = function() {
 		if (object.isInitEvent) return;
-		object.tag.addEventListener("input", async function(e) {
-			let rect = object.tag.getBoundingClientRect();
-			object.autocompleteTag.style.top = rect.bottom + "px";
-			object.autocompleteTag.style.left = rect.left + "px";
-			object.autocompleteTag.style.right = rect.right + "px";
-			object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
-			let fontSize = window.getComputedStyle(object.tag).fontSize;
-			object.autocompleteTag.style.fontSize = fontSize;
+		async function trigger() {
+			object.setPosition();
 			object.autocompleteTag.innerHTML = '';
-			let val = object.tag.value;
+			let val = object.input.value;
 			object.closeAllLists();
 			object.currentFocus = -1;
 			if (object.data.constructor.name == 'AsyncFunction') {
@@ -259,10 +291,14 @@ let Autocomplete = function() {
 					let response = await POST(object.data, data);
 					object.autocompleteTag.innerHTML = '';
 					let result;
-					if (response.results != null && response.results != undefined) result = response.results;
-					else if (response.result != null && response.result != undefined) result = response.result;
+					if (response.results != null && response.results != undefined) {
+						console.log(`*** DEPRECATED: 'results' should not be used@${object.data}.`);
+						result = response.results;
+					} else if (response.result != null && response.result != undefined) {
+						result = response.result;
+					}
 					if (result == undefined) return;
-				   object.filter(result, val, object.callback);
+				   	object.filter(result, val, object.callback);
 				}else{
 					object.data(val, object.limit, object.parameter, function(data) {
 						object.autocompleteTag.innerHTML = '';
@@ -271,51 +307,19 @@ let Autocomplete = function() {
 					});
 				}
 			}
+		}
+		object.tag.addEventListener("input", async function(e) {
+			await trigger();
 		});
-
 		object.tag.addEventListener("click", async function(e) {
-			let rect = object.tag.getBoundingClientRect();
-			object.autocompleteTag.style.top = rect.bottom + "px";
-			object.autocompleteTag.style.left = rect.left + "px";
-			object.autocompleteTag.style.right = rect.right + "px";
-			object.autocompleteTag.style.width = (rect.right - rect.left)  + "px";
-			let fontSize = window.getComputedStyle(object.tag).fontSize;
-			object.autocompleteTag.style.fontSize = fontSize;
-			object.autocompleteTag.innerHTML = '';
-			let val = object.tag.value;
-			object.closeAllLists();
-			object.currentFocus = -1;
-			if (object.data.constructor.name == 'AsyncFunction') {
-				let data = await object.data(val, object.limit, object.parameter);
-				object.autocompleteTag.innerHTML = '';
-				if (data == null || data == undefined) return;
-				object.filter(data, val, object.callback);
-			} else {
-				if(typeof(object.data) == 'string'){
-					let data = {
-						name: val,
-						limit: object.limit,
-						parameter: object.parameter
-					}
-					let response = await POST(object.data, data);
-					object.autocompleteTag.innerHTML = '';
-					let result;
-					if (response.results != null && response.results != undefined){
-						console.log(`*** DEPRECATED: 'results' should not be used@${object.data}.`);
-						result = response.results;
-					}else if (response.result != null && response.result != undefined){
-						result = response.result;
-					}
-					if (result == undefined) return;
-				   object.filter(result, val, object.callback);
-				}else{
-					object.data(val, object.limit, object.parameter, function(data) {
-						object.autocompleteTag.innerHTML = '';
-						if (data == null || data == undefined) return;
-						object.filter(data, val, object.callback);
-					})
-				}
-			}
+			object.input.value = object.tag.value;
+			await trigger();
+		});
+		object.input.addEventListener("input", async function(e) {
+			await trigger();
+		});
+		object.input.addEventListener("click", async function(e) {
+			await trigger();
 		});
 		object.setKeyDown();
 		object.isInitEvent = true;
@@ -340,7 +344,7 @@ let Autocomplete = function() {
 	}
 
 	this.setKeyDown = function() {
-		object.tag.addEventListener("keydown", function(e) {
+		function handler(e) {
 			let x = object.autocompleteTag;
 			if (x) x = x.getElementsByTagName("div");
 			if (e.keyCode == 40) {
@@ -355,9 +359,14 @@ let Autocomplete = function() {
 					if (x) x[object.currentFocus].click();
 				}
 			}
-		});
+		}
+		object.tag.addEventListener("keydown", handler);
+		object.input.addEventListener("keydown", handler);
 		document.addEventListener("click", function (e) {
 			object.closeAllLists(e.target);
+			if (e.target == object.modal) {
+				object.modal.classList.add('hidden');
+			}
 		});
 	}
 

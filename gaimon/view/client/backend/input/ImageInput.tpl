@@ -2,7 +2,7 @@
 	<div rel="labelDIV" localize>{{{label}}}</div>
 	<div class="flex gap-5px">
 		<div class="width-100-percent hidden">
-			<input type="file" imageFile="true" rel="{{{columnName}}}" autocomplete="off" accept="image/*" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}}>
+			<input type="file" imageFile="true" aspectRatio="{{{aspectRatio}}}" rel="{{{columnName}}}" autocomplete="off" accept="image/*" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}}>
 		</div>
 		<div class="width-100-percent" style="max-width:{{#config.isView}}calc(100% - 35px);{{/config.isView}}{{^config.isView}}calc(100% - 73px);{{/config.isView}}">
 			<div class="abstract_input_file" rel="{{{columnName}}}_file">

@@ -33,7 +33,7 @@ class StepView{
 	}
 
 	sort() {
-		this.itemList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.itemList.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
 
 	async renderStep(itemID, data) {

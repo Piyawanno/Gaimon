@@ -8,7 +8,7 @@
 			
 			</div>
 			<div class="abstract_form_input" rel="additionalForm"></div>
-			<div class="flex gap-5px flex-end" rel="operation">
+			<div class="flex gap-5px flex-end width-100-percent" rel="operation">
 				<div class="abstract_button submit_button" rel="submit" localize>Submit</div>
 				<div class="abstract_button cancel_button" rel="cancel" localize>Cancel</div>
 			</div>

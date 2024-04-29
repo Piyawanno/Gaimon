@@ -233,6 +233,9 @@ const AbstractView = function(page) {
 		let view = await object.getView(modelName, config, viewType);
 		await object.initViewEvent(view, config, viewType, checkEdit);
 		view.modelName = modelName;
+		if (viewType != "Dialog" && viewType != 'SearchForm') {
+			main.home.dom.tabContainer.classList.add('hidden');
+		}
 		if (viewType == 'Dialog') {
 			main.appendDialog(view);
 		} else {
@@ -409,6 +412,7 @@ const AbstractView = function(page) {
 							return await object.nextStep(step.group, step.pageID, data)
 						}
 					}
+					step.stepConfig = stepConfig;
 					SHOW_LOADING_DIALOG(async function(){
 						await step.page.onPrepareState();
 						await step.callback('', stepConfig, 'Form');
@@ -418,6 +422,10 @@ const AbstractView = function(page) {
 			} else {
 				component.dom.step.classList.add('disable');
 			}
+			step.nextStep = async function(data){
+				return await object.nextStep(step.group, step.pageID, data)
+			}
+			component.step = step;
 			object.stepTabMap[step.pageID] = component;
 			object.stepTabs.push(component);
 			// console.log(config);
@@ -426,6 +434,8 @@ const AbstractView = function(page) {
 			}
 		}
 		if (config.selectedStep != undefined) {
+			config.nextStep = object.stepTabMap[config.selectedStep].step.nextStep;
+			// await object.stepTabMap[config.selectedStep].step.callback('', config, 'Form');
 			await object.highlightStepTab(config.selectedStep);
 		}
 		view.dom.step.show();
@@ -482,6 +492,20 @@ const AbstractView = function(page) {
 			}
 			if(!inputConfig.config) inputConfig.config = {};
 			inputConfig.config.isView = config.isView;
+			if(inputConfig.typeName == "CheckBox" || inputConfig.typeName == "Radio"){
+				let currentOptions = JSON.parse(JSON.stringify(inputConfig.option));
+				inputConfig.option = [];
+				for(let j in currentOptions){
+					if(currentOptions[j].label != undefined){
+						inputConfig.option = currentOptions;
+						break;
+					}
+					inputConfig.option.push({
+						label: currentOptions[j][1],
+						value: currentOptions[j][0]
+					});
+				}
+			}
 			input = renderInput(inputConfig);
 			if (inputConfig.typeName == "RichText") {
 				input.dom[inputConfig.columnName].quill = new Quill(input.dom[inputConfig.columnName], await object.page.util.getQuillConfig(inputConfig));

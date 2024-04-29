@@ -23,6 +23,13 @@ let InputSetterState = function(parent){
 				object.setDOMData(data, unset, name);
 			}else if (type == 'input') {
 				object.setInput(data, input, name);
+			}else if (type == 'radio') {
+				let key = `${name}_${data[name]}`;
+				input = dom[key];
+				input.checked = true;
+				if (input.prerequisite != undefined && input.prerequisite && input.onchange != undefined) {
+					object.callPrerequisite(input, data);
+				}
 			}
 		}
 	}
@@ -116,7 +123,12 @@ let InputSetterState = function(parent){
 		let isView = tbody.getAttribute('isView');
 		isView = isView != null ? true : false;
 		let template = object.getFileMatrixTemplate(name, isView);
-		let items = JSON.parse(data[name]);
+		let items = [];
+		try{
+			items = JSON.parse(data[name]);
+		}catch{
+			items = [];
+		}
 		let index = 0;
 		if (items == null) return;
 		for (let item of items) {
@@ -142,6 +154,10 @@ let InputSetterState = function(parent){
 
 	this.getInputByName = function(name){
 		let parent = object.parent;
+		if(name == 'religion'){
+			console.log(parent);
+			console.log(parent.requireTag[name]);
+		}
 		if(name in parent.__timeSpan_input__){
 			return ['timeSpan', parent.__timeSpan_input__[name]];
 		}else if(name in parent.__fraction_input__){
@@ -156,6 +172,8 @@ let InputSetterState = function(parent){
 			return ['fileMatrix', parent.__fileMatrix_input__[name]];
 		}else if(name in parent.__input__){
 			return ['input', parent.__input__[name]];
+		}else if (parent.requireTag[name]) {
+			return [parent.requireTag[name].type, parent.requireTag[name].input]
 		} else{
 			return [null, null];
 		}

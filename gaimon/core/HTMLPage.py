@@ -303,7 +303,7 @@ class HTMLPage:
 		if self.metaTitle == '': self.metaTitle = self.title
 		if self.metaDescription == '': self.metaDescription = self.title
 		if self.metaURL == '': self.metaURL = self.rootURL
-		if self.metaImage == '': self.metaImage = self.icon  
+		if self.metaImage == '': self.metaImage = self.icon 
 		if self.horizontalLogo == None: self.horizontalLogo = '/share/icon/ximple_dark.png'
 		parameter = {
 			'title': self.title,

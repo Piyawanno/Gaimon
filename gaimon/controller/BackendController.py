@@ -161,25 +161,30 @@ class BackendController:
 		page.setRequest(request)
 		page.reset()
 		page.title = self.title + " - BACKEND"
+		await self.setIcon(page)
+		await self.setFavIcon(page)
+		await self.setHorizontalLogo(page)
 		await self.setJS(page, request)
 		await self.setCSS(page, request)
 		await self.setMenu(page, request)
-		await self.setJSVar(page, request)
-		await self.setFavIcon(page)
-		await self.setHorizontalLogo(page)
+		await self.setJSVar(page, request)		
 		template = self.theme.getTemplate('Backend.tpl')
-		page.body = self.renderer.render(template, {'rootURI': page.rootURL}, )
+		page.body = self.renderer.render(template, {'rootURI': page.rootURL})
 		rendered = page.render(ID='backend')
 		__CACHED_PAGE__[key] = rendered
 		return response.html(rendered)
+	
+	async def setIcon(self, page: HTMLPage):
+		if len(self.icon) == 0: page.icon = '/share/icon/logo.png'
+		else: page.icon = self.icon
 	
 	async def setFavIcon(self, page: HTMLPage):
 		if len(self.favicon) == 0: return
 		page.favicon = self.favicon
 
 	async def setHorizontalLogo(self, page: HTMLPage):
-		if len(self.horizontalLogo) == 0: return
-		page.horizontalLogo = self.horizontalLogo
+		if len(self.horizontalLogo) == 0: page.horizontalLogo = '/share/icon/ximple_dark.png'
+		else: page.horizontalLogo = self.horizontalLogo
 
 	async def setJS(self, page: HTMLPage, request: Request):
 		page.enableAllAddOns()
@@ -187,8 +192,10 @@ class BackendController:
 		page.js.extend(__BACKEND_JS__)
 		if not 'TITLE' in page.jsVar:
 			page.jsVar['TITLE'] = self.title
+		if not 'LOGO' in page.jsVar:
+			page.jsVar['LOGO'] = page.icon
 		if not 'HORIZONTAL_LOGO' in page.jsVar:
-			page.jsVar['HORIZONTAL_LOGO'] = self.horizontalLogo
+			page.jsVar['HORIZONTAL_LOGO'] = page.horizontalLogo
 		if not 'JS_EXTENSION' in page.jsVar:
 			page.jsVar['JS_EXTENSION'] = {}
 		page.extensionJS.update(await self.extension.getJS(request))

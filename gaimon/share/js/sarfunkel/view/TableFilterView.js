@@ -78,7 +78,7 @@ class TableFilterView{
 	}
 
 	async setButton(){
-		this.button.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.button.sort((a, b) => VersionParser.compare(a.order, b.order));
 		for(let i of this.button){
 			let rendered = await i.render();
 			this.filter.dom.operation.appendChild(rendered.html);

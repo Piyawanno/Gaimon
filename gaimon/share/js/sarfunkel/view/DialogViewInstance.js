@@ -23,6 +23,23 @@ class DialogViewInstance extends DialogView{
 		return this.dialog;
 	}
 
+	async renderBlank(title){
+		if(this.dialog == null){
+			this.template = TEMPLATE.DialogView;
+			this.dialog = new DOMObject(this.template, {title});
+			await this.setButton();
+			this.page.onCreateForm(this);
+		}else{
+			await this.setInput(this.record);
+			this.dialog.dom.title.innerHTML = title;
+		}
+		this.message = [];
+		this.isPass = true;
+		this.onRender();
+		this.dialog.__instance__ = this;
+		return this.dialog;
+	}
+
 	async renderInsert(title, selectedData=null, handleSubmit, callback){
 		this.record = {};
 		this.handleSubmit = handleSubmit;

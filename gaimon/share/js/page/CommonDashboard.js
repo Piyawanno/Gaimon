@@ -17,7 +17,7 @@ const CommonDashboard = function(main, parent) {
 		object.dateRangeInput.onchange = function(filter) {
 			object.refresh();
 		}
-		object.dashboard.dom.filterContainer.html(object.dateRangeInput)
+		object.dashboard.dom.filterContainer.html(object.dateRangeInput);
 	}
 
 	this.render = async function(target) {

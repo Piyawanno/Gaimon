@@ -12,12 +12,12 @@ class ColumnMetaData{
 		this.isTable = config.isTable;
 		this.isTableForm = config.isTableForm;
 
-		this.input = this.isForm ? this.createInput() : null;
+		this.input = this.createInput();
 	}
 
 	createInput(){
 		try{
-			let input = eval(`new ${this.config.typeName}Input(this, this.config);`)
+			let input = eval(`new ${this.config.typeName}Input(this, this.config);`);
 			return input;
 		}catch(error){
 			console.error(error);

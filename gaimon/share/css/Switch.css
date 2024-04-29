@@ -58,3 +58,7 @@ input:checked + .slider:before {
 .slider.round:before {
 	border-radius: 50%;
 }
+
+.table_buttonList .switch_animate_box {
+    top: calc(50% + 5px);
+}

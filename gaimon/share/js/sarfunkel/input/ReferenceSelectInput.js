@@ -4,6 +4,7 @@ class ReferenceSelectInput extends SelectInput{
 		this.url = config.url;
 		this.tableURL = config.tableURL;
 		this.isReferenced = true;
+		this.option = [];
 	}
 	
 	/**
@@ -74,7 +75,7 @@ class ReferenceSelectInput extends SelectInput{
 
 	async renderCell(record, reference) {
 		let parameter = {...this};
-		let cell = new DOMObject(TEMPLATE.TableCellView, parameter);
+		let cell = new DOMObject(TEMPLATE.TableReferenceCellView, parameter);
 		if(record) this.setTableValue(cell, record, reference);
 		return cell;
 	}
@@ -164,6 +165,20 @@ class ReferenceSelectInput extends SelectInput{
 			let data = reference[this.columnName];
 			if (data != undefined && item != undefined) {
 				item.innerHTML = data[attribute] != undefined ? data[attribute].label: '-';
+				if (data[attribute]?.avatar?.url) {
+					cell.dom.avatar.onerror = function() {
+						this.src = data[attribute]?.avatar?.default;
+					}
+					cell.dom.avatar.src = data[attribute]?.avatar?.url;
+				} else {
+					if (data[attribute]?.avatar?.default) {
+						cell.dom.avatar.src = data[attribute]?.avatar?.default;
+					} else {
+						cell.dom.avatar.src = "share/icon/logo_padding.png";
+						cell.dom.avatarContainer.hide();
+					}
+					
+				}
 			}
 		}
 	}
@@ -236,12 +251,12 @@ class ReferenceSelectInput extends SelectInput{
 		} else {
 			inputForm.dom[this.columnName].disabled = true;
 			for (let sideIcon of this.formSideIconList) {
-				if (sideIcon.svg) {
+				if (sideIcon.svg && sideIcon.svg.html) {
 					sideIcon.svg.html.hide();
 				}
 			}
 			for (let sideIcon of this.dialogSideIconList) {
-				if (sideIcon.svg) {
+				if (sideIcon.svg && sideIcon.svg.html) {
 					sideIcon.svg.html.hide();
 				}
 			}

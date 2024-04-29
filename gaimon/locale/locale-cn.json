@@ -224,5 +224,15 @@
 	"DepartmentPersonnelPosition" : "部门人员职务",
 	"stock" : "库存",
 	"ProductionStock" : "生产库存",
-	"ShelfDimension" : ""
+	"ShelfDimension" : "搁板尺寸",
+	"Alert" : "警报",
+	"The inputs are invalid:" : "输入无效：",
+	"StockPackage" : "包装",
+	"StockReconcile" : "调和",
+	"StockLog" : "日志",
+	"SupplierStock" : "供应商物料库存",
+	"StockPackageCapacity" : "包装能力",
+	"StockItemCategory" : "材质类别",
+	"CustomerStock" : "成品库存",
+	"machine" : "机器"
 }

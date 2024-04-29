@@ -106,7 +106,6 @@ class ViewLoader{
 	}
 
 	filterExcludeInput(excludeList) {
-		console.log(excludeList);
 		for (let item of excludeList) {
 			for (let i in this.meta.inputList) {
 				let input = this.meta.inputList[i];

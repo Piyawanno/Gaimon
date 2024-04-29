@@ -294,7 +294,7 @@ AbstractInputUtil.prototype.mergeInput = async function(defaultInput, additional
 	return input;
 }
 	
-AbstractInputUtil.prototype.parseInputData = async function(inputs, reference = {}, group = {}) {
+AbstractInputUtil.prototype.parseInputData = async function(inputs, reference = {}, group = {}) {	
 	let object = this;
 	for (let input of inputs) {
 		if (input.isGroup) {
@@ -326,7 +326,7 @@ AbstractInputUtil.prototype.parseInputData = async function(inputs, reference = 
 			input.isPrerequisiteReferenceSelect = true;
 			if (reference[input.url] == undefined) reference[input.url] = [];
 			reference[input.url].push(input.columnName)
-		} else if (input.typeName == "CheckBox"){
+		} else if (input.typeName == "CheckBox" || input.typeName == "Radio"){
 			let currentOptions = JSON.parse(JSON.stringify(input.option));
 			input.option = [];
 			for(let j in currentOptions){
@@ -662,10 +662,11 @@ AbstractInputUtil.prototype.setInputMapper = async function(detail, inputs,  exc
 }
 
 AbstractInputUtil.prototype.initCropperEvent = async function(key, dom){
+	let aspectRatio = dom[key].getAttribute('aspectRatio');
 	let image = dom[`${key}_image`];
 	let cropper = new Cropper(image, {
 		dragMode: 'move',
-		aspectRatio: 1,
+		aspectRatio: aspectRatio,
 		autoCropArea: .75,
 		restore: false,
 		guides: true,
@@ -952,7 +953,8 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 		config.isView = true;
 		config.data[columnLinkMap.column.foreignColumn] = value;
 		if (config.data && config.data.id != undefined && config.data.id == -1) return;
-		page.main.pageModelDict[modelName].prepare();
+		await page.main.pageModelDict[modelName].prepare();
+		console.log(page.main.pageModelDict[modelName]);
 		page.main.pageModelDict[modelName].renderViewFromExternal(modelName, config, 'Form');
 	} else {
 		let config = {};
@@ -964,7 +966,7 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 			config.data[columnLinkMap.column.columnName] = value;
 		}
 		if (config.data && config.data.id != undefined && config.data.id == -1) return;
-		page.prepare();
+		await page.prepare();
 		page.renderViewFromExternal(page.model, config, 'Form')
 	}
 }

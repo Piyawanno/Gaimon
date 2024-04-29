@@ -67,7 +67,6 @@ class FileMatrixInput extends FileInput {
 		dom.dom.file_box.style.width = "100%";
 		dom.dom.file_box.style.maxWidth = "100%";
 		if (item) {
-			// dom.dom.fileName.innerHTML = item[0];
 			let content = {};
 			content[this.columnName] = JSON.stringify(item);
 			fileInput.setFormValue(dom, content);

@@ -257,5 +257,15 @@
 	"stock" : "สต็อก",
 	"ProductionStock" : "สต็อกการผลิต",
 	"ShelfDimension" : "ขนาดชั้นวาง",
-	"Show password": "แสดงรหัสผ่าน"
+	"Show password": "แสดงรหัสผ่าน",
+	"Alert" : "แจ้งเตือน",
+	"The inputs are invalid:" : "อินพุตไม่ถูกต้อง:",
+	"StockPackage" : "แพ็กเกจ",
+	"StockReconcile" : "การกระทบยอด",
+	"StockLog" : "บันทึกการทำงาน",
+	"SupplierStock" : "สต๊อกวัสดุ/วัตถุดิบ",
+	"StockPackageCapacity" : "ความจุของแพ็คเกจ",
+	"StockItemCategory" : "หมวดหมู่",
+	"CustomerStock" : "สต็อกพร้อมขาย",
+	"machine" : "เครื่องจักร"
 }

@@ -140,13 +140,13 @@ class InputMetaData{
 		data[this.columnName] = this.column.inputToJSON(result);
 		if(this.isRequired && (result == null || result.length == 0)){
 			if (isShowError) {
-				input.classList.add('error');
+				input?.classList.add('error');
 				message.push(`Required field "${this.label}" is not set.`);
 			}
 			this.isPass = false;
 			return false;
 		}else{
-			input.classList.remove('error');
+			input?.classList.remove('error');
 			return true;
 		}
 	}
@@ -237,7 +237,7 @@ class InputMetaData{
 
 	setOption(select, option){
 		select.innerHTML = '';
-		select.html(`<option value="-1">null</option>`);
+		select.html(`<option value="-1" selected>Not Select</option>`);
 		for(let data of option){
 			select.append(`<option value="${data.value}">${data.label}</option>`);
 		}
@@ -308,7 +308,7 @@ class InputMetaData{
 	}
 
 	async renderFormSideIcon(record){
-		this.formSideIconList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.formSideIconList.sort((a, b) => VersionParser.compare(a.order, b.order));
 		let rendered = [];
 		for(let icon of this.formSideIconList){
 			rendered.push(await icon.render(record));
@@ -317,7 +317,7 @@ class InputMetaData{
 	}
 
 	async renderDialogSideIcon(record){
-		this.dialogSideIconList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.dialogSideIconList.sort((a, b) => VersionParser.compare(a.order, b.order));
 		let rendered = [];
 		for(let icon of this.dialogSideIconList){
 			rendered.push(await icon.render(record));

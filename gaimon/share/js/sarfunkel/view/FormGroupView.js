@@ -50,7 +50,7 @@ class FormGroupView{
 	}
 
 	sort(){
-		this.inputList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.inputList.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
 
 	checkGroup() {
@@ -66,6 +66,7 @@ class FormGroupView{
 		let excludeList = this.meta.excludeInputViewMap[ViewType.FORM];
 		excludeList = excludeList != undefined ? excludeList : [];
 		for(let input of this.inputList){
+			if (!input.config.isForm) continue;
 			input.formGroupView = this;
 			let isRendered = input.input != undefined;
 			if (excludeList.indexOf(input.columnName) != -1) continue;
@@ -81,8 +82,9 @@ class FormGroupView{
 	async setDetailInput(record, reference){
 		this.checkGroupDetail();
 		let group = this.groupDetail.dom.group;
-		for(let i of this.inputList){
-			let rendered = await i.renderDetail(record, reference);
+		for(let input of this.inputList){
+			if (!input.config.isForm) continue;
+			let rendered = await input.renderDetail(record, reference);
 			group.appendChild(rendered.html);
 		}
 		return this.groupDetail;
@@ -91,9 +93,9 @@ class FormGroupView{
 	async setTableFilterInput(){
 		await this.renderTableFilter();
 		let group = this.groupFilter.dom.group;
-		for(let i of this.inputList){
-			if (!i.config.isSearch) continue;
-			let rendered = await i.renderTableFilter();
+		for(let input of this.inputList){
+			if (!input.config.isSearch) continue;
+			let rendered = await input.renderTableFilter();
 			group.appendChild(rendered.html);
 		}
 		return this.group;

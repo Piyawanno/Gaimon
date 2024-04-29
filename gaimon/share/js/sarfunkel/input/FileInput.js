@@ -60,19 +60,24 @@ class FileInput extends TextInput{
 
 		input.dom.preview.onclick = async function(){
 			if(!object.hasImage) return;
-			let file = input.dom.fileInput.files[0];
-			let name = input.dom.fileInput.files[0].name;
-			let reader = new FileReader();
-			reader.onload = function(e){
-				fetch(e.target.result).then(res => res.blob()).then(blob => {
-					const fileURL = URL.createObjectURL(blob);
-					const link = document.createElement('a');
-					link.href = fileURL;
-					link.download = name;
-					link.click();
-				})
+			if (input.dom.fileInput.files[0]) {
+				let file = input.dom.fileInput.files[0];
+				let name = input.dom.fileInput.files[0].name;
+				let reader = new FileReader();
+				reader.onload = function(e){
+					fetch(e.target.result).then(res => res.blob()).then(blob => {
+						const fileURL = URL.createObjectURL(blob);
+						const link = document.createElement('a');
+						link.href = fileURL;
+						link.download = name;
+						link.click();
+					})
+				}
+				if(file != undefined) reader.readAsDataURL(file);
+			} else {
+				let url = object.config.url;
 			}
-			if(file != undefined) reader.readAsDataURL(file);
+			
 		}
 
 		if(input.dom.delete){
@@ -91,6 +96,7 @@ class FileInput extends TextInput{
 	setFormValue(inputForm, record){
 		if(record != undefined && Object.keys(record).length > 0){
 			let attribute = record[this.columnName];
+			this.currentRecord = attribute;
 			if (attribute == null || attribute == undefined) return;
 			if (attribute == '[]') return;
 			let content = JSON.parse(attribute);

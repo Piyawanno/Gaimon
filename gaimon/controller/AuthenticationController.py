@@ -134,6 +134,7 @@ class AuthenticationController:
 		self.page.setRequest(request)
 		self.page.reset()
 		self.page.title = f"{self.title} - LOGIN"
+		await self.setIcon(self.page)
 		await self.setFavIcon(self.page)
 		self.page.enableCrypto()
 		self.page.enableLogIn()
@@ -440,6 +441,10 @@ class AuthenticationController:
 		}
 		self.page.body = self.renderer.render(template, data)
 		return response.html(self.page.render())
+	
+	async def setIcon(self, page: HTMLPage):
+		if len(self.icon) == 0: self.icon = 'share/icon/logo.png'
+		page.icon = self.icon
 	
 	async def setFavIcon(self, page: HTMLPage):
 		if len(self.favicon) == 0: return

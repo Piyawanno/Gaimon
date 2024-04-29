@@ -17,7 +17,6 @@ from asyncio import Task
 
 import os, logging
 
-
 class NotificationService(AsyncService):
 	def __init__(self, config: dict, namespace: str = ''):
 		super().__init__(config, namespace)
@@ -58,7 +57,6 @@ class NotificationService(AsyncService):
 		management = self.managementMap.get(entity, None)
 		if management is None :
 			resourcePath = f"{self.resourcePath}/notification"
-			print('getManagement resourcePath', resourcePath)
 			if not os.path.isdir(resourcePath): os.makedirs(resourcePath)
 			management = NotificationManagement(self.config, self.resourcePath, entity)
 			session = await self.pool.getSession()
@@ -106,7 +104,6 @@ class NotificationService(AsyncService):
 
 	def loadManagement(self):
 		resourcePath = f"{self.resourcePath}/notification"
-		print('loadManagement resourcePath', resourcePath)
 		if not os.path.isdir(resourcePath): os.makedirs(resourcePath)
 		for i in os.listdir(resourcePath):
 			path = f"{resourcePath}/{i}"

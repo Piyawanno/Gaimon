@@ -57,6 +57,11 @@ class DialogView{
 		return await dialog.render(title);
 	}
 
+	async renderBlank(title) {
+		let dialog = new DialogViewInstance(this.page);
+		return await dialog.renderBlank(title);
+	}
+
 	onRender(){
 		for(let input of this.meta.inputList){
 			input.isPass = true;
@@ -86,7 +91,7 @@ class DialogView{
 
 	appendButton(button){
 		this.button.push(button);
-		this.button.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.button.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
 
 	async setButton(){
@@ -209,7 +214,7 @@ class DialogView{
 	}
 
 	async renderTableForm(){
-		this.tableForm.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.tableForm.sort((a, b) => VersionParser.compare(a.order, b.order));
 		for(let tableForm of this.tableForm){
 			await tableForm.render();
 		}

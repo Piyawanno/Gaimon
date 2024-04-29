@@ -103,8 +103,8 @@ class UserController:
 
 	@POST("/user/drop", permission=[PT.DROP])
 	async def dropUser(self, request: Request):
-		await self.userHandler.dropUser(self.session, request.json)
-		return REST({'isSuccess': True})
+		model:User = await self.userHandler.dropUser(self.session, request.json)
+		return Success(model.toDict())
 
 	@GET('/user/permission/module/get', permission=[PT.READ])
 	async def getPermissionModule(self, request: Request):

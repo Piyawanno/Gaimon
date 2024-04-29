@@ -165,6 +165,7 @@ class TableFormView{
 	async createRecordList(filter){
 		if (filter == undefined) filter = {};
 		let data = await this.fetchAll(filter);
+		console.log(data);
 		let count = undefined;
 		if(!data){
 			console.error('No data can be fetched.');

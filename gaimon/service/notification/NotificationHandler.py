@@ -138,7 +138,7 @@ class NotificationHandler:
 		return {'isSuccess': True, 'notification': [i.toDict() for i in notificationList]}
 
 	@POST('/search', hasDBSession=False)
-	async def search(self, request, parameter):
+	async def search(self, request, paramnotificationListeter):
 		uid = parameter['uid']
 		level = int(parameter['level'])
 		date = parameter['notifyTime']

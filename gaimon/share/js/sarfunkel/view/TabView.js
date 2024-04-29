@@ -32,7 +32,7 @@ class TabView{
 	}
 
 	sort() {
-		this.itemList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.itemList.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
 
 	async renderTab(itemID, data) {

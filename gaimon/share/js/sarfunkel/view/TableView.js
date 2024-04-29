@@ -355,6 +355,17 @@ class TableView{
 		cell.html.onclick = async function() {
 			if (column.column.foreignColumn == undefined && column.column.foreignModelName == undefined) {
 				object.page.renderDetail(record.id);
+			} else {
+				let ID = record[column.columnName];
+				await main.pageModelDict[column.column.foreignModelName]?.onPrepareState()
+				if (main.pageModelDict[column.column.foreignModelName]) {
+					if (main.pageModelDict[column.column.foreignModelName].renderDetail) {
+						main.pageModelDict[column.column.foreignModelName]?.renderDetail(ID)
+					} else {
+						main.pageModelDict[column.column.foreignModelName]?.renderViewFromExternal(column.column.foreignModelName, {data: {id: ID}, isView: true}, 'Form')
+					}
+				}
+				
 			}
 		}
 	}
@@ -402,7 +413,7 @@ class TableView{
 					if (response.isSuccess) {
 						this.currentReferencedData[i.columnName] = response.result;
 					}
-				}else{
+				}else if (i.config.typeName != "PrerequisiteReferenceSelect"){
 					this.currentReferencedData[i.columnName] = {};
 					if (i.url == undefined) continue;
 					let response = await GET(i.url);
@@ -425,13 +436,12 @@ class TableView{
 	async createRecordList(filter){
 		if (filter == undefined) filter = {};
 		let data = await this.fetchAll(filter);
-		if(!data){
-			console.error('No data can be fetched.');
-			return;
-		}
-		if (data.count != undefined && data.data != undefined) {
+		if (data != undefined && data.count != undefined && data.data != undefined) {
 			this.totalPage = data.count;
 			data = data.data;
+		}
+		if (!data) {
+			data = [];
 		}
 		this.pagination.refresh();
 		this.currentRawList = data;

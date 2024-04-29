@@ -71,6 +71,7 @@ class FormView{
 
 	onRender(){
 		for(let input of this.meta.inputList){
+			if (!input.config.isForm) continue;
 			input.isPass = true;
 			if (input.input == undefined) continue;
 			input.onRender(input.input);
@@ -82,6 +83,7 @@ class FormView{
 		let excludeList = this.meta.excludeInputViewMap[ViewType.FORM];
 		excludeList = excludeList != undefined ? excludeList : [];
 		for(let input of this.meta.inputList){
+			if (!input.config.isForm) continue;
 			input.formView = this;
 			if (excludeList.indexOf(input.columnName) != -1) continue;
 			if(!input.isGrouped){
@@ -110,7 +112,7 @@ class FormView{
 
 	appendButton(button){
 		this.button.push(button);
-		this.button.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.button.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
 
 	async setButton(){
@@ -122,9 +124,10 @@ class FormView{
 
 	getFormValue(form, data, file, message) {
 		let isPass = true;
-		for(let i of this.meta.inputList){
-			isPass = i.getFormValue(this.form, i.input, data, file, message) && isPass;
-			isPass = i.isPass && isPass;
+		for(let input of this.meta.inputList){
+			if (!input.config.isForm) continue;
+			isPass = input.getFormValue(this.form, input.input, data, file, message) && isPass;
+			isPass = input.isPass && isPass;
 		}
 		return isPass;
 	}
@@ -176,9 +179,10 @@ class FormView{
 				this.handleSubmit(this.data);
 			}
 		}else{
-			for(let i of this.meta.inputList){
-				if (i.message == undefined) continue;
-				if(i.message.length > 0) this.message.push(i.message);
+			for(let input of this.meta.inputList){
+				if (!input.config.isForm) continue;
+				if (input.message == undefined) continue;
+				if(input.message.length > 0) this.message.push(input.message);
 			}
 			console.error(this.message);
 			this.page.handleSubmitError(this.message);
@@ -191,6 +195,7 @@ class FormView{
 
 	setData(record){
 		for(let input of this.meta.inputList){
+			if (!input.config.isForm) continue;
 			input.setFormValue(input.input, record);
 		}
 	}
@@ -211,6 +216,7 @@ class FormView{
 
 	setInputEvent(){
 		for(let input of this.meta.inputList){
+			if (!input.config.isForm) continue;
 			let eventMapper = this.eventMapper[input.columnName];
 			if(eventMapper == undefined) continue;
 			let dom = input.input.dom[input.columnName];
@@ -228,7 +234,7 @@ class FormView{
 	}
 
 	async renderTableForm(){
-		this.tableForm.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.tableForm.sort((a, b) => VersionParser.compare(a.order, b.order));
 		for(let tableForm of this.tableForm){
 			await tableForm.render();
 		}

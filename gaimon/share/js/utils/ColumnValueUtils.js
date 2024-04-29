@@ -5,7 +5,10 @@
 	else if(type == "Select") return getSelectColumnValue(column, data);
 	else if (type == "EnumCheckBox") return getSelectColumnValue(column, data);
 	else if (type == "Enable") return getEnableColumnValue(column, data);
-	else if (type == "ReferenceSelect")  return getReferenceSelectColumnValue(column, data);
+	else if (type == "Radio") return getRadioColumnValue(column, data);
+	else if (type == "EnumRadio") return getRadioColumnValue(column, data);
+	else if (type == "ReferenceRadio") return getRadioColumnValue(column, data);
+	else if (type == "ReferenceSelect")  return getReferenceRadioColumnValue(column, data);
 	else if (type == "PrerequisiteReferenceSelect") return await getPrerequisiteColumnValue(object, column, data);
 	else if (type == "AutoComplete") return await getAutoCompleteColumnValue(column, data);
 	else if(type == "Fraction")  return getFractionColumnValue(column, data);
@@ -19,6 +22,29 @@
 	else if (type == "DateTime") return getDateTimeColumnValue(column, data);
 	else if (column.optionMap != undefined) return data[column.columnName];
 	else return data[column.columnName];
+}
+
+function getRadioColumnValue(column, data) {
+	let value = data[column.columnName];
+	for (let j in column.option) {
+		if (column.option[j].value == value) return column.option[j].label;
+	}
+	return value
+}
+
+function getReferenceRadioColumnValue(column, data){
+	if (column.option != undefined) {
+		column.optionMap = {}
+		for (let option of column.option) {
+			column.optionMap[option.value] = option.label;
+		}
+	}
+	if (column.optionMap == undefined) return "-";
+	if (column.optionMap[data[column.columnName]] == undefined) return "-";
+	if (column.optionMap[data[column.columnName]] != undefined){
+		return column.optionMap[data[column.columnName]];
+	}
+	return "";
 }
 
 function getSelectColumnValue(column, data){

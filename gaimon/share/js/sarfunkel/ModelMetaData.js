@@ -31,8 +31,8 @@ class ModelMetaData{
 	}
 
 	sort(){
-		this.groupList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
-		this.inputList.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.groupList.sort((a, b) => VersionParser.compare(a.order, b.order));
+		this.inputList.sort((a, b) => VersionParser.compare(a.order, b.order));
 		for(let group of this.groupList){
 			group.sort();
 		}
@@ -43,6 +43,7 @@ class ModelMetaData{
 	}
 
 	extractGroup(){
+		this.groupList = [];
 		for(let config of this.config.inputGroup){
 			let group = new FormGroupView(config);
 			this.groupList.push(group);
@@ -51,6 +52,8 @@ class ModelMetaData{
 	}
 
 	extractInput(){
+		this.columnList = [];
+		this.inputList = [];
 		for(let raw of this.config.input){
 			let name = raw.columnName;
 			let column = null;

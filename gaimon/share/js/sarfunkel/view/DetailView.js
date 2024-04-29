@@ -40,7 +40,7 @@ class DetailView{
 
 	appendButton(button){
 		this.button.push(button);
-		this.button.sort((a, b) => {VersionParser.compare(a.order, b.order)});
+		this.button.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
 	
 	async setButton(){

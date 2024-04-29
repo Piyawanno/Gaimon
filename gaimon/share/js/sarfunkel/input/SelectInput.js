@@ -129,7 +129,7 @@ class SelectInput extends InputMetaData{
 			message.push(`Required field "${this.label}" is not selected.`);
 			return false;
 		}else{
-			input.classList.remove('error');
+			input?.classList.remove('error');
 			return true;
 		}
 	}

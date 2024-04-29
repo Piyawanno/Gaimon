@@ -191,6 +191,7 @@ let TableRecordRenderState = function(parent, modelName, config, column, table, 
 	}
 
 	this.createRecord = async function(option){
+		console.log(option);
 		let record = new InputDOMObject(object.recordTemplate, option);
 		await object.parent.setMouseOverOnStatus(record);
 		record.id = object.data.id;
@@ -245,6 +246,7 @@ let TableRecordRenderState = function(parent, modelName, config, column, table, 
 		for(let item of object.column){
 			let type = item.typeName;
 			if (type == "ReferenceSelect") object.processSelect(item, data);
+			else if (type == "ReferenceRadio") object.processSelect(item, data);
 			else if(type == "AutoComplete") object.processSelect(item, data);
 			else if (type == "PrerequisiteReferenceSelect") object.processPrerequisite(item, data);
 			else if (type == "Status") object.processStatus(item, data);

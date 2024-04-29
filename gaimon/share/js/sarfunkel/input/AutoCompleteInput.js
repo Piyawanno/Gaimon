@@ -24,6 +24,7 @@ class AutoCompleteInput extends ReferenceSelectInput{
 		data.typeName = "AutoComplete";
 		data.prerequisite = config.prerequisite != undefined ? config.prerequisite: "";
 		data.prerequisiteParameterKey = config.prerequisiteParameterKey != undefined ? config.prerequisiteParameterKey: "";
+		data.template = config.template;
 		return data;
 	}
 
@@ -65,6 +66,56 @@ class AutoCompleteInput extends ReferenceSelectInput{
 		// this.setOption(cell.dom[this.columnName], this.option);
 		if(record) this.setFormValue(cell, record);
 		return cell;
+	}
+
+	async renderCell(record, reference) {
+		let parameter = {...this};
+		let cell = new DOMObject(TEMPLATE.TableReferenceCellView, parameter);
+		if(record){
+			this.setTableValue(cell, record, reference);
+		}
+		return cell;
+	}
+
+	setTableValue(cell, record, reference){
+		let object = this;
+		let parameter = {...object};
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			if(attribute != undefined){
+				if (attribute == -1) {
+					cell.dom.avatarContainer.hide();
+					cell.dom[this.columnName].innerHTML = "-";
+					return;
+				}
+				let url = `${this.url}/by/reference`;
+				let template = this.config.template;
+				if (typeof attribute == 'object') {
+					cell.dom[this.columnName].innerHTML = Mustache.render(template, attribute);
+				} else {
+					POST(url, {'reference': attribute}, undefined, 'json', true).then(response => {
+						if (response.isSuccess) {
+							cell.dom[this.columnName].innerHTML = Mustache.render(template, response.result);
+							if (response.result.__avatar__ == null) {
+								cell.dom.avatarContainer.hide();
+							}
+							if (response.result?.__avatar__?.url) {
+								cell.dom.avatar.onerror = function() {
+									this.src = response.result?.__avatar__?.default;
+								}
+								cell.dom.avatar.src = response.result?.__avatar__?.url;
+							}
+						} else {
+							cell.dom.avatarContainer.hide();
+							cell.dom[this.columnName].innerHTML = "-";
+						}
+					});
+				}
+			} else {
+				cell.dom.avatarContainer.hide();
+				cell.dom[this.columnName].innerHTML = "-";
+			}
+		}
 	}
 
 	async setFormEvent(input) {
@@ -134,5 +185,8 @@ class AutoCompleteInput extends ReferenceSelectInput{
 		inputForm.autocompleteObject.clear();
 		if (data[input.columnName] == -1) this.disableEdit(inputForm);
 		else this.enableEdit(inputForm);
+	}
+
+	async getOption(){
 	}
 }

@@ -28,6 +28,18 @@ class EnableInput extends CheckBoxInput{
 		}
 	}
 
+	setTableValue(cell, record, reference){
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			let item = cell.dom[this.columnName];
+			if(attribute != undefined && item != undefined){
+				item.html(this.optionMap[attribute].label);
+			} else {
+				item.html(this.optionMap[0].label);
+			}
+		}
+	}
+
 	clearFormValue(inputForm) {
 		let input = inputForm.dom[`${this.columnName}_1`];
 		input.checked = false;

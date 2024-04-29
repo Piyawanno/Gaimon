@@ -1593,7 +1593,7 @@ input[type=color]{
 
 .abstract_dialog_container.abstract_dialog_form {
 	display: flex;
-    flex-direction: column;
+    /* flex-direction: column; */
     gap: 20px;
 }
 

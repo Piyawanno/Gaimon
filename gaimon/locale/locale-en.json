@@ -254,5 +254,15 @@
 	"DepartmentPersonnelPosition" : "DepartmentPersonnelPosition",
 	"stock" : "stock",
 	"ProductionStock" : "ProductionStock",
-	"ShelfDimension" : "ShelfDimension"
+	"ShelfDimension" : "ShelfDimension",
+	"Alert" : "Alert",
+	"The inputs are invalid:" : "The inputs are invalid:",
+	"StockPackage" : "StockPackage",
+	"StockReconcile" : "StockReconcile",
+	"StockLog" : "StockLog",
+	"SupplierStock" : "SupplierStock",
+	"StockPackageCapacity" : "StockPackageCapacity",
+	"StockItemCategory" : "StockItemCategory",
+	"CustomerStock" : "CustomerStock",
+	"machine" : "machine"
 }

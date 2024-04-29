@@ -228,7 +228,6 @@ class NotificationStorage:
 		end = min(fileSize, (page + 1) * pageSize)
 		size = end - start
 		if start >= fileSize or size <= 0: return []
-		print('metaPath', metaPath)
 		with open(metaPath, 'rb') as metaFD:
 			print(f'size={size} end={end} start={start}')
 			metaFD.seek(start, io.SEEK_SET)
@@ -340,7 +339,6 @@ class NotificationStorage:
 							rawMeta: bytes) -> List[NotificationItem]:
 		result = []
 		infoPath = self.infoFormat.format(uid=uid)
-		print('infoPath', infoPath)
 		with open(infoPath, 'rb') as infoFD:
 			position = 0
 			size = len(rawMeta)

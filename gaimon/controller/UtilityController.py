@@ -343,3 +343,7 @@ class UtilityController (InputProcessor) :
 				'label': Month.label,
 			}
 		)
+	
+	@GET('/utilily/health/check', role=['guest'])
+	async def ping(self, request):
+		return response.text('')

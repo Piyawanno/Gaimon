@@ -11,6 +11,7 @@ class ModelPage extends ViewLoader{
 		this.page = null;
 		this.defaultRender = this.renderSummary;
 		this.isCreated = false;
+		this.meta = null;
 		
 
 		this.createFormHandler = [];
@@ -49,6 +50,7 @@ class ModelPage extends ViewLoader{
 	}
 
 	async createMeta(config){
+		if (this.meta != null) return;
 		let response = await GET(`input/${this.modelName}`);
 		if(response.isSuccess){
 			this.meta = new ModelMetaData(this, this.modelName, response);
@@ -84,6 +86,10 @@ class ModelPage extends ViewLoader{
 
 	getPageStateURL(){
 		return '';
+	}
+
+	async prepare() {
+		await this.onPrepareState();
 	}
 
 	async onPrepareState(){
@@ -296,6 +302,16 @@ class ModelPage extends ViewLoader{
 		this.checkTemplate();
 		this.checkTableForm();
 		return await this.tableForm.render(this.title, filter);
+	}
+
+	async renderViewFromExternal(modelName, config, tab, isReplaceState) {
+		console.log(this.protocol);
+		let item = await this.protocol.getByReference(config.data);
+		let data = undefined;
+		if (config.data == undefined) return;
+		if (config.data.id) data = config.data.id;
+		if (data == undefined) return;
+		await this.renderDetail(data, tab, isReplaceState);
 	}
 
 	/// NOTE data can be record or ID of record;
