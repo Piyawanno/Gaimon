@@ -1,7 +1,7 @@
 from gaimon.core.Service import Service
 from gaimon.core.AsyncServicePermissionChecker import AsyncServicePermissionChecker
 from gaimon.core.Route import Route
-from gaimon.core.DBPoolLoader import DBPoolLoader
+# from gaimon.core.DBPoolLoader import DBPoolLoader
 
 import logging, importlib
 
@@ -9,7 +9,8 @@ import logging, importlib
 class AsyncService(Service):
 	def __init__(self, config: dict, namespace: str = ''):
 		Service.__init__(self, config, namespace)
-		self.poolLoader: DBPoolLoader = None
+		# self.poolLoader: DBPoolLoader = None
+		self.poolLoader = None
 
 	def createApplication(self):
 		from sanic import Sanic
