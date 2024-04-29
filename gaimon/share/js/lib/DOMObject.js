@@ -503,6 +503,7 @@ let DOMObject = function(template, data, isHTML, isInit) {
 		} else if (tag.tagName == "OPTION") {
 			// tag.innerText = value; // BUG JSONColumn SelectInput
 		} else if (tag.tagName == "TEXTAREA") {
+			value = value.replaceAll('&nbsp;', ' ');
 			tag.value = value;
 		} else if (tag.tagName == "LABEL") {
 			tag.innerHTML = value;

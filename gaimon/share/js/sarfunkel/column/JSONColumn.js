@@ -1,0 +1,2 @@
+class JSONColumn extends ColumnMetaData{
+}

@@ -6,7 +6,10 @@
 	</div>
 	<div class="abstract_form" rel="form_container">
 		<div class="flex space-between" rel="titleContainer">
-			<div class="form_header" rel="title" localize>{{{title}}}</div>
+			<div class="form_header" {{^isSpace}}style="gap:0px"{{/isSpace}}>
+				{{#prefixTitle}}<div rel="prefixTitle" localize>{{prefixTitle}}</div>{{/prefixTitle}}
+				<div rel="title" localize>{{{title}}}</div>
+			</div>
 			<div class="hidden" rel="switch">
 				<div class="advanceSwitch button b2">
 					<input type="checkbox" class="checkbox" rel="isAdvance">

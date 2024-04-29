@@ -27,6 +27,7 @@
 			</div>
 		</div>
 	</div>
+	<div class="comparatorLabelBox" rel="fullNumber"></div>
 	<div class="comparatorLabelBox">
 		<div localize>vs previous</div>
 		<div rel="comparatorValue"></div>

@@ -27,13 +27,13 @@ from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from xerial.Record import Record
 
 from multiprocessing import cpu_count
-from typing import List, Union, Dict, Callable
+from typing import List, Dict, Callable
 from sanic import Sanic
-from sanic_session import Session, AIORedisSessionInterface
+from sanic_session import Session, RedisSessionInterface
 from packaging.version import Version
 
-import os, sys, aioredis, logging, aiofiles, json, gaimon.model
-import psutil, time, asyncio, importlib, traceback
+import os, sys, logging, json, psutil, asyncio, importlib, traceback
+import redis.asyncio as redis
 
 
 Record.enableDefaultBackup()
@@ -87,7 +87,8 @@ class AsyncApplication(Application):
 		)
 		self.theme = ThemeHandler(config['theme'], self.resourcePath, self.extension)
 		self.title = config['title']
-		self.icon = config.get('icon', '')
+		self.config['language'] = config.get('language', 'th')
+		self.icon = config.get('icon', '/share/icon/logo.png')
 		self.favicon = config.get('favicon', '')
 		self.horizontalLogo = config.get('horizontalLogo', '/share/icon/ximple_dark.png')
 		self.fullTitle = config.get('fullTitle', self.title)
@@ -169,9 +170,9 @@ class AsyncApplication(Application):
 			task = loop.create_task(self.monitor.startLoop())
 			self.taskList.append(task)
 
-	async def load(self):
+	async def load(self, loop):
 		self.connectionCount = 0
-		await self.connect()
+		await self.connect(loop)
 		self.authen = Authentication(self)
 		self.extension.checkPath()
 		await self.readModelModification()
@@ -224,23 +225,33 @@ class AsyncApplication(Application):
 	def registerStart(self, subroutine):
 		self.startSubroutine.append(subroutine)
 
-	async def connect(self):
+	async def connect(self, loop):
 		redisConfig = self.config['redis']
 		redisURL = f"redis://{redisConfig['host']}:{redisConfig['port']}"
 		if 'db' in redisConfig:
 			redisURL = f'{redisURL}/{redisConfig["db"]}'
-		self.redis = aioredis.from_url(redisURL, decode_responses=True)
+		self.redisPool = redis.ConnectionPool.from_url(redisURL, decode_responses=True)
+		self.redis = redis.Redis(connection_pool=self.redisPool, decode_responses=True)
+		async def getConnection():
+			return redis.Redis(connection_pool=self.redisPool)
 		self.httpSession.init_app(
 			self.application,
-			interface=AIORedisSessionInterface(self.redis)
+			interface=RedisSessionInterface(getConnection)
 		)
+		# from sanic_session import AIORedisSessionInterface
+		# import aioredis
+		# self.redis = aioredis.from_url(redisURL, decode_responses=True)
+		# self.httpSession.init_app(
+		# 	self.application,
+		# 	interface=AIORedisSessionInterface(self.redis)
+		# )
 		self.sessionPool = AsyncDBSessionPool(self.config["DB"])
 		logging.info(">>> Connecting Database")
 		await self.sessionPool.createConnection()
 		self.session = await self.sessionPool.getSession()
 
-	async def reconnect(self):
-		await self.connect()
+	async def reconnect(self, loop):
+		await self.connect(loop)
 		self.websocket.startLoop()
 
 	async def initORM(self):
@@ -257,8 +268,8 @@ class AsyncApplication(Application):
 	async def readModelModification(self):
 		path = f'{self.resourcePath}/ModelVersion.json'
 		if os.path.isfile(path):
-			async with aiofiles.open(path, 'rt') as fd:
-				raw = await fd.read()
+			with open(path, 'rt') as fd:
+				raw = fd.read()
 			try:
 				modelVersion = json.loads(raw)
 			except:
@@ -296,8 +307,10 @@ class AsyncApplication(Application):
 		return client
 
 	def map(self, controllerList, processRoute:Callable=processRouteEmpty):
+		self.mappedController = {}
 		for controller in controllerList:
-			isMapped = getattr(controller.__class__, '__is_mapped__', False)
+			# isMapped = getattr(controller.__class__, '__is_mapped__', False)
+			isMapped = self.mappedController.get(controller.__class__, False)
 			if  isMapped :
 				print(f"*** Warning {controller.__class__.__name__} is already mapped.")
 				continue
@@ -325,7 +338,8 @@ class AsyncApplication(Application):
 					self.routeSocket(controller, attributeName, route)
 				else:
 					self.routeRegular(controller, attributeName, route)
-			controller.__class__.__is_mapped__ = True
+			# controller.__class__.__is_mapped__ = True
+			self.mappedController[controller.__class__] = True
 		self.replaceRoute()
 
 	def replaceRoute(self) :
@@ -515,14 +529,14 @@ class AsyncApplication(Application):
 
 		@self.application.main_process_start
 		async def prepare(application, loop):
-			await self.load()
+			await self.load(loop)
 			await self.setSequence()
 			self.startMainLoop(loop)
 			await self.close()
 
 		@self.application.after_server_start
 		async def reconnect(application, loop):
-			await self.reconnect()
+			await self.reconnect(loop)
 			await self.getSequence()
 			logging.info(
 				f"Process {os.getpid()} ID={self.applicationID} memory : {int(psutil.Process().memory_info().rss / (1024 * 1024))}MB"

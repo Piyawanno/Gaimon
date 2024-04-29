@@ -15,6 +15,7 @@ class NotificationController:
 		self.renderer = pystache.Renderer()
 		self.pull = self.application.createNotificationClient()
 		self.push = None
+		self.entity: str = None
 
 	@POST('/notification/count', role=['user'], hasDBSession=False)
 	async def count(self, request):
@@ -58,8 +59,8 @@ class NotificationController:
 			if handler is not None:
 				self.push = handler.push
 
-		if self.push is not None and self.push.isConnected:
+		if self.push is not None and self.push.isConnected and False:
 			result = await self.push.call(route, requestParameter)
 		else:
-			result = await self.pull.call(route, requestParameter)
+			result = await self.pull.call(route, requestParameter, entity=self.entity)
 		return REST(result, ensure_ascii=False)

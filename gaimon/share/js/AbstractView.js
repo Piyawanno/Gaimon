@@ -17,7 +17,12 @@ const AbstractView = function(page) {
 		else if (viewType == 'ConfirmDialog') viewTemplate = TEMPLATE.ConfirmDialog;
 		else if (viewType == 'ExportExcelDialog') viewTemplate = TEMPLATE.ExportExcelDialog;
 		else return;
-		let view = new InputDOMObject(viewTemplate, {title: config.title, isForm: true});
+		let view = new InputDOMObject(viewTemplate, {
+			title: config.title,
+			prefixTitle: config.prefixTitle,
+			isSpace: ["en"].includes(LANGUAGE),
+			isForm: true,
+		});
 		object.setOperationButton(config, view);
 		// await object.initViewEvent(view, config, viewType);
 		return view;
@@ -29,7 +34,7 @@ const AbstractView = function(page) {
 			for(let button of operations){
 				let rel = button.getAttribute('rel');
 				if(rel == 'cancel') button.html('Close');
-				else if(rel == 'edit') button.show();
+				else if(rel == 'edit' && CHECK_PERMISSION_USER(object.page.extension, object.page.role, ['UPDATE'])) button.show();
 				else button.hide();
 			}
 		}else if(view.dom.edit != undefined){
@@ -192,8 +197,12 @@ const AbstractView = function(page) {
 		let destination = await object.getRenderDestination(viewType);
 		let view = await object.getBlankView(config, viewType);
 		await object.initViewEvent(view, config, viewType, checkEdit);
-		destination.html('');
-		destination.append(view);
+		if (viewType == 'Dialog') {
+			main.appendDialog(view);
+		} else {
+			destination.html('');
+			destination.append(view);
+		}
 		await object.getViewConfig(config);
 		if (object.steps.length > 0) {
 			await object.renderStepTab(view, config);
@@ -209,8 +218,12 @@ const AbstractView = function(page) {
 		if (config == undefined) config = {};
 		let destination = await object.getRenderDestination(viewType);
 		await object.initViewEvent(view, config, viewType, checkEdit);
-		destination.html('');
-		destination.append(view);
+		if (viewType == 'Dialog') {
+			main.appendDialog(view);
+		} else {
+			destination.html('');
+			destination.append(view);
+		}
 		return view;
 	}
 
@@ -220,8 +233,15 @@ const AbstractView = function(page) {
 		let view = await object.getView(modelName, config, viewType);
 		await object.initViewEvent(view, config, viewType, checkEdit);
 		view.modelName = modelName;
-		destination.html('');
-		destination.append(view);
+		if (viewType != "Dialog" && viewType != 'SearchForm') {
+			main.home.dom.tabContainer.classList.add('hidden');
+		}
+		if (viewType == 'Dialog') {
+			main.appendDialog(view);
+		} else {
+			destination.html('');
+			destination.append(view);
+		}
 
 		if (object.steps.length > 0 && config.step) {
 			await object.renderStepTab(view, config);
@@ -315,12 +335,15 @@ const AbstractView = function(page) {
 	}
 
 	this.nextStep = async function(group, currentStep, data){
-		if(main.viewStepMap[group] == undefined) return;
+		if(main.viewStepMap[group] == undefined) return false;
 		for(let i in main.viewStepMap[group]){
 			let step = main.viewStepMap[group][i];
 			if(step.pageID == currentStep){
 				let nextStep = main.viewStepMap[group][parseInt(i)+1];
+				console.log(nextStep);
 				if (nextStep == undefined) continue;
+				let isVisible = await nextStep.isVisible(data);
+				let isEnable = await nextStep.isEnable(data);
 				let config = {
 					isSetState: false,
 					isView: false,
@@ -328,12 +351,15 @@ const AbstractView = function(page) {
 					state: undefined,
 					data : data
 				};
-				console.log(config);
-				console.log(nextStep.page);
+				console.log('test', isVisible, isEnable)
+				console.error('!(isVisible && isEnable)', !(isVisible && isEnable));
+				if (!(isVisible && isEnable)) return false;
 				await nextStep.page.prepare();
 				await nextStep.callback(nextStep.page.model, config, 'Form');	
+				return true
 			}
 		}
+		return false;
 	}
 
 	this.renderTab = async function(view, config = {}) {
@@ -381,9 +407,12 @@ const AbstractView = function(page) {
 					stepConfig.isSetState = false;
 					stepConfig.state = step.state;
 					stepConfig.selectedStep = step.pageID;
-					stepConfig.nextStep = async function(data){
-						object.nextStep(step.group, step.pageID, data)
+					if (main.viewStepMap[step.group]) {
+						stepConfig.nextStep = async function(data){
+							return await object.nextStep(step.group, step.pageID, data)
+						}
 					}
+					step.stepConfig = stepConfig;
 					SHOW_LOADING_DIALOG(async function(){
 						await step.page.onPrepareState();
 						await step.callback('', stepConfig, 'Form');
@@ -393,6 +422,10 @@ const AbstractView = function(page) {
 			} else {
 				component.dom.step.classList.add('disable');
 			}
+			step.nextStep = async function(data){
+				return await object.nextStep(step.group, step.pageID, data)
+			}
+			component.step = step;
 			object.stepTabMap[step.pageID] = component;
 			object.stepTabs.push(component);
 			// console.log(config);
@@ -401,6 +434,8 @@ const AbstractView = function(page) {
 			}
 		}
 		if (config.selectedStep != undefined) {
+			config.nextStep = object.stepTabMap[config.selectedStep].step.nextStep;
+			// await object.stepTabMap[config.selectedStep].step.callback('', config, 'Form');
 			await object.highlightStepTab(config.selectedStep);
 		}
 		view.dom.step.show();
@@ -457,6 +492,20 @@ const AbstractView = function(page) {
 			}
 			if(!inputConfig.config) inputConfig.config = {};
 			inputConfig.config.isView = config.isView;
+			if(inputConfig.typeName == "CheckBox" || inputConfig.typeName == "Radio"){
+				let currentOptions = JSON.parse(JSON.stringify(inputConfig.option));
+				inputConfig.option = [];
+				for(let j in currentOptions){
+					if(currentOptions[j].label != undefined){
+						inputConfig.option = currentOptions;
+						break;
+					}
+					inputConfig.option.push({
+						label: currentOptions[j][1],
+						value: currentOptions[j][0]
+					});
+				}
+			}
 			input = renderInput(inputConfig);
 			if (inputConfig.typeName == "RichText") {
 				input.dom[inputConfig.columnName].quill = new Quill(input.dom[inputConfig.columnName], await object.page.util.getQuillConfig(inputConfig));

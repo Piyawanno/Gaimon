@@ -1,60 +1,26 @@
-from typing import Dict, List
 from gaimon.core.Route import GET, POST
 from gaimon.core.PermissionChecker import PermissionChecker
+from gaimon.core.HTMLPage import HTMLPage
+from gaimon.core.RESTResponse import RESTResponse
+from gaimon.core.ThemeHandler import ThemeHandler 
 from gaimon.model.User import User
 from gaimon.model.UserGroup import UserGroup
 from gaimon.model.PermissionType import PermissionType
-from gaimon.core.HTMLPage import HTMLPage
+from gaimon.util.SarfunkelBrowser import SarfunkelBrowser
 from xerial.ColumnType import ColumnType
-from xerial.input.InputType import InputType
 from xerial.CurrencyColumn import CurrencyData
+from xerial.input.InputType import InputType
+from gaimon.core.RESTResponse import (
+	SuccessRESTResponse as Success
+)
 
-from typing import List
+from typing import List, Dict
 from packaging.version import Version
 from sanic import response, Request
-from gaimon.core.RESTResponse import RESTResponse 
 
 import os, json, struct, time, pystache
 
 __SALT_TIME_LIMIT__ = 300.0
-
-__SARFUNKEL_JS__: List[str] = [
-	'sarfunkel/util/VersionParser.js',
-	'sarfunkel/util/BaseProtocol.js',
-	'sarfunkel/ViewType.js',
-
-	'sarfunkel/component/SVGIcon.js',
-	'sarfunkel/component/ImageIcon.js',
-	'sarfunkel/component/Button.js',
-	'sarfunkel/component/Avatar.js',
-	'sarfunkel/component/TableOperation.js',
-	'sarfunkel/component/TableRecordOperation.js',
-
-	'sarfunkel/view/DetailView.js',
-	'sarfunkel/view/TableView.js',
-	'sarfunkel/view/TableViewMode.js',
-	'sarfunkel/view/TableRowView.js',
-	'sarfunkel/view/TableHeaderView.js',
-	'sarfunkel/view/TableFilterView.js',
-	'sarfunkel/view/PaginationView.js',
-	'sarfunkel/view/FormGroupView.js',
-	'sarfunkel/view/FormView.js',
-	'sarfunkel/view/PageMenuView.js',
-	'sarfunkel/view/MenuView.js',
-	'sarfunkel/view/SubMenuView.js',
-
-	'sarfunkel/InputMetaData.js',
-	'sarfunkel/input/NumberInput.js',
-	'sarfunkel/input/TextInput.js',
-	'sarfunkel/input/ReferenceSelectInput.js',
-	
-	'sarfunkel/ColumnMetaData.js',	
-	'sarfunkel/column/IntegerColumn.js',
-	'sarfunkel/column/StringColumn.js',
-
-	'sarfunkel/ModelMetaData.js',
-	'sarfunkel/ModelPage.js',
-]
 
 __BACKEND_JS__: List[str] = [
 	'utils/Utils.js',
@@ -91,7 +57,8 @@ __BACKEND_JS__: List[str] = [
 	'StatusBar.js',
 	'Calendar.js',
 	'Handbook.js',
-	'CurrencyData.js',
+	# NOTE It is not used and conflict with Sarfunkel.
+	# 'CurrencyData.js',
 	'DynamicLayoutCreator.js',
 	'TemplateCreator.js',
 	'TemplateLabelCreator.js',
@@ -155,6 +122,7 @@ class BackendController:
 		self.application: AsyncApplication = application
 		self.extension = self.application.getExtensionInfo()
 		self.entity: str = None
+		self.theme:ThemeHandler = None
 		self.title = self.application.title
 		self.resourcePath = application.resourcePath
 		self.renderer = pystache.Renderer()
@@ -165,7 +133,7 @@ class BackendController:
 			self.horizontalLogo = application.horizontalLogo
 		except:
 			pass
-		__BACKEND_JS__.extend(__SARFUNKEL_JS__)
+		self.sarfunkel = SarfunkelBrowser(application)
 		setattr(self.application, 'loginURL', self.application.rootURL + 'backend')
 
 	@GET("/", role=['guest'], isHome=True)
@@ -193,33 +161,41 @@ class BackendController:
 		page.setRequest(request)
 		page.reset()
 		page.title = self.title + " - BACKEND"
+		await self.setIcon(page)
+		await self.setFavIcon(page)
+		await self.setHorizontalLogo(page)
 		await self.setJS(page, request)
 		await self.setCSS(page, request)
 		await self.setMenu(page, request)
-		await self.setJSVar(page, request)
-		await self.setFavIcon(page, request)
-		await self.setHorizontalLogo(page, request)
+		await self.setJSVar(page, request)		
 		template = self.theme.getTemplate('Backend.tpl')
-		page.body = self.renderer.render(template, {'rootURI': page.rootURL}, )
+		page.body = self.renderer.render(template, {'rootURI': page.rootURL})
 		rendered = page.render(ID='backend')
 		__CACHED_PAGE__[key] = rendered
 		return response.html(rendered)
 	
-	async def setFavIcon(self, page: HTMLPage, request: Request):
+	async def setIcon(self, page: HTMLPage):
+		if len(self.icon) == 0: page.icon = '/share/icon/logo.png'
+		else: page.icon = self.icon
+	
+	async def setFavIcon(self, page: HTMLPage):
 		if len(self.favicon) == 0: return
 		page.favicon = self.favicon
 
-	async def setHorizontalLogo(self, page: HTMLPage, request: Request):
-		if len(self.horizontalLogo) == 0: return
-		page.horizontalLogo = self.horizontalLogo
+	async def setHorizontalLogo(self, page: HTMLPage):
+		if len(self.horizontalLogo) == 0: page.horizontalLogo = '/share/icon/ximple_dark.png'
+		else: page.horizontalLogo = self.horizontalLogo
 
 	async def setJS(self, page: HTMLPage, request: Request):
 		page.enableAllAddOns()
+		page.enableSarfunkel(self.sarfunkel)
 		page.js.extend(__BACKEND_JS__)
 		if not 'TITLE' in page.jsVar:
 			page.jsVar['TITLE'] = self.title
+		if not 'LOGO' in page.jsVar:
+			page.jsVar['LOGO'] = page.icon
 		if not 'HORIZONTAL_LOGO' in page.jsVar:
-			page.jsVar['HORIZONTAL_LOGO'] = self.horizontalLogo
+			page.jsVar['HORIZONTAL_LOGO'] = page.horizontalLogo
 		if not 'JS_EXTENSION' in page.jsVar:
 			page.jsVar['JS_EXTENSION'] = {}
 		page.extensionJS.update(await self.extension.getJS(request))
@@ -329,8 +305,10 @@ class BackendController:
 
 		config = await self.application.configHandler.getEntityConfig(self.entity)
 		page.jsVar["EntityConfig"] = config
-  
+
 		page.jsVar['CURRENCY_DATA_ORIGINAL'] = CurrencyData().toDict()
+		component = await self.extension.getModelPageComponent(request)
+		page.jsVar['COMPONENT'] = component
 
 	def sortExtensionMenu(self, extensionMenuConfig: List):
 		for item in extensionMenuConfig:
@@ -511,11 +489,6 @@ class BackendController:
 			user.isRoot = 1
 			await self.session.insert(user)
 	
-	def loadSarfukel(self):
-		path = os.path.abspath(f'{self.resourcePath}share/js/sarfunkel')
-		l = len(os.path.abspath(f'{self.resourcePath}share/js/'))
-		for root, dirs, files in os.walk(path):
-			for i in files :
-				if i[-3:] == '.js':
-					__SARFUNKEL_JS__.append(f'{root[l+1:]}/{i}')
-		__BACKEND_JS__.extend(__SARFUNKEL_JS__)
+	@GET("/enum/get", role=['guest'])
+	async def getENUM(self, request):
+		return Success({})

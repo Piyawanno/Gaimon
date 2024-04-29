@@ -44,19 +44,19 @@ class UserController:
   
 	@POST("/user/get/by/id", permission=[PT.READ])
 	async def getUserByID(self, request: Request):
-		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), request.headers['entity'])
+		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), self.entity)
 		if user is None : return Error('User cannot be found.')
 		else : return Success(user.toTransportDict())
 
 	@POST("/user/global/get/by/id", role=['guest'])
 	async def getUserGlobalByID(self, request: Request):
-		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), request.headers['entity'])
+		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), self.entity)
 		if user is None : return Error('User cannot be found.')
 		else : return Success({'id': request.json['id'], 'firstName' : user.firstName, 'lastName' : user.lastName, 'avatar': user.avatar})
 		
 	@GET('/user/global/avatar/get/<id>', role=['guest'])
 	async def getAvatarGlobal(self, request, id):
-		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), request.headers['entity'])
+		user: User = await self.userHandler.getUserByID(self.session, int(request.json['id']), self.entity)
 		if user is None : return Error('User cannot be found.')
 		picturePath = user.avatar
 		picture = self.avatar.get(picturePath, None)
@@ -75,18 +75,18 @@ class UserController:
 
 	@POST("/user/get/all", permission=[PT.READ])
 	async def getAllUser(self, request: Request):
-		result = await self.userHandler.getUserByConditionWithPage(self.session, request.json, request.headers['entity'])
+		result = await self.userHandler.getUserByConditionWithPage(self.session, request.json, self.entity)
 		result['data'] = [i.toTransportDict() for i in result['data']]
 		return Success(result)
 	
 	@POST('/user/option/get/autocomplete', permission=[PT.READ])
 	async def getOptionByAutoComplete(self, request: Request):
-		users:List[User] = await self.userHandler.getUserByWildcard(self.session, request.json, request.headers['entity'])
+		users:List[User] = await self.userHandler.getUserByWildcard(self.session, request.json, self.entity)
 		return Success([i.toDict() for i in users])
 	
 	@POST('/user/option/get/autocomplete/by/reference', role=['user'])
 	async def getAutoCompleteByID(self, request: Request):
-		record = await self.userHandler.getUserByID(self.session, int(request.json['reference']), request.headers['entity'])
+		record = await self.userHandler.getUserByID(self.session, int(request.json['reference']), self.entity)
 		if record is None :
 			return REST({'isSuccess': True, 'label': '', 'result': {}})
 		else :
@@ -98,13 +98,13 @@ class UserController:
 
 	@GET("/user/option/get", permission=[PT.READ])
 	async def getUserOption(self, request: Request):
-		users:List[User] = await self.userHandler.getAllUser(self.session, request.headers['entity'])
+		users:List[User] = await self.userHandler.getAllUser(self.session, self.entity)
 		return Success([i.toOption() for i in users])
 
 	@POST("/user/drop", permission=[PT.DROP])
 	async def dropUser(self, request: Request):
-		await self.userHandler.dropUser(self.session, request.json)
-		return REST({'isSuccess': True})
+		model:User = await self.userHandler.dropUser(self.session, request.json)
+		return Success(model.toDict())
 
 	@GET('/user/permission/module/get', permission=[PT.READ])
 	async def getPermissionModule(self, request: Request):
@@ -114,12 +114,12 @@ class UserController:
 
 	@POST('/user/autoComplete/get', permission=[PT.READ])
 	async def getUser(self, request: Request):
-		users:List[User] = await self.userHandler.getUserByWildcard(self.session, request.json, request.headers['entity'])
+		users:List[User] = await self.userHandler.getUserByWildcard(self.session, request.json, self.entity)
 		return Success([i.toDict() for i in users])
 
 	@POST('/user/autoComplete/get/by/reference', permission=[PT.READ])
 	async def getAutoCompleteUserByID(self, request: Request):
-		user: User = await self.userHandler.getUserByID(self.session, int(request.json['reference']), request.headers['entity'])
+		user: User = await self.userHandler.getUserByID(self.session, int(request.json['reference']), self.entity)
 		fullName = ''
 		result = {}
 		if not user is None:
@@ -133,7 +133,7 @@ class UserController:
 
 	@GET('/user/avatar/get/<id>', role=['guest'])
 	async def getAvatar(self, request, id):
-		user:User = await self.userHandler.getUserByID(self.session, int(id), request.headers['entity'])
+		user:User = await self.userHandler.getUserByID(self.session, int(id), self.entity)
 		if user is None: return response.text("Picture cannot be found.", status=404)
 		picturePath = user.avatar
 		if picturePath is None:
@@ -153,7 +153,7 @@ class UserController:
 	@POST("/user/avatar/update", permission=[PT.WRITE, PT.UPDATE])
 	async def updateAvatar(self, request: Request):
 		data = json.loads(request.form['data'][0])
-		user:User = await self.userHandler.getUserByID(self.session, int(data['id']), request.headers['entity'])
+		user:User = await self.userHandler.getUserByID(self.session, int(data['id']), self.entity)
 		if user is None: return Error('Data does not exist.')
 		if 'avatar' in request.files:
 			avatar = await self.storeAvatarFile(request, 'avatar')
@@ -165,7 +165,7 @@ class UserController:
 	@POST("/user/password/update", permission=[PT.WRITE, PT.UPDATE])
 	async def updatePassword(self, request: Request):
 		data = request.json['data']
-		user:User = await self.userHandler.getUserByID(self.session, int(data['id']), request.headers['entity'])
+		user:User = await self.userHandler.getUserByID(self.session, int(data['id']), self.entity)
 		if user is None: return Error('Data does not exist.')
 		if len(data['passwordHash']) and data['passwordHash'] == data['confirm_passwordHash']:
 			salt = User.getSalt()
@@ -180,7 +180,7 @@ class UserController:
 		if 'avatar' in request.files:
 			avatar = await self.storeAvatarFile(request, 'avatar')
 			data['avatar'] = avatar[0][1] if len(avatar) else ""
-		user = await self.userHandler.insertUser(self.session, data, request.headers['entity'])
+		user = await self.userHandler.insertUser(self.session, data, self.entity)
 		await self.application.authen.checkUserInformation(self.session, user.id, True, self.entity)
 		try:
 			await self.checkNotificationClient()
@@ -195,7 +195,7 @@ class UserController:
 	async def update(self, request: Request):
 		data = json.loads(request.form['data'][0])
 		isAvatar = False
-		user = await self.userHandler.getUserByID(self.session, data['id'], request.headers['entity'])
+		user = await self.userHandler.getUserByID(self.session, data['id'], self.entity)
 		if user is None: return Error("User does not exist.")
 		if 'avatar' in request.files:
 			isAvatar = True
@@ -205,7 +205,7 @@ class UserController:
 			await self.static.removeStaticShare(user.avatar)
 		if data['avatarRemoved'] :
 			data['avatar'] = ''
-		user = await self.userHandler.updateUser(self.session, data, request.headers['entity'])
+		user = await self.userHandler.updateUser(self.session, data, self.entity)
 		await self.application.authen.checkUserInformation(self.session, user.id, True, self.entity)
 		userDict = user.toTransportDict()
 		userDict['additional'] = data
@@ -214,15 +214,15 @@ class UserController:
 	@POST("/user/option/getByIDList", permission=[PT.READ])
 	async def getUserOptionByIDList(self, request: Request):
 		IDList = [int(i) for i in request.json['IDList']]
-		result = await self.userHandler.getUserOptionByIDList(self.session, IDList, request.headers['entity'])
+		result = await self.userHandler.getUserOptionByIDList(self.session, IDList, self.entity)
 		return Success(result)
 	
 	@POST("/user/username/isexist", role=["guest"])
 	async def isUsernameExist(self, request: Request):
-		result = await self.userHandler.isUsernameExist(self.session, request.json['username'], request.headers['entity'])
+		result = await self.userHandler.isUsernameExist(self.session, request.json['username'], self.entity)
 		return Success(result)
 
 	@POST('/user/email/isexist', role=['guest'])
 	async def isEmailExist(self, request: Request):
-		result = await self.userHandler.isEmailExist(self.session, request.json['email'], request.headers['entity'])
+		result = await self.userHandler.isEmailExist(self.session, request.json['email'], self.entity)
 		return Success(result)

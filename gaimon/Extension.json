@@ -8,10 +8,29 @@
 	],
 	"backend" : {
 		"script" : [
+			"MonitorPage.js"
 		],
 		"css" : [
 		],
 		"menu" : [
+			{
+				"group": {
+					"ID": "General",
+					"label": "General",
+					"icon": "More",
+					"order": "99.0"
+				},
+				"child": [
+					{
+						"ID": "MonitorPage",
+						"label": "Monitor",
+						"icon": "More",
+						"order": "1.0",
+						"hasAdd": false,
+						"isHidden" : false
+					}
+				]
+			}
 		]
 	}
 }

@@ -7,6 +7,7 @@ from gaimon.util.RequestUtil import (
 	createSelectHandler, createCountHandler, createOptionHandler,
 	createInsertHandler, createInsertWithFileHandler, createUpdateHandler, createUpdateWithFileHandler, createDropHandler,
 	createInsertMultipleHandler, createOptionByIDHandler, createSelectByIDHandler, 
+	createAutocompleteHandler, createAutocompleteByReferenceHandler,
 	createSelectByAttributeHandler, calculatePage
 )
 
@@ -36,6 +37,7 @@ def BASE(modelClass, baseRoute, role):
 			decorator = POST(route, role=role, permission=[PT.READ])
 			decorator(callable.getAll)
 
+
 		if not hasattr(callable, 'getByReference'):
 			async def getByReference(self, request):
 				return await callable._getByReference(self, request)
@@ -45,6 +47,7 @@ def BASE(modelClass, baseRoute, role):
 			route = f"{baseRoute}/get/by/reference"
 			decorator = POST(route, role=role, permission=[PT.READ])
 			decorator(callable.getByReference)
+
 
 		if not hasattr(callable, 'getByID'):
 			async def getByID(self, request, ID):
@@ -56,6 +59,7 @@ def BASE(modelClass, baseRoute, role):
 			decorator = GET(route, role=role, permission=[PT.READ])
 			decorator(callable.getByID)
 
+
 		if not hasattr(callable, 'getOption'):
 			async def getOption(self, request):
 				return await callable._getOption(self, request)
@@ -65,6 +69,7 @@ def BASE(modelClass, baseRoute, role):
 			route = f"{baseRoute}/get/option"
 			decorator = GET(route, permission=[PT.READ])
 			decorator(callable.getOption)
+
 
 		if not hasattr(callable, 'getOptionByIDList'):
 			async def getOptionByIDList(self, request):
@@ -76,6 +81,28 @@ def BASE(modelClass, baseRoute, role):
 			decorator = POST(route, permission=[PT.READ])
 			decorator(callable.getOptionByIDList)
 
+
+		if not hasattr(callable, 'getAutocomplete'):
+			async def getAutocomplete(self, request):
+				return await callable._getAutocomplete(self, request)
+			callable.getAutocomplete = getAutocomplete
+
+		if not hasattr(callable.getAutocomplete, '__ROUTE__'):
+			route = f"{baseRoute}/autocomplete/get"
+			decorator = POST(route, permission=[PT.READ])
+			decorator(callable.getAutocomplete)
+
+		
+		if not hasattr(callable, 'getAutocompleteByReference'):
+			async def getAutocompleteByReference(self, request):
+				return await callable._getAutocompleteByReference(self, request)
+			callable.getAutocompleteByReference = getAutocompleteByReference
+
+		if not hasattr(callable.getAutocompleteByReference, '__ROUTE__'):
+			route = f"{baseRoute}/autocomplete/get/by/reference"
+			decorator = POST(route, permission=[PT.READ])
+			decorator(callable.getAutocompleteByReference)
+
 		if not hasattr(callable, 'insert'):
 			async def insert(self, request, hasFeedback=False):
 				return await callable._insert(self, request, hasFeedback=hasFeedback)
@@ -86,6 +113,7 @@ def BASE(modelClass, baseRoute, role):
 			decorator = POST(route, permission=[PT.WRITE])
 			decorator(callable.insert)
 		
+
 		if not hasattr(callable, 'insertMultiple'):
 			async def insertMultiple(self, request, hasFeedback=False):
 				return await callable._insertMultiple(self, request, hasFeedback=hasFeedback)
@@ -96,6 +124,7 @@ def BASE(modelClass, baseRoute, role):
 			decorator = POST(route, permission=[PT.WRITE])
 			decorator(callable.insertMultiple)
 
+
 		if not hasattr(callable, 'update'):
 			async def update(self, request):
 				return await callable._update(self, request)
@@ -105,6 +134,7 @@ def BASE(modelClass, baseRoute, role):
 			route = f"{baseRoute}/update"
 			decorator = POST(route, permission=[PT.UPDATE])
 			decorator(callable.update)
+
 
 		if not hasattr(callable, 'drop'):
 			async def drop(self, request):
@@ -139,6 +169,8 @@ class BaseController:
 		self.selectByID = createSelectByIDHandler(modelClass)
 		self.selectByReference = createSelectByAttributeHandler(modelClass)
 		self.count = createCountHandler(modelClass)
+		self.handleGetAutocomplete = createAutocompleteHandler(modelClass)
+		self.handleGetAutocompleteByReference = createAutocompleteByReferenceHandler(modelClass)
 		self.handleGetOption = createOptionHandler(modelClass)
 		self.handleGetOptionByID = createOptionByIDHandler(modelClass)
 		self.handleInsert = createInsertWithFileHandler(self.application, modelClass)
@@ -177,6 +209,14 @@ class BaseController:
 
 	async def _getOptionByIDList(self, request):
 		result = await self.handleGetOptionByID(self.session, request.json['IDList'])
+		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
+	
+	async def _getAutocomplete(self, request):
+		result = await self.handleGetAutocomplete(self.session, request.json)
+		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
+
+	async def _getAutocompleteByReference(self, request):
+		result = await self.handleGetAutocompleteByReference(self.session, request.json)
 		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 
 	async def _insert(self, request, hasFeedback=True):

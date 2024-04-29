@@ -1,0 +1,2 @@
+class DayIntervalColumn extends ColumnMetaData{
+}

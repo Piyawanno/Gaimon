@@ -85,6 +85,10 @@ body{
 	background: #ECEFF1;
 } 
 
+.abstract_form_input .abstract_container {
+	background: unset;
+}
+
 .abstract_top_bar{
 	background: var(--main-sidebar-background-color);
 	border-color: #383838;
@@ -406,8 +410,9 @@ body{
 }
 
 .notification_container{
-	background: var(--main-sidebar-submenu-background-color);
+	background: var(--main-sidebar-background-color);
 	color: #afc6c9;
+	box-shadow: 0 6px 24px 0 rgb(0 0 0 / 12%), 0 3px 8px 0 rgb(0 0 0 / 6%);
 }
 
 .notification_list_item.warning{

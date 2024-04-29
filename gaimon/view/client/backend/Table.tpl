@@ -4,7 +4,7 @@
 		<div class="flex gap-10px">
 			<div class="table_form_head" localize>{{{title}}}</div>
 		</div>
-		<div class="flex gap-10px" rel="buttonList">
+		<div class="flex gap-10px table_buttonList" rel="buttonList">
 			{{#hasAdd}}
 			<div class="abstract_button add_button" rel="add" localize>
 				<div class="flex-column-center">

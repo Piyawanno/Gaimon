@@ -189,6 +189,7 @@ class LogAnalyzer:
 		for i in range(start, end + 1):
 			date = dateIDToDateTime(i)
 			path = f"{logPath}/{date.strftime('%Y/%m/%d')}-gaimon-INFO.gz"
+			print(path)
 			logList = logMap.get(i, [])
 			if len(logList) == 0: logMap[i] = logList
 			if os.path.isfile(path):

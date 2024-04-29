@@ -11,7 +11,7 @@ class SubMenuView extends MenuView{
 				await page.setPageState();
 				SHOW_LOADING_DIALOG(async function(){
 					await page.onPrepareState();
-					await page.render(ViewType.INSERT);
+					await page.render();
 				});
 			}else{
 				console.error("Page is not defined.");

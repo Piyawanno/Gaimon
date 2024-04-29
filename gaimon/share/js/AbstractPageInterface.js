@@ -327,6 +327,8 @@ AbstractPage.prototype.getTable = async function(modelName, config) {
 
 AbstractPage.prototype.renderTable = async function(modelName, config) {
 	let object = this;
+	if(!CHECK_PERMISSION_USER(object.extension, object.role, ['UPDATE'])) config.hasEdit = false;
+	if(!CHECK_PERMISSION_USER(object.extension, object.role, ['DROP'])) config.hasDelete = false;
 	let table = await this.tableView.renderView(modelName, config, 'Table');
 	if (this.restProtocol != undefined) {
 		table.onDeleteRecord = async function(record) {

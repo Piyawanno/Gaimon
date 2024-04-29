@@ -26,22 +26,22 @@ class UserHandler :
 		self.drop = createDropHandler(User)
 		self.getOptionByIDList = createOptionByIDHandler(User)
 	
-	async def getUserByID(self, session: AsyncDBSessionBase, ID: int, entity:str) -> User:
+	async def getUserByID(self, session: AsyncDBSessionBase, ID: int, entity:str=None) -> User:
 		return await session.selectByID(User, ID)
 	
-	async def isUsernameExist(self, session: AsyncDBSessionBase, username: str, entity:str) -> bool:
+	async def isUsernameExist(self, session: AsyncDBSessionBase, username: str, entity:str=None) -> bool:
 		count = await session.count(User, "WHERE username = ?", parameter=[username])
 		return count > 0
 	
-	async def isEmailExist(self, session: AsyncDBSessionBase, email: str, entity:str) -> bool:
+	async def isEmailExist(self, session: AsyncDBSessionBase, email: str, entity:str=None) -> bool:
 		count = await session.count(User, "WHERE email = ?", parameter=[email])
 		return count > 0
 	
-	async def getAllUser(self, session: AsyncDBSessionBase, entity:str) -> List[User]:
+	async def getAllUser(self, session: AsyncDBSessionBase, entity:str=None) -> List[User]:
 		users: List[User] = await session.select(User, "WHERE isDrop = 0")
 		return users
 	
-	async def getUserByCondition(self, session: AsyncDBSessionBase, parameter: dict, entity:str) -> List[User]:
+	async def getUserByCondition(self, session: AsyncDBSessionBase, parameter: dict, entity:str=None) -> List[User]:
 		clause, parameter, limit, offset = processRequestQuery(parameter, User)
 		users: List[User] = await session.select(
 			User,
@@ -52,7 +52,7 @@ class UserHandler :
 		)
 		return users
 	
-	async def getUserByConditionWithPage(self, session: AsyncDBSessionBase, parameter: dict, entity:str) -> dict:
+	async def getUserByConditionWithPage(self, session: AsyncDBSessionBase, parameter: dict, entity:str=None) -> dict:
 		clause, parameter, limit, offset = processRequestQuery(parameter, User)
 		users: List[User] = await session.select(
 			User,
@@ -67,7 +67,7 @@ class UserHandler :
 			'count': calculatePage(count, limit)
 		}
 	
-	async def getUserByWildcard(self, session: AsyncDBSessionBase, parameter: dict, entity:str) -> List[User]:
+	async def getUserByWildcard(self, session: AsyncDBSessionBase, parameter: dict, entity:str=None) -> List[User]:
 		wildcard = parameter['name']+'%'
 		limit = None
 		if 'limit' in parameter: limit = int(parameter['limit'])
@@ -79,7 +79,7 @@ class UserHandler :
 		)
 		return users
 	
-	async def insertUser(self, session: AsyncDBSessionBase, data: dict, entity:str) -> User:
+	async def insertUser(self, session: AsyncDBSessionBase, data: dict, entity:str=None) -> User:
 		user = User()
 		user.username = data['username']
 		user.email = data['email']
@@ -97,7 +97,7 @@ class UserHandler :
 		await session.insert(user)
 		return user
 	
-	async def updateUser(self, session: AsyncDBSessionBase, data: dict, entity:str) -> User:
+	async def updateUser(self, session: AsyncDBSessionBase, data: dict, entity:str=None) -> User:
 		user:User = await self.selectByID(session, int(data['id']))
 		if user is None: return
 		user.username = data['username']
@@ -117,8 +117,8 @@ class UserHandler :
 		await session.update(user)
 		return user
 	
-	async def dropUser(self, session: AsyncDBSessionBase, data: dict, entity:str) -> User:
+	async def dropUser(self, session: AsyncDBSessionBase, data: dict, entity:str=None) -> User:
 		return await self.drop(session, data)
 	
-	async def getUserOptionByIDList(self, session: AsyncDBSessionBase, IDList: List[int], entity:str):
+	async def getUserOptionByIDList(self, session: AsyncDBSessionBase, IDList: List[int], entity:str=None):
 		return await self.getOptionByIDList(session, IDList)

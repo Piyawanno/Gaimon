@@ -23,8 +23,10 @@ class ThemeHandler:
 
 	def loadThemeTemplate(self):
 		viewPath = f"{self.resourcePath}/theme/{self.theme}/view/"
+		print(viewPath)
 		for i in os.listdir(viewPath):
 			path = f"{viewPath}/{i}"
+			print(path)
 			if i == "client":
 				self.loadClient(path, i)
 			elif os.path.isdir(path):

@@ -1,10 +1,4 @@
 class ColumnMetaData{
-	static inputMap = {
-		Number: NumberInput,
-		Text: TextInput,
-		ReferenceSelect: ReferenceSelectInput,
-	}
-
 	constructor(config){
 		this.config = config;
 		this.name = config.columnName;
@@ -18,12 +12,44 @@ class ColumnMetaData{
 		this.isTable = config.isTable;
 		this.isTableForm = config.isTableForm;
 
-		this.input = this.isForm ? this.createInput() : null;
+		this.input = this.createInput();
 	}
 
 	createInput(){
-		let InputClass = ColumnMetaData.inputMap[this.config.typeName];
-		if(InputClass == undefined) InputClass = InputMetaData;
-		return new InputClass(this, this.config);
+		try{
+			let input = eval(`new ${this.config.typeName}Input(this, this.config);`);
+			return input;
+		}catch(error){
+			console.error(error);
+			return new InputMetaData(this, this.config);
+		}
+	}
+
+	fromJSON(data){
+		return data;
+	}
+
+	toJSON(data){
+		return data;
+	}
+
+	toDisplay(data){
+		return data;
+	}
+
+	fromInput(data){
+		return data;
+	}
+
+	toInput(data){
+		return data;
+	}
+
+	inputToJSON(data){
+		return data;
+	}
+
+	jsonToInput(data){
+		return data;
 	}
 }

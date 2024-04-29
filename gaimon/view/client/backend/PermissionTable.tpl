@@ -11,7 +11,8 @@
 	</div>
 	<table class="abstract_form_table" rel="table">
 		<colgroup>
-			<col style="min-width:60%;max-width:60%;width:60%;">
+			<col style="min-width:50%;max-width:50%;width:50%;">
+			<col style="min-width:10%;max-width:10%;width:10%;">
 			<col style="min-width:10%;max-width:10%;width:10%;">
 			<col style="min-width:10%;max-width:10%;width:10%;">
 			<col style="min-width:10%;max-width:10%;width:10%;">

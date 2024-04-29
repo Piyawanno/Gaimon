@@ -4,7 +4,7 @@
 		{{#isRequired}}<div><label class="required">*</label></div>{{/isRequired}}
 	</div>
 	<div class="flex gap-5px">
-		<div class="width-100-percent"><input type="number" rel="{{{columnName}}}" autocomplete="off" fraction="{{{columnName}}}"
+		<div class="width-100-percent"><input class="{{#config.isView}}abstract_input_view{{/config.isView}}" type="number" rel="{{{columnName}}}" autocomplete="off" fraction="{{{columnName}}}"
 			isNegative="{{{isNegative}}}" 
 			isZeroIncluded="{{{isZeroIncluded}}}"
 			isFloatingPoint="{{{isFloatingPoint}}}"

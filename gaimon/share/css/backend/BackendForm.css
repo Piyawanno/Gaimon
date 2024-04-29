@@ -624,14 +624,15 @@
 }
 
 .autocomplete-items {
-	position: fixed;
+	/* position: fixed;
 	border: 1px solid #d4d4d4;
 	border-bottom: none;
 	border-top: none;
 	z-index: 99;
 	top: 100%;
 	left: 0;
-	right: 0;
+	right: 0; */
+	z-index: 99;
 	font-size: .14em;
 }
 
@@ -639,7 +640,8 @@
 	padding: 10px;
 	cursor: pointer;
 	background-color: #fff;
-	border-bottom: 1px solid #d4d4d4;	
+	border-bottom: 1px solid #d4d4d4;
+	white-space: initial;	
 }
 
 .autocomplete-items div:hover {
@@ -705,7 +707,6 @@
 }
 
 .formTagText {
-	background-color: #00796B;
     color: #fff;
     padding: 5px 10px;
     height: 30px;
@@ -715,6 +716,9 @@
     border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
     user-select: none;
+	border: 1px solid var(--main-topbar-background-color);
+    background: #fff;
+    color: var(--main-topbar-background-color);
 }
 
 .formTagButton {
@@ -723,7 +727,7 @@
     height: 30px;
     display: flex;
     align-items: center;
-    background-color: #EF5350;
+    background-color: red;
     padding: 0 5px;
     justify-content: center;
     border-top-right-radius: 10px;

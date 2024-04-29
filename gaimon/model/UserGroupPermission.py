@@ -8,7 +8,7 @@ from xerial.input.PrerequisiteReferenceSelectInput import PrerequisiteReferenceS
 
 from gaimon.model.PermissionType import PermissionType
 
-__GAIMON_ROLE__ = ['User', 'Unit', 'Dashboard']
+__GAIMON_ROLE__ = ['User', 'Role', 'Unit', 'Dashboard']
 
 
 class UserGroupPermission(Record):

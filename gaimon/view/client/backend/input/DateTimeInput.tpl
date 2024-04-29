@@ -3,6 +3,6 @@
 		<div localize>{{{label}}}</div>
 		{{#isRequired}}<div><label class="required">*</label></div>{{/isRequired}}
 	</div>
-	<div><input type="datetime-local" rel="{{{columnName}}}" autocomplete="off" {{#isRequired}}required{{/isRequired}} {{#config.isView}}disabled{{/config.isView}} {{^isEditable}}disabled{{/isEditable}}></div>
+	<div><input class="{{#config.isView}}abstract_input_view{{/config.isView}}" type="datetime-local" rel="{{{columnName}}}" autocomplete="off" {{#isRequired}}required{{/isRequired}} {{#config.isView}}disabled{{/config.isView}} {{^isEditable}}disabled{{/isEditable}}></div>
 	<div class="error text-align-center hidden" rel="{{{columnName}}}_error"></div>
 </div>

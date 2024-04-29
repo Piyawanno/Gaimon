@@ -167,13 +167,13 @@ AbstractInputUtil.prototype.createSideIcon = async function(groupedInput){
 	for(let group of groupedInput){
 		if (group.isGroup) {
 			for (let input of group.input) {
-				if(input.sideIcon != null){
-					input.SVG = await CREATE_SVG_ICON(input.sideIcon);
+				if(input.sideIcon != null && Array.isArray(input.sideIcon) && input.sideIcon.length > 0){
+					input.SVG = await CREATE_SVG_ICON(input.sideIcon[0].icon);
 				}
 			}
 		}
-		if(group.sideIcon != null){
-			group.SVG = await CREATE_SVG_ICON(group.sideIcon);
+		if(group.sideIcon != null && Array.isArray(group.sideIcon) && group.sideIcon.length > 0){
+			group.SVG = await CREATE_SVG_ICON(group.sideIcon[0].icon);
 		}
 	}
 }
@@ -294,7 +294,7 @@ AbstractInputUtil.prototype.mergeInput = async function(defaultInput, additional
 	return input;
 }
 	
-AbstractInputUtil.prototype.parseInputData = async function(inputs, reference = {}, group = {}) {
+AbstractInputUtil.prototype.parseInputData = async function(inputs, reference = {}, group = {}) {	
 	let object = this;
 	for (let input of inputs) {
 		if (input.isGroup) {
@@ -326,7 +326,7 @@ AbstractInputUtil.prototype.parseInputData = async function(inputs, reference = 
 			input.isPrerequisiteReferenceSelect = true;
 			if (reference[input.url] == undefined) reference[input.url] = [];
 			reference[input.url].push(input.columnName)
-		} else if (input.typeName == "CheckBox"){
+		} else if (input.typeName == "CheckBox" || input.typeName == "Radio"){
 			let currentOptions = JSON.parse(JSON.stringify(input.option));
 			input.option = [];
 			for(let j in currentOptions){
@@ -549,6 +549,7 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 		prerequisite.childInput[inputs[i].detail.columnName] = inputs[i];
 	}
 	prerequisite.onchange = async function(isForceFetch=false) {
+		console.log(this.value)
 		if (this.value == undefined) return;
 		if (this.value == '') return;
 		for (let index in prerequisite.childInput) {
@@ -560,6 +561,8 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 			if (prerequisite.fetched[detail.columnName] == undefined){
 				prerequisite.fetched[detail.columnName] = {};
 			}
+			console.log(prerequisite.fetched[detail.columnName])
+			console.log(prerequisite.fetched[detail.columnName][this.value])
 			if (prerequisite.fetched[detail.columnName][this.value] == undefined || isForceFetch) {
 				let response;
 				if (this.currentValue == undefined){
@@ -659,10 +662,11 @@ AbstractInputUtil.prototype.setInputMapper = async function(detail, inputs,  exc
 }
 
 AbstractInputUtil.prototype.initCropperEvent = async function(key, dom){
+	let aspectRatio = dom[key].getAttribute('aspectRatio');
 	let image = dom[`${key}_image`];
 	let cropper = new Cropper(image, {
 		dragMode: 'move',
-		aspectRatio: 1,
+		aspectRatio: aspectRatio,
 		autoCropArea: .75,
 		restore: false,
 		guides: true,
@@ -851,7 +855,10 @@ AbstractInputUtil.prototype.setImageMap = async function(view, imageMap) {
 				this.classList.remove('disabled');
 				view.dom[`${i}_originalButton`].classList.add('disabled');
 			}
-		}else view.dom[`${i}_croppedButton`].remove();
+		}else if (view.dom[`${i}_croppedButton`]) {
+			console.log(view.dom[`${i}_croppedButton`]);
+			// view.dom[`${i}_croppedButton`].remove();
+		}
 		view.dom[`${i}_previwerCancel`].onclick = async function(){
 			view.dom[`${i}_previewer`].hide();
 		}
@@ -946,7 +953,8 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 		config.isView = true;
 		config.data[columnLinkMap.column.foreignColumn] = value;
 		if (config.data && config.data.id != undefined && config.data.id == -1) return;
-		page.main.pageModelDict[modelName].prepare();
+		await page.main.pageModelDict[modelName].prepare();
+		console.log(page.main.pageModelDict[modelName]);
 		page.main.pageModelDict[modelName].renderViewFromExternal(modelName, config, 'Form');
 	} else {
 		let config = {};
@@ -958,7 +966,7 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 			config.data[columnLinkMap.column.columnName] = value;
 		}
 		if (config.data && config.data.id != undefined && config.data.id == -1) return;
-		page.prepare();
+		await page.prepare();
 		page.renderViewFromExternal(page.model, config, 'Form')
 	}
 }
@@ -980,7 +988,7 @@ AbstractInputUtil.prototype.getRenderedTemplate = function(value, template) {
 		}
 		let avatarTemplate = `<div class="flex gap-10px">
 			<div class="autocomplete_avatar" rel="avatarContainer"></div>
-			<div class="flex center">{{{preRendered}}}</div>
+			<div class="flex-column-center">{{{preRendered}}}</div>
 		</div>`;
 		let rendered = new InputDOMObject(avatarTemplate, {preRendered});
 		rendered.dom.avatarContainer.appendChild(image);

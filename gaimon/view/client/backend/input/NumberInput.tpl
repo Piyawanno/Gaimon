@@ -3,7 +3,8 @@
 		<div localize>{{{label}}}</div>
 		{{#isRequired}}<div><label class="required">*</label></div>{{/isRequired}}
 	</div>
-	<div><input type="number" rel="{{{columnName}}}" autocomplete="off" 
+	<div>
+		<input type="number" rel="{{{columnName}}}" class="{{#config.isView}}abstract_input_view{{/config.isView}}" autocomplete="off" 
 			isNegative="{{{isNegative}}}" 
 			isZeroIncluded="{{{isZeroIncluded}}}"
 			isFloatingPoint="{{{isFloatingPoint}}}"
@@ -13,6 +14,7 @@
 			{{/isFloatingPoint}}}
 			{{#isRequired}}required{{/isRequired}}
 			{{^isEditable}}disabled{{/isEditable}}
-			{{#config.isView}}readonly{{/config.isView}}></div>
+			{{#config.isView}}readonly{{/config.isView}}>
+	</div>
 	<div class="error_message text-align-center hidden" rel="{{{columnName}}}_error"></div>
 </div>

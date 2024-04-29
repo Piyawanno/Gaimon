@@ -1,8 +1,8 @@
 websockets==10.4
 sanic==22.6.0
 sanic_session
+sanic_session[redis]
 aiofiles
-aioredis
 pystache
 pyjwt
 requests

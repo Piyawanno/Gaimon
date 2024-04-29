@@ -28,7 +28,7 @@ class NotificationCreator:
 					'message': message
 				}
 			}
-			result = await self.client.call('/set/module', data)
+			result = await self.client.call('/set', data)
 			print(f"Send notification {i}", result)
 
 
@@ -36,12 +36,13 @@ if __name__ == '__main__':
 	import json, asyncio
 	with open('/etc/gaimon/Notification.json', encoding="utf-8") as fd:
 		config = json.load(fd)
+	print(config)
 
 	creator = NotificationCreator(config)
 	asyncio.run(
 		creator.createNotification(
 			NotificationLevel.INFO,
-			1,
+			2,
 			1,
 			NotificationType.INTERNAL,
 			f"This's a fake notification for test @{datetime.now()}."

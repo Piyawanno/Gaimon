@@ -14,6 +14,8 @@ class SVGIcon{
 		this.name = name;
 		this.isSVG = true;
 		this.icon = '';
+		this.DOM = null;
+		this.html = null;
 	}
 
 	async render(){
@@ -25,6 +27,8 @@ class SVGIcon{
 			else break
 		}
 		if (typeof this.icon == 'object') this.icon = '';
+		this.DOM = new DOMObject(TEMPLATE.SideIcon, {SVG: this.icon});
+		this.html = this.DOM.html;
 		return this;
 	}
 }

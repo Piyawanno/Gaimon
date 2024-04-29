@@ -10,6 +10,8 @@ from gaimon.core.RESTResponse import (
 )
 from gaimon.util.InputProcessor import InputProcessor
 from gaimon.util.ExcelTemplateGenerator import ExcelTemplateGenerator
+from gaimon.util.SarfunkelBrowser import SarfunkelBrowser
+from gaimon.util.LocaleUtil import readLocale
 from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from sanic import response, Request
 
@@ -33,6 +35,7 @@ class UtilityController (InputProcessor) :
 		self.picture = {}
 		self.theme: ThemeHandler = None
 		self.readCountryData()
+		self.sarfunkel = SarfunkelBrowser(application)
 		
 	
 	def readCountryData(self) :
@@ -53,6 +56,11 @@ class UtilityController (InputProcessor) :
 			self.language = json.loads(fd.read())
 		with open("%s/country-by-currency-code.json" % (dataPath), encoding="utf-8") as fd:
 			self.currency = json.loads(fd.read())
+
+	@GET("/sarfunkel", role=['guest'], hasDBSession=False)
+	async def getSarfunkel(self, request) :
+		content = self.sarfunkel.getContent()
+		return response.raw(content, content_type='text/javascript')
 
 	@POST("/log/register", role=['guest'], isLogData=True)
 	async def recordLog(self, request) :
@@ -155,49 +163,9 @@ class UtilityController (InputProcessor) :
 	async def getLocale(self, request: Request, language, oldLanguage):
 		path = f'{importlib.import_module("gaimon").__path__[-1]}/locale/'
 		uid = request.ctx.session['uid']
-		data = await self.readLocale(request, language, path, uid)
-		return RESTResponse({'isSuccess': True, 'results': data}, ensure_ascii=False)
-
-	async def readLocale(self, request: Request, language: str, path: str, uid: int):
-		if language in self.locale: return self.locale[language]
-		for root, directories, files in os.walk(path):
-			for i in files:
-				with open('%s/%s' % (root, i), 'r', encoding='utf-8') as fd:
-					content = fd.read()
-					if not i.split('.')[0].split('-')[1] in self.locale: self.locale[i.split('.')[0].split('-')[1]] = {}
-					self.locale[i.split('.')[0].split('-')[1]] = json.loads(content)
-		await self.readAllExtensionLocale(request, language, uid)
-		if language in self.locale:
-			return self.locale[language]
-		else:
-			return {}
-
-	async def readAllExtensionLocale(self, request: Request, language: str, uid: int):
-		locale = {}
 		extensionList = await self.extension.getExtension(request)
-		for key in extensionList :
-			locale.update(await self.readExtensionLocale(language, key))
-		return locale
-
-	async def readExtensionLocale(self, language, extension):
-		if not extension in self.extensionLocale: self.extensionLocale[extension] = {}
-		if language in self.extensionLocale[extension]:
-			return self.extensionLocale[extension][language]
-		path = f'{importlib.import_module(extension).__path__[-1]}/locale/'
-		if not os.path.isdir(path): return {}
-		for root, directories, files in os.walk(path):
-			for i in files:
-				if i[-5:] != '.json': continue
-				with open('%s/%s' % (root, i), 'r', encoding='utf-8') as fd:
-					content = fd.read()
-					self.extensionLocale[extension][i.split('.')[0].split('-')[1]
-													] = json.loads(content)
-					if not i.split('.')[0].split('-')[1] in self.locale: self.locale[i.split('.')[0].split('-')[1]] = {}
-					self.locale[i.split('.')[0].split('-')[1]].update(json.loads(content))
-		if language in self.extensionLocale[extension]:
-			return self.extensionLocale[extension][language]
-		else:
-			return {}
+		data = await readLocale(language, extensionList)
+		return RESTResponse({'isSuccess': True, 'results': data}, ensure_ascii=False)
 
 	@GET("/locale/set/<text>", role=['guest'], hasDBSession=False)
 	async def setTextLocale(self, request, text):
@@ -375,3 +343,7 @@ class UtilityController (InputProcessor) :
 				'label': Month.label,
 			}
 		)
+	
+	@GET('/utilily/health/check', role=['guest'])
+	async def ping(self, request):
+		return response.text('')

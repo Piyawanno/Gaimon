@@ -1,5 +1,6 @@
 from gaimon.core.ThemeHandler import ThemeHandler
 from gaimon.core.StaticCompressor import StaticCompressor, StaticType
+from gaimon.util.SarfunkelBrowser import SarfunkelBrowser
 from gaimon.util.PathUtil import conform
 
 from typing import List, Dict, Tuple
@@ -69,6 +70,7 @@ class HTMLPage:
 		self.appIcon = None
 		self.hasAppIcon = False
 		self.icon = None
+		self.horizontalLogo = None
 		self.favicon = 'share/icon/favicon.png'
 		self.meta = []
 
@@ -152,6 +154,13 @@ class HTMLPage:
 		self.enableXSLX()
 		self.enableEPUB()
 		self.enableCropper()
+		self.enableLogIn()
+	
+	def enableSarfunkel(self, sarfunkel: SarfunkelBrowser):
+		if sarfunkel.application.isDevelop or True:
+			self.js.extend(sarfunkel.getScriptList())
+		else:
+			self.js.append(sarfunkel.getURL())
 
 	def enableFraction(self) :
 		self.incompressibleJS.append('lib/fraction.min.js')
@@ -236,7 +245,6 @@ class HTMLPage:
 		self.googleAnalyticsCode = code
 
 	def render(self, ID: str = None):
-		self.enableLogIn()
 		if self.isCompress and ID is not None:
 			return self.renderCompress(ID)
 		else:
@@ -295,7 +303,8 @@ class HTMLPage:
 		if self.metaTitle == '': self.metaTitle = self.title
 		if self.metaDescription == '': self.metaDescription = self.title
 		if self.metaURL == '': self.metaURL = self.rootURL
-		if self.metaImage == '': self.metaImage = self.icon
+		if self.metaImage == '': self.metaImage = self.icon 
+		if self.horizontalLogo == None: self.horizontalLogo = '/share/icon/ximple_dark.png'
 		parameter = {
 			'title': self.title,
 			'rootURL': self.rootURL,
@@ -348,6 +357,7 @@ class HTMLPage:
 		if self.metaDescription == '': self.metaDescription = self.title
 		if self.metaURL == '': self.metaURL = self.rootURL
 		if self.metaImage == '': self.metaImage = f"{self.rootURL}{self.icon}"
+		if self.horizontalLogo == None: self.horizontalLogo = '/share/icon/ximple_dark.png'
 		parameter = {
 			'title': self.title,
 			'rootURL': self.rootURL,
@@ -359,6 +369,7 @@ class HTMLPage:
 			'internalJS': internalJS,
 			'header': self.header,
 			'favicon': self.favicon,
+			'horizontalLogo': self.horizontalLogo,
 			'extensionJS': extensionJS,
 			'extensionCSS': extensionCSS,
 			'jsVar': self.getJSVar(),

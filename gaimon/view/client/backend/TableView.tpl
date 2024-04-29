@@ -1,4 +1,4 @@
-<div class="width-100-percent flex-column gap-10px" rel="tableContainer">
+<div class="width-100-percent flex-column gap-10px" style="overflow-x: auto;" rel="tableContainer">
 	<div class="overflow-x-auto width-100-percent">
 		<table class="abstract_table" rel="table">
 			<thead rel="thead"></thead>

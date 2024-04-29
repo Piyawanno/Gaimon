@@ -32,6 +32,12 @@
 				</div>
 				<div class="warning-label hidden" rel="message"></div>
 			</div>
+			<div class="login-input-block">
+				<div class="flex gap-10px">
+					<div><input type="checkbox" rel="showPassword"></div>
+					<label rel="showPasswordLabel" localize>Show password</label>
+				</div>
+			</div>
 			<div class="login-button" rel="login" localize>Log In</div>
 			<!-- <div class="login-register" rel="register" localize>Sign Up</div> -->
 			{{# authentication.isExternal }}

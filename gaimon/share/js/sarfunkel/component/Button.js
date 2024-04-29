@@ -1,5 +1,5 @@
 class Button{
-	constructor(label, order='1.0', callback=async (event)=>{}, classList=[]){
+	constructor(label, order='1.0', callback=async (event)=>{}, classList=[], url=async (id)=>{}){
 		this.label = label;
 		this.classList = classList;
 		this.callback = callback;
@@ -7,6 +7,8 @@ class Button{
 		this.template = null;
 		this.button = null;
 		this.order = new VersionParser(order);
+		this.url = url;
+		this.urlPath = null;
 	}
 
 	enable(){
