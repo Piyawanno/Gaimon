@@ -2,21 +2,26 @@ const MonitorPage = function(main, parent) {
 	AbstractPage.call(this, main, parent);
 	let object = this;
 	this.title = "Monitor";
-	this.model = "MonitorCategory";
 	this.pageNumber = 1;
 	this.limit = 10;
 
 	object.role = ['Monitor'];
 
 	this.prepare = async function() {
+		
 	}
 
 	this.render = async function() {
+		/// https://github.com/janl/mustache.js
 		console.log("Monitor");
-		let template = await TEMPLATE.get('erpbase.AddressRecord', true);
-		console.log(template);
-		let dom = new DOMObject(template, {});
-		this.main.home.dom.container.append(dom);
+		let template = await TEMPLATE.get('MonitorPage', false);
+		let container = new DOMObject(template, {'label': 'Hello'});
+		let data = await GET('country/get/all');
+		console.log(data);
+		container.dom.button.onclick = function(){
+			container.dom.header.style.color = 'red';
+		}
+		this.main.home.dom.container.append(container);
 	}
 
 	this.renderState = async function(state) {
@@ -25,6 +30,5 @@ const MonitorPage = function(main, parent) {
 
 	this.renderView =  async function(modelName, config, viewType='Form') {
 		if (config == undefined) config = {};
-		
 	}
 }
