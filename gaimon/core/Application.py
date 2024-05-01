@@ -10,13 +10,14 @@ from gaimon.core.ValidationDecorator import ValidationDecorator
 from gaimon.core.ReplaceDecorator import ReplaceRule
 from gaimon.core.Route import Route
 from gaimon.util.PathUtil import conform
+from gaimon.util.ProcessUtil import getMemory
 from xerial.DBSessionPool import DBSessionPool
 from xerial.Record import Record
 
 from multiprocessing import cpu_count
 from typing import Callable, List, Any, Dict
 
-import importlib, traceback, os, logging, sys, time
+import importlib, traceback, os, logging, sys, time, psutil
 
 __MAX_POOL_SIZE__ = 2 * cpu_count()
 
@@ -231,6 +232,7 @@ class Application:
 			if name[-10:] != 'Controller': continue
 			try:
 				module = importlib.import_module(f"{modulePath}.{name}")
+				# print(f"{modulePath}.{name} {round(getMemory(), 2)}")
 				controllerClass = getattr(module, name)
 				controllerClass.extension = modulePath
 				controllerList.append(controllerClass(self))

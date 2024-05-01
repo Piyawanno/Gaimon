@@ -15,6 +15,8 @@ class MonitorController:
 	
 	@GET('/monitor/get', role=['user'])
 	async def getMonitor(self, request: Request):
-		
+		config = {}
+		client = AsyncServiceClient(config)
+		# Fetch monitor data here.
 		result = {}
 		return Success(result)

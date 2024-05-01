@@ -31,14 +31,16 @@ class Authentication:
 			roles:List[str] = result.get(model.gid, [])
 			roles.append(model.toString())
 			result[model.gid] = roles
-		await self.redis.hset(self.GROUP_ROLE_KEY, entity, json.dumps(result))
+		redis = self.application.getRedis()
+		await redis.hset(self.GROUP_ROLE_KEY, entity, json.dumps(result))
 
 	async def getUserByID(
 		self,
 		userID: int,
 	):
 		if userID < 0: return None
-		raw = await self.redis.hget(self.AUTHENTICATION_REDIS_KEY, userID)
+		redis = self.application.getRedis()
+		raw = await redis.hget(self.AUTHENTICATION_REDIS_KEY, userID)
 		return json.loads(raw)
 
 	async def checkUserInformation(
@@ -49,7 +51,8 @@ class Authentication:
 		entity: str = 'main'
 	):
 		if userID < 0: return None
-		raw = await self.redis.hget(self.AUTHENTICATION_REDIS_KEY, userID)
+		redis = self.application.getRedis()
+		raw = await redis.hget(self.AUTHENTICATION_REDIS_KEY, userID)
 		if not raw is None and not isForce: return json.loads(raw)
 		user:User = await self.userHandler.getUserByID(session, userID, entity)
 		if user is None: return None
@@ -62,12 +65,13 @@ class Authentication:
 		isForce: bool = False,
 		entity: str = 'main'
 	):
-		raw = await self.redis.hget(self.AUTHENTICATION_REDIS_KEY, user.id)
+		redis = self.application.getRedis()
+		raw = await redis.hget(self.AUTHENTICATION_REDIS_KEY, user.id)
 		if not raw is None and not isForce: return json.loads(raw)
 		result = user.toDict()
 		result['uid'] = user.id
 		result['role'] = await self.processRole(session, user, entity)
-		await self.redis.hset(self.AUTHENTICATION_REDIS_KEY, user.id, json.dumps(result))
+		await redis.hset(self.AUTHENTICATION_REDIS_KEY, user.id, json.dumps(result))
 		return result
 	
 	async def processRole(self, session:AsyncDBSessionBase, user: User, entity: str, isForce:bool=False):
@@ -77,18 +81,20 @@ class Authentication:
 		groupID = -1
 		if not user.gid is None: groupID = int(user.gid)
 		role = ["user"]
-		result = await self.redis.hget(self.GROUP_ROLE_KEY, entity)
+		redis = self.application.getRedis()
+		result = await redis.hget(self.GROUP_ROLE_KEY, entity)
 		if result is None: 
 			await self.triggerRole(session, entity)
-			result = await self.redis.hget(self.GROUP_ROLE_KEY, entity)
+			result = await redis.hget(self.GROUP_ROLE_KEY, entity)
 		if result is None: return role
 		result:Dict[str, List[str]] = json.loads(result)
 		return result.get(str(groupID), role)
 
 	async def setUserInformationByToken(self, token, data, expireTime=None):
-		await self.redis.hset(self.TOKEN_REDIS_KEY, token, json.dumps(data))
+		redis = self.application.getRedis()
+		await redis.hset(self.TOKEN_REDIS_KEY, token, json.dumps(data))
 		if not expireTime is None:
-			await self.redis.hset(self.TOKEN_TIME_REDIS_KEY, token, expireTime)
+			await redis.hset(self.TOKEN_TIME_REDIS_KEY, token, expireTime)
 
 	async def refreshToken(self, session: AsyncDBSessionBase, token: dict):
 		isExpire = await self.isExpire(token)
@@ -105,17 +111,19 @@ class Authentication:
 		if token is None: return None
 		isExpire = await self.isExpire(token)
 		if isExpire: return None
-		raw = await self.redis.hget(self.TOKEN_REDIS_KEY, token)
+		redis = self.application.getRedis()
+		raw = await redis.hget(self.TOKEN_REDIS_KEY, token)
 		if not raw is None: return json.loads(raw)
 		return None
 
 	async def isExpire(self, token):
-		expireTime = await self.redis.hget(self.TOKEN_TIME_REDIS_KEY, token)
+		redis = self.application.getRedis()
+		expireTime = await redis.hget(self.TOKEN_TIME_REDIS_KEY, token)
 		if expireTime is not None:
 			expireTime = float(expireTime)
 			if expireTime < datetime.timestamp(datetime.now(timezone.utc)):
-				await self.redis.hdel(self.TOKEN_REDIS_KEY, token)
-				await self.redis.hdel(self.TOKEN_TIME_REDIS_KEY, token)
+				await redis.hdel(self.TOKEN_REDIS_KEY, token)
+				await redis.hdel(self.TOKEN_TIME_REDIS_KEY, token)
 				return True
 			else:
 				return False
@@ -124,8 +132,9 @@ class Authentication:
 
 	async def deleteSession(self, token):
 		if token is None: return
-		await self.redis.hdel(self.TOKEN_REDIS_KEY, token)
-		await self.redis.hdel(self.TOKEN_TIME_REDIS_KEY, token)
+		redis = self.application.getRedis()
+		await redis.hdel(self.TOKEN_REDIS_KEY, token)
+		await redis.hdel(self.TOKEN_TIME_REDIS_KEY, token)
 
 	async def saveSessionByUser(self, session: AsyncDBSessionBase, user: User, entity:str):
 		now = datetime.now(timezone.utc)
@@ -169,7 +178,8 @@ class Authentication:
 			payload = jwt.decode(token, self.SIGNING_KEY, algorithms=["HS512", "HS256"])
 			return payload
 		except jwt.exceptions.ExpiredSignatureError:
-			await self.redis.hdel(self.TOKEN_REDIS_KEY, token)
+			redis = self.application.getRedis()
+			await redis.hdel(self.TOKEN_REDIS_KEY, token)
 			return None
 		except jwt.exceptions.InvalidTokenError:
 			return None
@@ -178,7 +188,8 @@ class Authentication:
 	async def getRoleByGroupID(self, groupID:int, entity:str):
 		if groupID is None or groupID < 0: return []
 		role = ["user"]
-		result = await self.redis.hget(self.GROUP_ROLE_KEY, entity)
+		redis = self.application.getRedis()
+		result = await redis.hget(self.GROUP_ROLE_KEY, entity)
 		if result is None: return role
 		result:Dict[str, List[str]] = json.loads(result)
 		return result.get(str(groupID), role)

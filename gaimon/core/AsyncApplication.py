@@ -231,8 +231,8 @@ class AsyncApplication(Application):
 		if 'db' in redisConfig:
 			redisURL = f'{redisURL}/{redisConfig["db"]}'
 		
-		isRedisPool = False
-		if isRedisPool:
+		self.isRedisPool = False
+		if self.isRedisPool:
 			self.redisPool = redis.ConnectionPool.from_url(redisURL, decode_responses=True)
 			self.redis = redis.Redis(connection_pool=self.redisPool, decode_responses=True)
 			async def getConnection():
@@ -254,6 +254,12 @@ class AsyncApplication(Application):
 		logging.info(">>> Connecting Database")
 		await self.sessionPool.createConnection()
 		self.session = await self.sessionPool.getSession()
+	
+	def getRedis(self):
+		if self.isRedisPool:
+			return redis.Redis(connection_pool=self.redisPool, decode_responses=True)
+		else:
+			return self.redis
 
 	async def reconnect(self, loop):
 		await self.connect(loop)

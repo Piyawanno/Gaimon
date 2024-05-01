@@ -110,4 +110,6 @@ def setSystemPath(namespace):
 	filtered = [i for i in sys.path if i not in sitePackages]
 	filtered.append(path)
 	sys.path = filtered
-	
+
+def getMemory():
+	return psutil.Process().memory_info().rss/1024/1024
