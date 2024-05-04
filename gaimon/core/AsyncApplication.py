@@ -18,11 +18,13 @@ from gaimon.core.WebSocketHandler import WebSocketHandler
 from gaimon.core.StaticFileHandler import StaticFileHandler
 from gaimon.core.CommonDecorator import CommonDecoratorRule
 from gaimon.core.ReplaceDecorator import ReplaceRule
-from gaimon.util.PathUtil import copy
-from gaimon.service.monitor.MonitorClient import MonitorClient
 from gaimon.core.UserHandler import UserHandler
-from xerial.AsyncDBSessionBase import AsyncDBSessionBase
+from gaimon.core.ManagedServer import ManagedServer
+from gaimon.util.PathUtil import copy
+from gaimon.util.ProcessUtil import getMemory
+from gaimon.service.monitor.MonitorClient import MonitorClient
 
+from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from xerial.Record import Record
 
@@ -32,7 +34,7 @@ from sanic import Sanic
 from sanic_session import Session, RedisSessionInterface
 from packaging.version import Version
 
-import os, sys, logging, json, psutil, asyncio, importlib, traceback
+import os, sys, logging, json, psutil, asyncio, importlib, traceback, time
 import redis.asyncio as redis
 
 
@@ -66,9 +68,9 @@ class AsyncApplication(Application):
 		logConfig = self.setLog()
 		self.sanicName = self.config.get("sanicName", self.__class__.__name__)
 		if logConfig is not None:
-			self.application = Sanic(self.sanicName, log_config=logConfig)
+			self.application = ManagedServer(self.sanicName, log_config=logConfig)
 		else:
-			self.application = Sanic(self.sanicName)
+			self.application = ManagedServer(self.sanicName)
 		self.isLocalConfig = True
 		self.isEnableShare = isEnableShare
 		if isEnableShare:
@@ -156,7 +158,7 @@ class AsyncApplication(Application):
 			except:
 				print(traceback.format_exc())
 
-	def startMainLoop(self, loop):
+	def startMainLoop(self, loop: asyncio.BaseEventLoop):
 		self.loop = loop
 
 	def startWorkerLoop(self, loop: asyncio.BaseEventLoop):
@@ -231,7 +233,7 @@ class AsyncApplication(Application):
 		if 'db' in redisConfig:
 			redisURL = f'{redisURL}/{redisConfig["db"]}'
 		
-		self.isRedisPool = False
+		self.isRedisPool = True
 		if self.isRedisPool:
 			self.redisPool = redis.ConnectionPool.from_url(redisURL, decode_responses=True)
 			self.redis = redis.Redis(connection_pool=self.redisPool, decode_responses=True)
@@ -539,23 +541,23 @@ class AsyncApplication(Application):
 		self.application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
 
 		@self.application.main_process_start
-		async def prepare(application, loop):
+		async def prepare(application: Sanic, loop):
 			await self.load(loop)
 			await self.setSequence()
 			self.startMainLoop(loop)
 			await self.close()
 
 		@self.application.after_server_start
-		async def reconnect(application, loop):
+		async def reconnect(application: Sanic, loop):
 			await self.reconnect(loop)
 			await self.getSequence()
 			logging.info(
-				f"Process {os.getpid()} ID={self.applicationID} memory : {int(psutil.Process().memory_info().rss / (1024 * 1024))}MB"
+				f"Process {os.getpid()} ID={self.applicationID} memory : {round(getMemory(), 2)}MB"
 			)
 			self.startWorkerLoop(loop)
 
 		@self.application.after_server_stop
-		async def stop(application, loop):
+		async def stop(application: Sanic, loop):
 			self.websocket.stopTask()
 			await self.close()
 

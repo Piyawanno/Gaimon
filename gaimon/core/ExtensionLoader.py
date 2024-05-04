@@ -156,7 +156,7 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		path = module.__path__[0]
 		app = self.application
 		if os.path.isdir(f"{path}/controller"):
-			logging.info(f'>>> Loading controller of {extensionPath}')
+			start = time.time()
 			controller = importlib.import_module(f'{extensionPath}.controller')
 			directory = controller.__path__[0]
 			modulePath = f"{extensionPath}.controller"
@@ -169,7 +169,8 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 			app.browsePostProcessor(directory, modulePath)
 			if result is None: self.application.controller.extend(controllerList)
 			else: result.extend(controllerList)
-			logging.info(f'>>> Loaded [{round(getMemory(), 2)}MB]')
+			elapsed = round(time.time() - start, 2)
+			logging.info(f'>>> Controller of {extensionPath} Loaded [{round(getMemory(), 2)}MB in {elapsed}s]')
 		self.loadedController.add(extensionPath)
 
 	def loadWebSocketHandler(self, extensionPath: str):
