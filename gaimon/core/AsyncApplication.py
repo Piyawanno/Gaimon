@@ -273,6 +273,7 @@ class AsyncApplication(Application):
 		self.sessionPool.model = self.model.copy()
 		await self.checkModelModification(self.session)
 		await self.session.createTable()
+		await self.session.injectModel()
 		dynamicModels = await self.dynamicHandler.checkModel(True, self.session, "main")
 		[self.session.appendModel(i) for i in dynamicModels]
 		self.sessionPool.model = self.session.model.copy()
