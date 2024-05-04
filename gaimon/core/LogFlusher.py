@@ -5,7 +5,6 @@ import asyncio, time, logging, os, json, traceback, io, zlib, psutil, copy
 
 LOG_LABEL = {10: "DEBUG", 20: "INFO", 30: "WARNING", 40: "ERROR", }
 
-
 class LogFlusher:
 	def __init__(self, config: dict, application):
 		from gaimon.core.AsyncApplication import AsyncApplication

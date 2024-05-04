@@ -104,6 +104,23 @@ class UtilityController (InputProcessor) :
 		result = await self.process(self.session, modelClass, model)
 		return RESTResponse(result, ensure_ascii=False)
 	
+	@GET("/default/<model>", role=['guest'])
+	async def getDefaultData(self, request, model: str):
+		modelClass = self.session.model.get(model, None)
+		if modelClass is None:
+			modelClass = await self.application.dynamicHandler.getModel(model, self.session, self.entity)
+			if modelClass is None:
+				return RESTResponse({
+					'isSuccess': False,
+					'message': f'Model {model} cannot be found.'
+				})
+		defaultData = {}
+		for name, column in modelClass.meta:
+			data = column.default
+			if callable(data): defaultData[name] = column.toDict(data())
+			else: defaultData[name] = column.toDict(data)
+		return Success(defaultData)
+
 	@GET("/compress/css/<pageID>/<sequence>", role=["guest"], hasDBSession=False)
 	async def getCSSCompress(self, request, pageID, sequence):
 		sequence = int(sequence)
@@ -193,7 +210,6 @@ class UtilityController (InputProcessor) :
 
 	@GET("/mustache/get/<branch>", role=['guest'], hasDBSession=False)
 	async def getMustache(self, request, branch):
-		print(list(self.theme.clientTemplate.keys()))
 		template = self.theme.clientTemplate.get(branch, None)
 		if template is not None:
 			return RESTResponse({'isSuccess': True, 'results': template}, ensure_ascii=False)

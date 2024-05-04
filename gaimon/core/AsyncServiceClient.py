@@ -1,7 +1,7 @@
 from gaimon.core.RESTResponse import RESTResponse
 from gaimon.core.ServiceClient import ServiceClient
 
-import aiohttp, time
+import time
 
 
 class AsyncServiceClient(ServiceClient):
@@ -16,6 +16,7 @@ class AsyncServiceClient(ServiceClient):
 		return result
 
 	async def request(self, url: str, headers: dict, data):
+		import aiohttp
 		self.timeOut = self.config.get('timeOut', 60)
 		timeout = aiohttp.ClientTimeout(total=self.timeOut)
 		async with aiohttp.ClientSession(timeout=timeout) as session:

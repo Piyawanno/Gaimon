@@ -4,11 +4,12 @@ from gaimon.core.Extension import Extension
 from gaimon.core.ExtensionTree import ExtensionTree
 from gaimon.core.CommonExtensionInfoHandler import CommonExtensionInfoHandler
 from gaimon.util.PathUtil import conform
+from gaimon.util.ProcessUtil import getMemory
 
 from sanic import Request
 from typing import Dict, List, Set
 
-import importlib, os, json, logging, time
+import importlib, os, json, logging, time, psutil
 
 class ExtensionLoader (CommonExtensionInfoHandler) :
 	def __init__(self, application):
@@ -155,7 +156,7 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		path = module.__path__[0]
 		app = self.application
 		if os.path.isdir(f"{path}/controller"):
-			logging.info(f'>>> Load controller of {extensionPath}')
+			logging.info(f'>>> Loading controller of {extensionPath}')
 			controller = importlib.import_module(f'{extensionPath}.controller')
 			directory = controller.__path__[0]
 			modulePath = f"{extensionPath}.controller"
@@ -168,6 +169,7 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 			app.browsePostProcessor(directory, modulePath)
 			if result is None: self.application.controller.extend(controllerList)
 			else: result.extend(controllerList)
+			logging.info(f'>>> Loaded [{round(getMemory(), 2)}MB]')
 		self.loadedController.add(extensionPath)
 
 	def loadWebSocketHandler(self, extensionPath: str):

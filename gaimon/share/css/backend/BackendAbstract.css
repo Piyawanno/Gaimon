@@ -20,7 +20,7 @@ input[type=color]{
 
 .abstract_container{
 	width: 100%;
-	height: calc(100vh - 45px);
+	height: calc(100vh - 85px);
 	padding: 10px;
 	display: flex;
 	flex-direction: column;

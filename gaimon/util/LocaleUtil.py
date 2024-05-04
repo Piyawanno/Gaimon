@@ -4,6 +4,25 @@ import os, json, importlib
 LOCALE = {}
 EXTENSION_LOCALE = {}
 
+THAI_DIGIT = [
+	('0', '๐'),
+	('1', '๑'),
+	('2', '๒'),
+	('3', '๓'),
+	('4', '๔'),
+	('5', '๕'),
+	('6', '๖'),
+	('7', '๗'),
+	('8', '๘'),
+	('9', '๙'),
+]
+
+def toThaiDigit(text: str):
+	processed = text
+	for k, v in THAI_DIGIT:
+		processed = processed.replace(k, v)
+	return processed
+
 async def readLocale(language: str, extensionList:List = []):
 	path = f'{importlib.import_module("gaimon").__path__[-1]}/locale/'
 	global LOCALE

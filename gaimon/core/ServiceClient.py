@@ -1,6 +1,6 @@
 from gaimon.core.ServicePermissionChecker import ServicePermissionChecker, SALT_LENGTH
 
-import json, requests, time, secrets, struct
+import json, time, secrets, struct
 
 
 class ServiceClient:
@@ -23,6 +23,7 @@ class ServiceClient:
 		self.lastCheck = -1.0
 
 	def call(self, route, parameter=None, payload=None, headers=None, entity:str='main'):
+		import requests
 		headers = {} if headers is None else headers
 		if self.isCheckPermission:
 			body = json.dumps(self.getPermissionPayLoad(parameter))

@@ -230,25 +230,36 @@ class AsyncApplication(Application):
 		redisURL = f"redis://{redisConfig['host']}:{redisConfig['port']}"
 		if 'db' in redisConfig:
 			redisURL = f'{redisURL}/{redisConfig["db"]}'
-		self.redisPool = redis.ConnectionPool.from_url(redisURL, decode_responses=True)
-		self.redis = redis.Redis(connection_pool=self.redisPool, decode_responses=True)
-		async def getConnection():
-			return redis.Redis(connection_pool=self.redisPool)
-		self.httpSession.init_app(
-			self.application,
-			interface=RedisSessionInterface(getConnection)
-		)
-		# from sanic_session import AIORedisSessionInterface
-		# import aioredis
-		# self.redis = aioredis.from_url(redisURL, decode_responses=True)
-		# self.httpSession.init_app(
-		# 	self.application,
-		# 	interface=AIORedisSessionInterface(self.redis)
-		# )
+		
+		self.isRedisPool = False
+		if self.isRedisPool:
+			self.redisPool = redis.ConnectionPool.from_url(redisURL, decode_responses=True)
+			self.redis = redis.Redis(connection_pool=self.redisPool, decode_responses=True)
+			async def getConnection():
+				return redis.Redis(connection_pool=self.redisPool)
+			self.httpSession.init_app(
+				self.application,
+				interface=RedisSessionInterface(getConnection)
+			)
+		else:
+			from sanic_session import AIORedisSessionInterface
+			import aioredis
+			self.redis = aioredis.from_url(redisURL, decode_responses=True)
+			self.httpSession.init_app(
+				self.application,
+				interface=AIORedisSessionInterface(self.redis)
+			)
+		
 		self.sessionPool = AsyncDBSessionPool(self.config["DB"])
 		logging.info(">>> Connecting Database")
 		await self.sessionPool.createConnection()
 		self.session = await self.sessionPool.getSession()
+	
+	def getRedis(self):
+		if self.isRedisPool:
+			return redis.Redis(connection_pool=self.redisPool, decode_responses=True)
+		else:
+			return self.redis
 
 	async def reconnect(self, loop):
 		await self.connect(loop)
