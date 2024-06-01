@@ -73,6 +73,9 @@ class GaimonSetup :
 			'gaimon-namespace-init',
 			'gaimon-namespace-package',
 			'gaimon-code-format',
+			'gaimon-checkout',
+			'gaimon-model-freeze',
+			'gaimon-backup-full'
 		]
 
 		self.extensionScript = [
@@ -110,6 +113,7 @@ class GaimonSetup :
 			(f'BusinessLog.example.json', 'BusinessLog.json'),
 			(f'ServiceStarter.example.json', 'ServiceStarter.json'),
 			(f'ServiceMonitor.example.json', 'ServiceMonitor.json'),
+			# (f'GaimonCheckout.example.json', 'GaimonCheckout.json'),
 		]
 	
 	def getSitePackagePath(self) :
@@ -310,16 +314,13 @@ class GaimonSetup :
 				print(command)
 				os.system(command)
 	
-def run():
+if __name__ == '__main__' :
 	from argparse import RawTextHelpFormatter
 	import argparse
 	parser = argparse.ArgumentParser(description=__help__, formatter_class=RawTextHelpFormatter)
 	parser.add_argument("operation", help="Operation of setup", choices=['setup', 'install', 'link', 'bdist_wheel'])
 	parser.add_argument("-p", "--platform", help="Platform for installation of base environment.", choices=['oracle', 'centos', 'debian10', 'ubuntu20.04'])
 	option = parser.parse_args(sys.argv[1:])
-	if option.platform is None: option.platform = 'ubuntu20.04'
-	if option.operation is None: option.operation = 'build'
+	if option.platform is None : option.platform = 'ubuntu20.04'
 	setup = GaimonSetup()
 	setup.operate(option.operation, option.platform)
-
-if __name__ == '__main__': run()
