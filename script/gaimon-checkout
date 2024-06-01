@@ -1,0 +1,67 @@
+#!/usr/bin/python3
+
+import argparse
+import sys
+
+from gaimon.GaimonApplication import readGaimonConfig
+from gaimon.core.checkout.context.AnalyzeContext import AnalyzeContext
+from gaimon.core.checkout.context.ListContext import ListContext
+
+__parser__ = argparse.ArgumentParser(
+    description="Managing database schema and data rollback for Gaimon."
+)
+
+__parser__.add_argument(
+    "-l",
+    "--list",
+    help="List all the modifications since last freeze.",
+    choices=['verbose', 'key']
+)
+
+__parser__.add_argument(
+    "-a",
+    "--analyze",
+    help="Analyze the modifications since last freeze and write the report to the file.",
+    action="store_true"
+)
+
+__option__ = __parser__.parse_args()
+__namespace__ = ''
+__config__ = readGaimonConfig(__namespace__)
+
+with open('/var/gaimon/Freeze.json') as fl:
+    freeze = eval(fl.read())
+
+print(f"[gaimon-checkout] module and extension: ")
+for module, extensions in freeze.items():
+    print(f"{module}:")
+    for extension in extensions:
+        print(f"- {extension}")
+
+moduleExtension = input("[gaimon-checkout] Select the module and extension (module.extension): ")
+module, extension = moduleExtension.split('.')
+if module not in freeze or extension not in freeze[module]:
+    print("[gaimon-checkout] Invalid module or extension.")
+    sys.exit(1)
+
+print(f"[gaimon-checkout] Selected module: {module} extension: {extension}")
+
+if __option__.list:
+    mode = __option__.list
+    context = ListContext(moduleExtension)
+    allModifications = context.getModificationReport(mode)
+    print(context.generateOutput(allModifications))
+
+elif __option__.analyze:
+    context = AnalyzeContext(moduleExtension)
+    analyzed: dict[str, str] = context.getAnalyzedReport()
+
+    for modelName, report in analyzed.items():
+        context.freeze.appendAnalysis(modelName, report)
+
+    print("[gaimon-checkout] Analyzed reports have been written to the file.")
+
+else:
+    __parser__.print_help()
+
+sys.exit()
