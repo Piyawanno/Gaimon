@@ -1,0 +1,111 @@
+#!/usr/bin/python3
+
+import argparse
+import json
+import os
+import shutil
+from datetime import datetime
+
+from gaimon.util.PathUtil import getModel
+from xerial.Record import Record
+
+SUGGESTION_CONTENT = """
+\n
+\"\"\"
+Please copy class attributes into the destination file and modify the class name as needed.
+
+NOTE: add/remove import statement as needed
+NOTE: run `gaimon-checkout --analyze` to get the CHANGELOG (will append the result to the end of this file)
+
+IMPORTANT 1: modify the following class to skip effective modification(s)
+IMPORTANT 2: change string length to maximum value if the length was changed from the destination class
+\"\"\"
+"""
+
+
+def parse_version_from_model(module_name: str, file_path: str) -> str:
+    model: type = getModel(module_name, file_path)
+    instance: Record = model()
+    instance.modify()
+    latest_modification = instance.getLatestModification()
+    if latest_modification is None:
+        return ""
+    return latest_modification.version.__str__()
+
+
+def copy_models_with_timestamp(extension: str):  # module.extension
+    print(f"Copying models from {extension}")
+    split = extension.split(".")
+    module_name, extension_name = split[0], split[1]
+
+    extension_folder = extension.replace(".", "/")
+    current_file = os.path.abspath(__file__)
+    destination_folder = os.path.join(
+        os.path.dirname(os.path.dirname(current_file)),
+        extension_folder,
+        "model",
+        "freeze-model"
+    )
+    print(f"Destination folder: {destination_folder}")
+    if not os.path.exists(destination_folder):
+        print(f"Creating destination folder {destination_folder}")
+        os.makedirs(destination_folder)
+
+    version = datetime.now().strftime("%Y/%m/%d/%H:%M:%S")
+    version_folder = os.path.join(destination_folder, version)
+    os.makedirs(version_folder)
+
+    freeze_path = "/var/gaimon/Freeze.json"
+    if not os.path.exists(freeze_path):
+        with open(freeze_path, "w") as json_file:
+            json.dump({}, json_file, indent=1)
+
+    with open(freeze_path) as json_file:
+        freeze = json.load(json_file)
+        if module_name not in freeze:
+            freeze[module_name] = {}
+        if extension_name not in freeze[module_name]:
+            freeze[module_name][extension_name] = {}
+
+    for filename in os.listdir(os.path.join(extension_folder, "model")):
+        file_path = os.path.join(extension_folder, "model", filename)
+        if os.path.isdir(file_path) or os.stat(file_path).st_size == 0:
+            continue
+        if not filename.endswith(".py") or filename == "__init__.py":
+            continue
+        model_name = filename.replace(".py", "")
+        new_filename = filename.replace(".py", ".txt")
+        destination_file_path = os.path.join(version_folder, new_filename)
+        shutil.copy2(file_path, destination_file_path)
+        filter_lines(destination_file_path)
+        freeze[module_name][extension_name][model_name] = {
+            "version": parse_version_from_model(model_name, file_path),
+            "path": destination_file_path,
+        }
+        with open(destination_file_path, 'a') as file:
+            file.write(SUGGESTION_CONTENT)
+
+    with open(freeze_path, "w") as json_file:
+        json.dump(freeze, json_file, indent=1)
+
+def filter_lines(file_path: str) -> None:
+    with open(file_path, "r") as file:
+        lines = file.readlines()
+        filtered_lines = []
+        filter_out = False
+        for line in lines:
+            if "#pragma filter-from-freeze start" in line:
+                filter_out = True
+            if "#pragma filter-to-freeze end" in line:
+                filter_out = False
+            if not filter_out:
+                filtered_lines.append(line)
+    with open(file_path, "w") as file:
+        file.writelines(filtered_lines)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Capture current version and structure of models')
+    parser.add_argument('extension', type=str, help='extension to capture')
+    namespace = parser.parse_args()
+    copy_models_with_timestamp(extension=namespace.extension)

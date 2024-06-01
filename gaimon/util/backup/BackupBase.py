@@ -1,11 +1,7 @@
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
-from xerial.Vendor import Vendor
 
 import gaimon.model as GaimonModel
 import logging, importlib, os
-
-DUMP_PATH = "{resourcePath}/backup/LastDump-{entity}.json"
-
 
 class BackupBase:
 	async def connect(self, entity: str):
@@ -13,8 +9,8 @@ class BackupBase:
 		logging.info(">>> Connecting Database")
 		await self.sessionPool.createConnection()
 		self.session = await self.sessionPool.getSession()
-		if len(entity) and self.config['vendor'] == Vendor.POSTGRESQL:
-			self.session.setSchema(entity)
+		# if len(entity) and self.config['vendor'] == Vendor.POSTGRESQL:
+		# 	self.session.setSchema(entity)
 		await AsyncDBSessionPool.browseModel(self.session, GaimonModel)
 		for extensionPath in self.config['extension']:
 			await self.loadModel(extensionPath)

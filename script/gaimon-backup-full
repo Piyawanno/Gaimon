@@ -1,0 +1,57 @@
+#!/usr/bin/python3
+
+from gaimon.util.backup.FullBackupManager import FullBackupManager
+from gaimon.util.backup.FullBackupStorage import FullBackupStorage
+from gaimon.util.ProcessUtil import readConfig
+
+import sys, logging, asyncio
+
+__config__ = readConfig(
+    ['Gaimon.json'],
+    {
+        'DB' : 'Database.json'
+    }
+)
+
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(message)s")
+__storage__ = FullBackupStorage("/mnt/c/Users/sitti/Documents/work/senior-project/Gaimon/gaimonqa/backupfull")
+__fullBackupManager__ = FullBackupManager(__config__, __storage__)
+
+print("[gaimon-full-backup] Processing")
+user = input("Select operations \n"
+      "\t(1) Full Backup\n"
+      "\t(2) Restore\n"
+      "\t(3) List\n"
+      "\t(4) Delete\n"
+      "\t(5) Exit\n"
+      "Enter the number of the operation: ")
+
+if user == '1':
+    print("[gaimon-full-backup] Full Backup")
+    asyncio.run(__fullBackupManager__.backup())
+elif user == '2':
+    print("[gaimon-full-backup] Restore")
+    print(
+    "By performing restore operation, you will\n"
+    "\t(1) fetch the data from your specified version,\n"
+    "\t(2) remove all the data in the database,\n"
+    "\t(3) replace the data with the fetched data,\n"
+    )
+    isProceed = input("[gaimon-backup-full-restore] Do you want to proceed? (y/N): ").lower().strip()
+    if isProceed != 'y':
+        sys.exit(0)
+    targetVersion = input("Enter the version to restore: ")
+    asyncio.run(__fullBackupManager__.restore(targetVersion))
+elif user == '3':
+    print("[gaimon-full-backup] List")
+    __fullBackupManager__.list()
+elif user == '4':
+    print("[gaimon-full-backup] Delete")
+    targetVersion = input("Enter the version to delete: ")
+    __fullBackupManager__.delete(targetVersion)
+elif user == '5':
+    print("[gaimon-full-backup] Exit")
+    sys.exit(0)
+else:
+    print("Invalid operation.")
+    sys.exit(1)
