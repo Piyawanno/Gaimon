@@ -56,6 +56,8 @@ class InputConfigCreator{
 		isCopyable=false,
 		inputPerLine=null,
 		typeName=null,
+		foreignColumn=null,
+		foreignModelName=null
 	) {
 		let data = {};
 		data.label = label;
@@ -84,6 +86,8 @@ class InputConfigCreator{
 		data.isCopyable = isCopyable;
 		data.inputPerLine = inputPerLine;
 		data.typeName = typeName;
+		data.foreignColumn = foreignColumn;
+		data.foreignModelName = foreignModelName;
 		return data;
 	}
 
@@ -148,7 +152,9 @@ class InputConfigCreator{
 		isSpreadSheet=true,
 		isCopyable=false,
 		inputPerLine=null,
-		typeName=null
+		typeName=null,
+		foreignColumn=null,
+		foreignModelName=null
 	}) {
 		let data = {};
 		data.label = label;
@@ -177,6 +183,8 @@ class InputConfigCreator{
 		data.isCopyable = isCopyable;
 		data.inputPerLine = inputPerLine;
 		data.typeName = typeName;
+		data.foreignColumn = foreignColumn;
+		data.foreignModelName = foreignModelName;
 		return data;
 	}
 }

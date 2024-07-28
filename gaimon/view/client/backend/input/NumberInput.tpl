@@ -14,7 +14,8 @@
 			{{/isFloatingPoint}}}
 			{{#isRequired}}required{{/isRequired}}
 			{{^isEditable}}disabled{{/isEditable}}
-			{{#config.isView}}readonly{{/config.isView}}>
+			{{#config.isView}}readonly{{/config.isView}}
+			placeholder="{{placeHolder}}">
 	</div>
 	<div class="error_message text-align-center hidden" rel="{{{columnName}}}_error"></div>
 </div>

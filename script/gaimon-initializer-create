@@ -1,6 +1,4 @@
 #!/usr/bin/python3
 
 from gaimon.util.creator.InitializerCreator import InitializerCreator
-
-creator = InitializerCreator()
-creator.start()
+if __name__ == '__main__': InitializerCreator().start()

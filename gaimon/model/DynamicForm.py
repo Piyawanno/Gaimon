@@ -1,12 +1,17 @@
-import json
-from typing import Dict, List
 from xerial.Record import Record
+from xerial.DBSessionBase import REGISTER
 from xerial.IntegerColumn import IntegerColumn
 from xerial.StringColumn import StringColumn
 from xerial.JSONColumn import JSONColumn
 from packaging.version import Version
 
+from typing import Dict, List
 
+import json
+
+
+
+@REGISTER
 class DynamicForm(Record):
 	modelName = StringColumn()
 	formType = IntegerColumn(default=0)

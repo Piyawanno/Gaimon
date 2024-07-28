@@ -1,12 +1,12 @@
 from gaimon.core.AsyncApplication import AsyncApplication
 from gaimon.core.LogFlusher import LogFlusher
 from gaimon.util.ProcessUtil import readConfig
+from sanic import Sanic
 
 import os
 
 class GaimonApplication (AsyncApplication) :
-	def __init__(self, config:dict, namespace:str) :
-		self.routeExtensionMap = {}
+	def __init__(self, config: dict, namespace: str) :
 		AsyncApplication.__init__(self, config, namespace, False)
 		self.rootPath = os.path.dirname(__file__)
 		self.config['extension'].insert(0, 'gaimon')

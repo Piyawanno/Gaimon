@@ -5,14 +5,22 @@ class FormView{
 		this.template = null;
 		this.form = null;
 		this.button = [];
-		this.setSubmitButton();
+		this.setSubmitButton();		
 		this.tableForm = [];
 		this.eventMapper = {};
 		this.currentInputMap = {};
+		this.operation = [];
+		this.setAdvanceFormOperation();
+		this.isAdvanceForm = false;
 	}
 
 	appendTableForm(tableForm){
 		this.tableForm.push(tableForm);
+	}
+
+	appendOperation(operation){
+		this.operation.push(operation);
+		this.operation.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
 
 	setSubmitButton(){
@@ -30,6 +38,22 @@ class FormView{
 			["cancel_button"],	
 		);
 		this.button.push(this.cancelButton);
+	}
+
+	setAdvanceFormOperation(){
+		const object = this;
+		if(this.advanceFormOperation == undefined){
+			this.advanceFormOperation = new FormOperation(
+				'Advance Form', null, true, '0.1',
+				async function(event, record){
+					object.isAdvanceForm = this.operation.dom.isEnable.checked;
+					object.render(object.page.title);
+				},
+				async (id) => {return}
+			);
+			this.advanceFormOperation.classList = [];
+			this.appendOperation(this.advanceFormOperation);
+		}
 	}
 
 	async renderInsert(title, selectedData=null, handleSubmit){
@@ -56,6 +80,7 @@ class FormView{
 			this.form = new DOMObject(this.template, {title});
 			await this.setInput(this.record);
 			await this.setButton();
+			await this.setOperation(this.record);
 			this.page.onCreateForm(this);
 			await this.renderTableForm();
 			this.setInputEvent();
@@ -71,7 +96,7 @@ class FormView{
 
 	onRender(){
 		for(let input of this.meta.inputList){
-			if (!input.config.isForm) continue;
+			if (!input.config.isForm || (!this.isAdvanceForm && input.isAdvanceForm)) continue;
 			input.isPass = true;
 			if (input.input == undefined) continue;
 			input.onRender(input.input);
@@ -83,7 +108,7 @@ class FormView{
 		let excludeList = this.meta.excludeInputViewMap[ViewType.FORM];
 		excludeList = excludeList != undefined ? excludeList : [];
 		for(let input of this.meta.inputList){
-			if (!input.config.isForm) continue;
+			if (!input.config.isForm || (!this.isAdvanceForm && input.isAdvanceForm)) continue;
 			input.formView = this;
 			if (excludeList.indexOf(input.columnName) != -1) continue;
 			if(!input.isGrouped){
@@ -95,10 +120,12 @@ class FormView{
 			}
 		}
 		for(let group of this.meta.groupList){
+			if(Object.keys(group.currentInputMap).length == 0) continue;
 			let isRendered = group.group != undefined;
+			group.isAdvanceForm = this.isAdvanceForm;
 			group.meta = this.meta;
 			let rendered = await group.renderForm(record);
-			this.extendInputMap(group.currentInputMap)
+			this.extendInputMap(group.currentInputMap);
 			if (!isRendered) container.appendChild(rendered.html);
 			container.appendChild(rendered.html);
 		}
@@ -114,7 +141,7 @@ class FormView{
 		this.button.push(button);
 		this.button.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
-
+	
 	async setButton(){
 		for(let i of this.button){
 			let rendered = await i.render();
@@ -122,10 +149,23 @@ class FormView{
 		}
 	}
 
+	async getOperation(){}
+
+	async setOperation(record){
+		await this.getOperation();
+		if(this.operation.length == 0) return;
+		this.menu = new DOMObject(TEMPLATE.DetailMenu);
+		this.form.dom.operationContainer.append(this.menu);
+		for(let i of this.operation){
+			let rendered = await i.render(record);
+			this.menu.dom.operation.appendChild(rendered.html);
+		}		
+	}
+
 	getFormValue(form, data, file, message) {
 		let isPass = true;
 		for(let input of this.meta.inputList){
-			if (!input.config.isForm) continue;
+			if (!input.config.isForm || input.input == undefined) continue;
 			isPass = input.getFormValue(this.form, input.input, data, file, message) && isPass;
 			isPass = input.isPass && isPass;
 		}
@@ -133,6 +173,31 @@ class FormView{
 	}
 
 	async submit(){
+		let isPass = await this.getValue();
+		if(isPass){
+			if (Object.keys(this.record).length > 0) {
+				this.data.id = this.record.id;
+			}
+			if (!this.file.isEmpty()) {
+				if (this.file.get('data') == null) {
+					this.file.append('data', JSON.stringify(this.data));
+				}
+				this.handleSubmit(this.file);
+			} else {
+				this.handleSubmit(this.data);
+			}
+		}else{
+			for(let input of this.meta.inputList){
+				if (!input.config.isForm) continue;
+				if (input.message == undefined) continue;
+				if(input.message.length > 0) this.message.push(input.message);
+			}
+			console.error(this.message);
+			this.page.handleSubmitError(this.message);
+		}
+	}
+
+	async getValue(){
 		this.data = {};
 		this.file = new FormData();
 		let isPass = this.isPass;
@@ -166,27 +231,7 @@ class FormView{
 		}
 		console.log(this.data);
 		console.log(this.file);
-		if(isPass){
-			if (Object.keys(this.record).length > 0) {
-				this.data.id = this.record.id;
-			}
-			if (!this.file.isEmpty()) {
-				if (this.file.get('data') == null) {
-					this.file.append('data', JSON.stringify(this.data));
-				}
-				this.handleSubmit(this.file);
-			} else {
-				this.handleSubmit(this.data);
-			}
-		}else{
-			for(let input of this.meta.inputList){
-				if (!input.config.isForm) continue;
-				if (input.message == undefined) continue;
-				if(input.message.length > 0) this.message.push(input.message);
-			}
-			console.error(this.message);
-			this.page.handleSubmitError(this.message);
-		}
+		return isPass;
 	}
 
 	async close() {

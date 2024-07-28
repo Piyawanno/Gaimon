@@ -34,16 +34,21 @@ class RichTextInput extends TextAreaInput{
 
 	async renderForm(record){
 		if (this.input == undefined) {
-			let input = await super.renderForm(record);
+			this.input = await super.renderForm(record);
 			new Quill(input.dom[this.columnName], this.getConfig());
 		}
 		return this.input;
 	}
 
 	async renderDialogForm(record){
-		let input = await super.renderDialogForm(record);
-		new Quill(input.dom[this.columnName], this.getConfig());
-		return input;
+		// let input = await super.renderDialogForm(record);
+		// new Quill(input.dom[this.columnName], this.getConfig());
+		// return input;
+		if (this.input == undefined) {
+			this.input = await super.renderForm(record);
+			new Quill(input.dom[this.columnName], this.getConfig());
+		}
+		return this.input;
 	}
 
 	handleImage(){

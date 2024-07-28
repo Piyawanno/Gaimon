@@ -54,8 +54,22 @@ class UtilityController (InputProcessor) :
 			self.countries = json.loads(fd.read())
 		with open("%s/language.json" % (dataPath), encoding="utf-8") as fd:
 			self.language = json.loads(fd.read())
+		self.getCurrencyData(dataPath)
+
+	def getCurrencyData(self, dataPath: str):
+		enabled = set(self.application.config.get("enabledCurrency", ["THB", "USD"]))
+		default = self.application.config.get("defaultCurrency", "THB")
 		with open("%s/country-by-currency-code.json" % (dataPath), encoding="utf-8") as fd:
-			self.currency = json.loads(fd.read())
+			currency = json.loads(fd.read())
+		self.currency = []
+		for i in currency:
+			if i["currency_code"] != default: continue
+			self.currency.append(i)
+		for i in currency:
+			if i["currency_code"] == default: continue
+			if i["currency_code"] not in enabled: continue
+			self.currency.append(i)
+
 
 	@GET("/sarfunkel", role=['guest'], hasDBSession=False)
 	async def getSarfunkel(self, request) :
@@ -360,6 +374,6 @@ class UtilityController (InputProcessor) :
 			}
 		)
 	
-	@GET('/utilily/health/check', role=['guest'])
+	@GET('/utility/health/check', role=['guest'])
 	async def ping(self, request):
 		return response.text('')

@@ -1,4 +1,5 @@
 from xerial.Record import Record
+from xerial.DBSessionBase import REGISTER
 from xerial.IntegerColumn import IntegerColumn
 from xerial.StringColumn import StringColumn
 from xerial.JSONColumn import JSONColumn
@@ -7,6 +8,7 @@ from gaimon.util.HashFunction import SMHash
 
 import json
 
+@REGISTER
 class DynamicModel(Record):
 	modelName = StringColumn()
 	label = StringColumn(

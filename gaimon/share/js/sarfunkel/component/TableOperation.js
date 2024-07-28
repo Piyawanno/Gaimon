@@ -7,13 +7,13 @@ class TableOperation extends Button{
 
 	render(){
 		if(!this.operation){
-			this.operation = new DOMObject(this.template, this);
+			this.operation = new InputDOMObject(this.template, this);
 			for(let i of this.classList){
 				this.operation.dom.operation.classList.add(i);
 			}
 			if(!this.isEnabled) this.operation.html.hide();
 			let operation = this.operation.dom.operation;
-			if(!operation) operation.onclick = this.callback;
+			if(operation) operation.onclick = this.callback;
 			let object = this;
 			this.url().then((url) => {
 				if (url) {

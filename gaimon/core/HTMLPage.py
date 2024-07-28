@@ -340,6 +340,10 @@ class HTMLPage:
 			template = self.theme.getTemplate('MainPreload.tpl')
 		else:
 			template = self.theme.getTemplate('Main.tpl')
+		parameter = self.getRegularRenderParameter()
+		return self.renderer.render(template, parameter)
+
+	def getRegularRenderParameter(self):
 		css = self.css[:]
 		css.extend(self.incompressibleCSS)
 		js = self.js[:]
@@ -386,7 +390,7 @@ class HTMLPage:
 		}
 		if self.isPreload:
 			parameter['preload'] = self.readPreload()
-		return self.renderer.render(template, parameter)
+		return parameter
 
 	def readPreload(self):
 		global __PRELOAD_CONTENT__

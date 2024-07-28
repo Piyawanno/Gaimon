@@ -13,7 +13,6 @@ class ModelPage extends ViewLoader{
 		this.isCreated = false;
 		this.meta = null;
 		
-
 		this.createFormHandler = [];
 		this.createMetaDataHandler = [];
 		this.createDetailHandler = [];
@@ -37,6 +36,7 @@ class ModelPage extends ViewLoader{
 		this.renderMap[ViewType.TABLE_DIALOG] = this.renderTableDialog;
 		this.renderMap[ViewType.DETAIL_DIALOG] = this.renderDetailDialog;
 		this.renderMap[ViewType.SUMMARY_DIALOG] = this.renderSummaryDialog;
+
 	}
 
 	createNavigationViewItem() {
@@ -81,7 +81,7 @@ class ModelPage extends ViewLoader{
 	}
 
 	register(){
-		// this.main
+		super.register();
 	}
 
 	getPageStateURL(){
@@ -94,6 +94,7 @@ class ModelPage extends ViewLoader{
 
 	async onPrepareState(){
 		await this.createMeta();
+		await this.checkTemplate();
 		let object = this;
 		this.navigation.itemMap.model.callback = async function() {
 			SHOW_LOADING_DIALOG(async function() {
@@ -132,7 +133,7 @@ class ModelPage extends ViewLoader{
 	}
 
 	pushState(tab, viewType, parameter, pageID, isStep) {
-		let url = this.getURL(tab, viewType, parameter, pageID, isStep)
+		let url = this.getURL(tab, viewType, parameter, pageID, isStep);
 		PUSH_SARFUNKEL_STATE(url);
 		
 	}
@@ -150,14 +151,7 @@ class ModelPage extends ViewLoader{
 	/// Data should not be the entire record to prevent concurrency.
 	async render(viewType, data, isReplaceState){
 		if (isReplaceState == undefined) isReplaceState = false;
-		let mainType = undefined;
-		let tab = "";
-		if(viewType != undefined){
-			let splitted = viewType.split(".");
-			mainType = splitted[0];
-			if(splitted.length > 1) tab = splitted[1];
-		}
-		
+		let {mainType, _, tab} = this.getParameterByViewType(viewType);
 		let render = mainType == undefined? this.defaultRender: this.renderMap[mainType];
 		if(render != undefined){
 			return await render.call(this, data, tab, isReplaceState);
@@ -168,19 +162,12 @@ class ModelPage extends ViewLoader{
 
 	async renderByURL(request){
 		await this.onPrepareState();
-		let mainType = undefined;
-		let viewType = request.get('v');
-		let tab = "";
-		if(viewType != undefined){
-			let splitted = viewType.split(".");
-			mainType = splitted[0];
-			if(splitted.length > 1) tab = splitted[1];
-		}
+		let {mainType, viewType, tab} = this.getParameterByRequest(request);
 		if (mainType == 'TABLE') {
 			return await this.renderTable(undefined, tab);
 		}
 		if (mainType == 'INSERT') {
-			let selectedData = request.get('sd');
+			let selectedData = JSON.parse(request.get('sd'));
 			return await this.renderInsert(selectedData, tab);
 		}
 		if (mainType == 'UPDATE') {
@@ -193,6 +180,21 @@ class ModelPage extends ViewLoader{
 		}
 	}
 
+	getParameterByRequest(request) {
+		return this.getParameterByViewType(request.get('v'));
+	}
+
+	getParameterByViewType(viewType) {
+		let mainType = undefined;
+		let tab = "";
+		if(viewType != undefined){
+			let splitted = viewType.split(".");
+			mainType = splitted[0];
+			if(splitted.length > 1) tab = splitted[1];
+		}
+		return {mainType, viewType, tab};
+	}
+
 	async renderMain(data, tab){
 		return await this.renderSummary();
 	}
@@ -200,7 +202,8 @@ class ModelPage extends ViewLoader{
 	async renderInsert(selectedData, tab, isReplaceState){
 		if (isReplaceState == undefined) isReplaceState = false;
 		await this.renderTab(ViewType.INSERT, tab);
-		await this.renderStep(ViewType.INSERT, tab);
+		// await this.renderStep(ViewType.INSERT, tab);
+		this.hideStep();
 		if (tab != undefined) {
 			let tabMap = this.tabViewMap[ViewType.INSERT];
 			if(tabMap != undefined){
@@ -214,8 +217,10 @@ class ModelPage extends ViewLoader{
 		this.resetNavigation();
 		await this.renderNavigation(this.navigation.itemMap.insert, this.defaultNavigationIndex);
 		this.setToMain(this.page);
-		if (isReplaceState) this.replaceState('', ViewType.INSERT);
-		else this.pushState('', ViewType.INSERT);
+		let parameter = undefined;
+		if (selectedData != undefined) parameter = {'sd': JSON.stringify(selectedData)};
+		if (isReplaceState) this.replaceState('', ViewType.INSERT, parameter);
+		else this.pushState('', ViewType.INSERT, parameter);
 		return this.page;
 	}
 
@@ -237,7 +242,8 @@ class ModelPage extends ViewLoader{
 	async renderUpdate(ID, tab, isReplaceState){
 		if (isReplaceState == undefined) isReplaceState = false;
 		await this.renderTab(ViewType.UPDATE, tab);
-		await this.renderStep(ViewType.UPDATE, tab);
+		// await this.renderStep(ViewType.UPDATE, tab);
+		this.hideStep();
 		await this.renderUpdateContent(ID);
 		this.resetNavigation();
 		await this.renderNavigation(this.navigation.itemMap.update, this.defaultNavigationIndex);
@@ -261,7 +267,8 @@ class ModelPage extends ViewLoader{
 	async renderTable(filter, tab, isReplaceState){
 		if (isReplaceState == undefined) isReplaceState = false;
 		await this.renderTab(ViewType.TABLE, tab);
-		await this.renderStep(ViewType.TABLE, tab);
+		// await this.renderStep(ViewType.TABLE, tab);
+		this.hideStep();
 		if (tab != undefined && tab.length > 0) {
 			let tabMap = this.tabViewMap[ViewType.TABLE];
 			if(tabMap != undefined){
@@ -290,7 +297,8 @@ class ModelPage extends ViewLoader{
 	async renderTableForm(filter, tab, isReplaceState){
 		if (isReplaceState == undefined) isReplaceState = false;
 		await this.renderTab(ViewType.TABLE_FORM, tab);
-		await this.renderStep(ViewType.TABLE_FORM, tab);
+		// await this.renderStep(ViewType.TABLE_FORM, tab);
+		this.hideStep();
 		let result = await this.getTableForm(filter);
 		this.resetNavigation();
 		await this.renderNavigation(this.navigation.itemMap.tableForm, this.defaultNavigationIndex);
@@ -305,7 +313,6 @@ class ModelPage extends ViewLoader{
 	}
 
 	async renderViewFromExternal(modelName, config, tab, isReplaceState) {
-		console.log(this.protocol);
 		let item = await this.protocol.getByReference(config.data);
 		let data = undefined;
 		if (config.data == undefined) return;
@@ -318,7 +325,8 @@ class ModelPage extends ViewLoader{
 	async renderDetail(data, tab, isReplaceState){
 		if (isReplaceState == undefined) isReplaceState = false;
 		await this.renderTab(ViewType.DETAIL, tab);
-		await this.renderStep(ViewType.DETAIL, tab);
+		// await this.renderStep(ViewType.DETAIL, tab);
+		this.hideStep();
 		let ID;
 		if(typeof data != 'object'){
 			ID = data;
@@ -373,6 +381,7 @@ class ModelPage extends ViewLoader{
 	async renderInsertDialogContent(selectedData, callback){
 		this.checkDialog();
 		let rendered = await super.renderInsertDialogContent(selectedData, callback);
+		this.dialog.dialog = rendered;
 		this.setToPage(rendered);
 		return rendered;
 	}
@@ -386,6 +395,7 @@ class ModelPage extends ViewLoader{
 	async renderUpdateDialogContent(ID){
 		this.checkDialog();
 		let rendered = await super.renderUpdateDialogContent(ID);
+		this.dialog.dialog = rendered;
 		this.setToPage(rendered);
 		return rendered;
 	}
@@ -405,9 +415,9 @@ class ModelPage extends ViewLoader{
 		this.setToTab(tab);
 	}
 
-	async renderStep(viewType, activeItem) {
+	async renderStep(flowCode, activeItem, parameter) {
 		this.checkTemplate();
-		let step = await super.renderStep(viewType, activeItem);
+		let step = await super.renderStep(flowCode, activeItem, parameter);
 		this.setToStep(step);
 	}
 
@@ -456,6 +466,7 @@ class ModelPage extends ViewLoader{
 	}
 
 	hideTab() {
+		this.main.home.dom.container.classList.add('fullContainer');
 		this.main.home.dom.tabContainer.classList.add('hidden');
 	}
 
@@ -463,17 +474,23 @@ class ModelPage extends ViewLoader{
 		if (result == undefined) return;
 		this.main.home.dom.tabContainer.html('');
 		this.main.home.dom.tabContainer.appendChild(result.html);
+		this.main.home.dom.container.classList.remove('fullContainer');
 		this.main.home.dom.tabContainer.classList.remove('hidden');
 	}
 
 	hideStep() {
+		this.main.home.dom.container.classList.add('fullContainer');
 		this.main.home.dom.stepContainer.classList.add('hidden');
 	}
 
 	setToStep(result){
-		if (result == undefined) return;
+		if (result == undefined) {
+			this.hideStep();
+			return;
+		}
 		this.main.home.dom.stepContainer.html('');
 		this.main.home.dom.stepContainer.appendChild(result.html);
+		this.main.home.dom.container.classList.remove('fullContainer');
 		this.main.home.dom.stepContainer.classList.remove('hidden');
 	}
 
@@ -481,8 +498,8 @@ class ModelPage extends ViewLoader{
 		let id = undefined;
 		if(this.protocol != null){
 			let result = await this.protocol.insert(data);
-			id = result.id;
-			if (isRenderDetail) await this.renderDetail(result.id);
+			if(result != undefined) id = result.id;
+			if (isRenderDetail && id) await this.renderDetail(id);
 			else {
 				this.form?.close();
 				this.dialog?.close();
@@ -523,6 +540,7 @@ class ModelPage extends ViewLoader{
 	async onCreate(){
 		this.main.pageModelDict[this.modelName] = this;
 		this.createNavigationViewItem();
+		await super.onCreate();
 	}
 
 	onCreateForm(form){

@@ -30,6 +30,6 @@ class DateInput extends TextInput{
 
 	// Not Tested
 	getTableFormInputTemplate(){
-		return TEMPLATE.input.TableFormTextInput;
+		return TEMPLATE.input.TableFormDateInput;
 	}
 }

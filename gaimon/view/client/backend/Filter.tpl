@@ -17,5 +17,5 @@
 			</div>
 		</div>
 	</div>
-	<div class="flex-column gap-10px" rel="additional"></div>
+	<div class="flex-column gap-10px abstract_dialog_input" rel="additional"></div>
 </div>

@@ -47,6 +47,7 @@ AbstractPage.prototype.create = async function(scriptName, main, parent) {
 		let pageName = GET_PAGE_NAME(scriptName);
 		pageClass = await AbstractPage.prototype.generate(pageName);
 		object = new pageClass(main, parent);
+		object.extension = extension;
 		object.isGenerate = true;
 	}
 	await object.initJS();
@@ -214,6 +215,7 @@ AbstractPage.prototype.getView = async function(modelName, config, viewType) {
 }
 
 AbstractPage.prototype.getBlankView = async function(config, viewType) {
+	console.log(this);
 	return await this.view.getBlankView(config, viewType);
 }
 

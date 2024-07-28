@@ -31,8 +31,10 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		self.startSubroutine = []
 		self.configuration = {}
 		self.loadedController = set()
+		self.isPrintController = False
 		self.tree = ExtensionTree()
 		self.tree.append('gaimon')
+		self.logger = logging.getLogger("sanic.root")
 	
 	async def getCSS(self, request: Request) -> Dict:
 		return self.css
@@ -62,7 +64,6 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		return self.pageExtension
 
 	async def getModelPageComponent(self, request: Request) -> Set[str]:
-		print(104, id(self), self.componentComposer)
 		return {
 			'composer': list(self.componentComposer),
 			'creator': list(self.componentCreator),
@@ -77,8 +78,10 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		]
 		for i in path:
 			i = conform(i)
+			continue
 			if not os.path.isdir(i):
-				os.makedirs(i)
+				if not os.path.exists(i):
+					os.makedirs(i)
 
 
 	async def load(self, extensionPath: str, session: AsyncDBSessionBase) -> Extension:
@@ -105,8 +108,18 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		return extension
 	
 	async def prepare(self, session: AsyncDBSessionBase):
+		from gaimon.util.StepFlowUtil import StepFlowUtil
+		from gaimon.model.StepFlowItem import StepFlowItem
+		stepConfig:Dict[str, List[StepFlowItem]] = {}
 		for path in self.extension:
 			await self.extension[path].prepare(self.application, session)
+			config = self.extension[path].getStepFlowConfig()
+			for code in config:
+				itemConfig = stepConfig.get(code, [])
+				itemConfig.extend(config[code])
+				stepConfig[code] = itemConfig
+		stepUtil = StepFlowUtil(self.application)
+		await stepUtil.registerStepFromConfig(session, stepConfig)
 
 	def checkInitialize(self, extensionPath: str) -> bool:
 		from gaimon.util.GaimonInitializer import conform
@@ -157,6 +170,7 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 		app = self.application
 		if os.path.isdir(f"{path}/controller"):
 			start = time.time()
+			startMemory = getMemory()
 			controller = importlib.import_module(f'{extensionPath}.controller')
 			directory = controller.__path__[0]
 			modulePath = f"{extensionPath}.controller"
@@ -169,8 +183,12 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 			app.browsePostProcessor(directory, modulePath)
 			if result is None: self.application.controller.extend(controllerList)
 			else: result.extend(controllerList)
-			elapsed = round(time.time() - start, 2)
-			logging.info(f'>>> Controller of {extensionPath} Loaded [{round(getMemory(), 2)}MB in {elapsed}s]')
+			if self.isPrintController :
+				elapsed = round(time.time() - start, 2)
+				currentMemory = round(getMemory(), 2)
+				usedMemory = round(currentMemory-startMemory, 2)
+				n = len(controllerList)
+				self.logger.info(f'>>> Load Controller {extensionPath}.controller [{n}] in {elapsed}s {usedMemory}MB/{currentMemory}MB')
 		self.loadedController.add(extensionPath)
 
 	def loadWebSocketHandler(self, extensionPath: str):
@@ -183,7 +201,12 @@ class ExtensionLoader (CommonExtensionInfoHandler) :
 
 	def loadBaseConfiguration(self, extensionPath: str) -> dict:
 		module = importlib.import_module(extensionPath)
-		path = f'{module.__path__[0]}/Extension.json'
+		modulePath = module.__path__[0]
+		developmentPath = f'{modulePath}/Extension.dev.json'
+		if self.application.isDevelop and os.path.isfile(developmentPath):
+			path = developmentPath
+		else:
+			path = f'{modulePath}/Extension.json'
 		if os.path.isfile(path):
 			with open(path, 'rt', encoding="utf-8") as fd:
 				configuration = json.load(fd)

@@ -11,10 +11,10 @@ const Authentication = function() {
 	object.role = null;
 
 	this.checkLogin = async function(isMobileApp, title) {
-		try {
-			await IndexedDBConnector.prototype.start("gaimon");
-		} catch {
-		}
+		// try {
+		// 	await IndexedDBConnector.prototype.start("gaimon");
+		// } catch {
+		// }
 		let token = window.localStorage.getItem('token');
 		if (token != undefined) {
 			object.isLoggedIn = true;
@@ -47,10 +47,10 @@ const Authentication = function() {
 	}
 
 	this.check = async function() {
-		try {
-			await IndexedDBConnector.prototype.start("gaimon");
-		} catch {
-		}
+		// try {
+		// 	await IndexedDBConnector.prototype.start("gaimon");
+		// } catch {
+		// }
 		let token = window.localStorage.getItem('token');
 		if (token != undefined) {
 			object.isLoggedIn = true;

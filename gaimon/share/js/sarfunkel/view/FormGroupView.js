@@ -12,6 +12,7 @@ class FormGroupView{
 		this.detailTemplate = null;
 		this.currentInputMap = {};
 		this.inputMapper = {};
+		this.isAdvanceForm = false;
 	}
 
 	async renderForm(record, reference){
@@ -66,7 +67,7 @@ class FormGroupView{
 		let excludeList = this.meta.excludeInputViewMap[ViewType.FORM];
 		excludeList = excludeList != undefined ? excludeList : [];
 		for(let input of this.inputList){
-			if (!input.config.isForm) continue;
+			if (!input.config.isForm || (!this.isAdvanceForm && input.isAdvanceForm)) continue;
 			input.formGroupView = this;
 			let isRendered = input.input != undefined;
 			if (excludeList.indexOf(input.columnName) != -1) continue;

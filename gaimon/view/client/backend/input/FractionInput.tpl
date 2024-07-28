@@ -9,7 +9,7 @@
 			isZeroIncluded="{{{isZeroIncluded}}}"
 			isFloatingPoint="{{{isFloatingPoint}}}"
 			{{#isRequired}}required{{/isRequired}}
-			{{^isEditable}}disabled{{/isEditable}}></div>
+			{{^isEditable}}disabled{{/isEditable}} placeholder="{{placeHolder}}"></div>
 		<!-- <div class="width-100-percent"><input type="number" rel="{{{columnName}}}_integer" autocomplete="off" fraction="{{{columnName}}}"
 			isNegative="{{{isNegative}}}" 
 			isZeroIncluded="{{{isZeroIncluded}}}"

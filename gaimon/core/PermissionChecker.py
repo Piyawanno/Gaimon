@@ -1,4 +1,3 @@
-from urllib.parse import urlparse
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 
@@ -9,6 +8,7 @@ from gaimon.core.Route import Route
 from gaimon.core.PermissionDecorator import PermissionRule
 from gaimon.core.PreProcessor import PreProcessRule
 from gaimon.core.PostProcessor import PostProcessRule
+from gaimon.core.ValidationDecorator import ValidationRule
 from gaimon.core.SecurityChecker import SecurityChecker
 from gaimon.model.UserGroup import UserGroup
 from gaimon.model.UserGroupPermission import UserGroupPermission
@@ -20,6 +20,8 @@ from sanic import Request
 from sanic.exceptions import SanicException
 from typing import List, Dict, Any, Callable
 from itertools import product
+from urllib.parse import urlparse
+
 
 import platform
 
@@ -55,9 +57,11 @@ class PermissionChecker:
 			self.permissions = set([f"{i}.{label[j]}" for i, j in product(role, permission)])
 		self.controllerName = callee.__self__.__class__.__name__
 		self.isSessionEachConnect = False
-		self.additionPermission:List[PermissionRule] = []
-		self.preProcessor:List[PreProcessRule] = []
-		self.postProcessor:List[PostProcessRule] = []
+		self.additionPermission: List[PermissionRule] = []
+		self.preProcessor: List[PreProcessRule] = []
+		self.postProcessor: List[PostProcessRule] = []
+		self.validator: List[ValidationRule] = []
+		self.logger: logging.Logger = self.application.createLogger()
 	
 	async def checkStateSession(self, state:RequestState) :
 		if state.session is None :
@@ -105,7 +109,8 @@ class PermissionChecker:
 		else:
 			return False
 
-	async def run(self, request: Request, *argument, **option):
+	async def run(self, request: Request, *argument, **option) -> HTTPResponse:
+		await self.application.httpSession.addSessionToRequest(request)
 		request.headers['entity'] = None
 		if not await self.security.check(request) :
 			return HTTPResponse("Bad request", code=500)
@@ -116,9 +121,11 @@ class PermissionChecker:
 		controller = self.application.getController(self.controllerName)
 		await self.setController(controller)
 		state.setController(controller)
-		return await self.runState(state)
+		response = await self.runState(state)
+		await self.application.httpSession.saveSession(request, response)
+		return response
 	
-	async def runState(self, state:RequestState) :
+	async def runState(self, state:RequestState) -> HTTPResponse:
 		try:
 			await self.setSession(state.request)
 			await self.checkPermission(state)
@@ -254,8 +261,7 @@ class PermissionChecker:
 			state.log["queryCount"] = 0
 		if not self.application.isDevelop:
 			self.setLog(state)
-			logger = logging.getLogger("gaimon")
-			logger.info("", extra=state.log)
+			self.logger.info("", extra=state.log)
 
 	def setErrorLog(self, state:RequestState):
 		if not self.application.isDevelop:
@@ -264,8 +270,7 @@ class PermissionChecker:
 			print(trace)
 			print(state.errorMessage)
 			self.setLog(state)
-			logger = logging.getLogger("gaimon")
-			logger.error(state.errorMessage, extra=state.log)
+			self.logger.error(state.errorMessage, extra=state.log)
 		else:
 			logging.error(traceback.format_exc())
 			logging.error(state.errorMessage)
@@ -309,7 +314,7 @@ class PermissionChecker:
 		if request.host != domain : return redirect(rootURL)
 	
 	@staticmethod
-	async def processRole(session, user, isForce=True):
+	async def processRole(session: AsyncDBSessionBase, user, isForce=True):
 		if user.isRoot: return ['root']
 		else:
 			groupID = -1

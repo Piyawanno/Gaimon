@@ -3,7 +3,7 @@
 	<td class="text_top"><input type="checkbox" rel="check"/></td>
 	{{/hasSelect}}
 	{{#hasIndex}}
-	<td class="text_top" style="text-align:center;">{{{index}}}</td>
+	<td class="text_top" style="text-align:center;" rel="index">{{{index}}}</td>
 	{{/hasIndex}}
 	{{#hasAvatar}}
 	<td class="avatar" rel="avatar"></td>

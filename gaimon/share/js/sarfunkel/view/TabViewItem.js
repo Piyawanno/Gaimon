@@ -5,6 +5,7 @@ class TabViewItem{
 		this.order = new VersionParser(order);
 		this.view = view;
 		this.viewItem = undefined;
+		this.renderFunction = undefined;
 		this.isMain = false;
 		this.role = [];
 	}
@@ -19,8 +20,9 @@ class TabViewItem{
 
 	async render(tabView, data){
 		let isPermitted = true;
+		console.log('render');
 		if(isPermitted){
-
+			if (this.renderFunction) this.renderFunction(data)
 		}else{
 			
 		}

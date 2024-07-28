@@ -18,7 +18,7 @@
 			let start = Date.now();
 		</script>
 
-		<link rel="shortcut icon" href="{{rootURL}}{{favicon}}" type="image/png" />
+		<link rel="icon" href="{{rootURL}}{{favicon}}" type="image/png"/>
 		
 		{{#hasAppIcon}}
 		<link rel="apple-touch-icon" sizes="{{appIcon.size}}" href="{{rootURL}}{{appIcon.path}}" type="{{appIcon.mime}}" />

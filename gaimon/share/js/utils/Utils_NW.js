@@ -20,8 +20,21 @@ async function getMustacheTemplate(branch, callback) {
     return result;
 }
 
+async function getMustacheIcon(callback) {
+	let result = await getMustacheTemplate('icon');
+    window.ICON = result;
+    if (callback != undefined) callback(result);
+    return result;
+}
+
 async function GET_TEMPLATE(name, isExtension) {
-    return eval(`ALL_TEMPLATE.${name}`);
+    let template = undefined;
+    for (let branch in window.ALL_TEMPLATE) {
+        if (window.ALL_TEMPLATE[branch][name] == undefined) continue;
+        template = window.ALL_TEMPLATE[branch][name];
+        break;
+    }
+    return template;
 }
 
 async function START_APP() {

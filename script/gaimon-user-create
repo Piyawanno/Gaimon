@@ -1,40 +1,4 @@
 #!/usr/bin/python3
 
-from gaimon.util.creator.UserCreator import UserCreator
-from gaimon.util.PathUtil import conform
-
-import json, sys, os, argparse, asyncio, getpass
-
-__parser__ = argparse.ArgumentParser(description="User creator.")
-__parser__.add_argument("-n", "--namespace", help="Namespace of gaimon application.")
-__parser__.add_argument("-u", "--username", help="User name to create.")
-
-__option__ = __parser__.parse_args(sys.argv[1:])
-__namespace__ = '' if __option__.namespace is None else __option__.namespace
-config = {}
-if len(__namespace__): path = conform(f'/etc/gaimon/namespace/{__namespace__}/Database.json')
-else : path = conform('/etc/gaimon/Database.json')
-
-with open(path, 'r', encoding='utf-8') as fd :
-	config['DB'] = json.load(fd)
-
-if __option__.username is None :
-	username = input("User name : ")
-else :
-	username = __option__.username
-
-while True :
-	password = getpass.getpass("Password : ")
-	confirm = getpass.getpass("Confirm password : ")
-	if password != confirm :
-		print("*** Error : Password and confirmed password do not match.")
-		print("*** Try again")
-	else :
-		break
-
-creator = UserCreator(config)
-async def start(creator) :
-	await creator.connectDB()
-	user = creator.createRoot(username, password)
-	await creator.session.insert(user)
-asyncio.run(start(creator))
+from gaimon.cli.GaimonUserCreatorCLI import run
+if __name__ == '__main__': run()

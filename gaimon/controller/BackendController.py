@@ -1,3 +1,4 @@
+from enum import IntEnum
 from gaimon.core.Route import GET, POST
 from gaimon.core.PermissionChecker import PermissionChecker
 from gaimon.core.HTMLPage import HTMLPage
@@ -10,9 +11,12 @@ from gaimon.util.SarfunkelBrowser import SarfunkelBrowser
 from xerial.ColumnType import ColumnType
 from xerial.CurrencyColumn import CurrencyData
 from xerial.input.InputType import InputType
+from xerial.input.TableDisplayType import TableDisplayType
 from gaimon.core.RESTResponse import (
 	SuccessRESTResponse as Success
 )
+
+from gaimon.util.StepFlowUtil import StepFlowUtil
 
 from typing import List, Dict
 from packaging.version import Version
@@ -29,6 +33,7 @@ __BACKEND_JS__: List[str] = [
 	'utils/DateUtils.js',
 	'utils/ColumnValueUtils.js',
 	'utils/EventUtils.js',
+	'utils/ThaiBaht.js',
 	'lib/html5-qrcode.js',
 	'lib/Autocomplete.js',
 	'lib/InputDOMObject.js',
@@ -82,7 +87,8 @@ __BACKEND_JS__: List[str] = [
 	'protocol/UtilityProtocol.js',
 	'protocol/PersonalScheduleProtocol.js',
 	'protocol/NotificationProtocol.js',
-	'protocol/TemplateCreatorProtocol.js'
+	'protocol/TemplateCreatorProtocol.js',
+	'protocol/StepFlowProtocol.js'
 ]
 
 __BACKEND_CSS__: List[str] = [
@@ -106,7 +112,8 @@ __BACKEND_CSS__: List[str] = [
 	'Flex.css',
 	'Style.css',
 	'AlertDialog.css',
-	'DefaultTheme.css'
+	'DefaultTheme.css',
+	'FontFamily.css',
 ]
 
 __INCOMPRESSIBLE_CSS__: List[str] = [
@@ -115,6 +122,9 @@ __INCOMPRESSIBLE_CSS__: List[str] = [
 
 __CACHED_PAGE__ = {}
 
+class AppPlatform (IntEnum) :
+	WEB = 1
+	NW = 2
 
 class BackendController:
 	def __init__(self, application):
@@ -134,6 +144,7 @@ class BackendController:
 		except:
 			pass
 		self.sarfunkel = SarfunkelBrowser(application)
+		self.stepUtil = StepFlowUtil(application)
 		setattr(self.application, 'loginURL', self.application.rootURL + 'backend')
 
 	@GET("/", role=['guest'], isHome=True)
@@ -157,6 +168,16 @@ class BackendController:
 		key = f"backend_{entity}"
 		cached = __CACHED_PAGE__.get(key, None)
 		if cached is not None: return response.html(cached)
+		rendered = await self.getBackendPage(request, AppPlatform.WEB)
+		__CACHED_PAGE__[key] = rendered
+		return response.html(rendered)
+
+	@GET("/backend/nw", role=['guest'])
+	async def renderNWIndex(self, request):
+		result = await self.getBackendPage(request, AppPlatform.NW)
+		return Success(result)
+
+	async def getBackendPage(self, request, platform:AppPlatform = AppPlatform.WEB):
 		page = self.application.createPage()
 		page.setRequest(request)
 		page.reset()
@@ -164,18 +185,54 @@ class BackendController:
 		await self.setIcon(page)
 		await self.setFavIcon(page)
 		await self.setHorizontalLogo(page)
-		await self.setJS(page, request)
+		await self.setJS(page, request, platform)
 		await self.setCSS(page, request)
 		await self.setMenu(page, request)
-		await self.setJSVar(page, request)		
+		await self.setJSVar(page, request)	
+		page.jsVar['IS_MOBILE_APP'] = False
 		template = self.theme.getTemplate('Backend.tpl')
 		page.body = self.renderer.render(template, {'rootURI': page.rootURL})
-		rendered = page.render(ID='backend')
-		__CACHED_PAGE__[key] = rendered
-		return response.html(rendered)
+		if platform == AppPlatform.WEB: return page.render(ID='backend')
+		elif platform == AppPlatform.NW: return await self.getNWBackendPage(page)
+		return
+
+	async def getNWBackendPage(self, page: HTMLPage):
+		page.jsVar['IS_MOBILE_APP'] = True
+		rendered = page.render()
+		result = {}
+		keyJS = f'src="{page.rootURL}'
+		replaceKeyJS = 'src="./'
+		rendered = rendered.replace(keyJS, replaceKeyJS)
+		keyCSS: str = f'href="{page.rootURL}'
+		replaceKeyCSS = 'href="./'
+		rendered = rendered.replace(keyCSS, replaceKeyCSS)
+		parameter = page.getRegularRenderParameter()
+
+		jsList = []
+		for js in parameter['internalJS']:
+			jsList.append(js)
+		for js in parameter['extensionJS']:
+			jsList.append(f'share/{js["name"]}/js/{js["source"]}')
+		cssList = []
+		for css in parameter['internalCSS']:
+			cssList.append(css)
+		for css in parameter['extensionCSS']:
+			cssList.append(f'share/{css["name"]}/css/{css["source"]}')
+
+		result['page'] = rendered
+		result['js'] = jsList
+		result['css'] = cssList
+		result['font'] = ["share/font/OpenSans-VariableFont_wdth,wght.ttf"]
+		result['view'] = {}
+		result['view']['backend'] = self.theme.clientTemplate.get('backend', None)
+		result['view']['frontend'] = self.theme.clientTemplate.get('frontend', None)
+		result['view']['icon'] = self.theme.icon
+		for key in self.theme.extensionClientTemplate:
+			result['view'][key] = self.theme.extensionClientTemplate[key]
+		return result
 	
 	async def setIcon(self, page: HTMLPage):
-		if len(self.icon) == 0: page.icon = '/share/icon/logo.png'
+		if len(self.icon) == 0: page.icon = 'share/icon/logo.png'
 		else: page.icon = self.icon
 	
 	async def setFavIcon(self, page: HTMLPage):
@@ -186,10 +243,11 @@ class BackendController:
 		if len(self.horizontalLogo) == 0: page.horizontalLogo = '/share/icon/ximple_dark.png'
 		else: page.horizontalLogo = self.horizontalLogo
 
-	async def setJS(self, page: HTMLPage, request: Request):
+	async def setJS(self, page: HTMLPage, request: Request, platform: AppPlatform = AppPlatform.WEB):
 		page.enableAllAddOns()
 		page.enableSarfunkel(self.sarfunkel)
 		page.js.extend(__BACKEND_JS__)
+		if platform == AppPlatform.NW: page.js.append('utils/Utils_NW.js')
 		if not 'TITLE' in page.jsVar:
 			page.jsVar['TITLE'] = self.title
 		if not 'LOGO' in page.jsVar:
@@ -309,6 +367,7 @@ class BackendController:
 		page.jsVar['CURRENCY_DATA_ORIGINAL'] = CurrencyData().toDict()
 		component = await self.extension.getModelPageComponent(request)
 		page.jsVar['COMPONENT'] = component
+		page.jsVar['STEP_FLOW'] = await self.stepUtil.getAll(self.session)
 
 	def sortExtensionMenu(self, extensionMenuConfig: List):
 		for item in extensionMenuConfig:
@@ -491,4 +550,7 @@ class BackendController:
 	
 	@GET("/enum/get", role=['guest'])
 	async def getENUM(self, request):
-		return Success({})
+		result = {}
+		result['TABLE_DISPLAY_TYPE'] = {i:TableDisplayType.__members__[i].value for i in TableDisplayType.__members__}
+		# result['TABLE_DISPLAY_TYPE'] = TableDisplayType.label
+		return Success(result)

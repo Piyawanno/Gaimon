@@ -72,7 +72,7 @@ def createDecoratorBrowser(self, ruleMap, decoratorClass, processRule:Callable=p
 class Application:
 	BASE_CONFIG = {}
 
-	def __init__(self, config, namespace: str = ''):
+	def __init__(self, config: Dict[str, Any], namespace: str = ''):
 		from flask import Flask
 		from gaimon.core.Extension import TabExtension
 		import redis
@@ -105,6 +105,14 @@ class Application:
 		self.pageTabExtension:TabExtension = {}
 		self.replaceMap: Dict[str, ReplaceRule] = {}
 		self.middlewareMap: Dict[str, PermissionChecker] = {}
+		self.processNumber: int = 1
+		self.isDevelop = config.get("isDevelop", True)
+		self.isProduction = not self.isDevelop
+		self.isCompress = config.get("isCompress", False)
+		self.isWebSocket = config.get("isWebSocket", True)
+		self.isPreload = config.get("isPreload", False)
+		self.logger = logging.getLogger()
+		self.applicationID = -1
 	
 	def initialDecorator(self) :
 		self.permissionMap: RuleMap = {}
@@ -126,8 +134,8 @@ class Application:
 				f"{self.config['resourcePath']}/namespace/{self.namespace}/"
 			)
 		else:
-			self.configPath = conform('/etc/gaimon/')
-			self.resourcePath = self.config['resourcePath']
+			self.configPath:str = conform('/etc/gaimon/')
+			self.resourcePath:str = self.config['resourcePath']
 		if not os.path.isdir(self.configPath):
 			os.makedirs(self.configPath)
 		if not os.path.isdir(self.resourcePath):
@@ -149,9 +157,6 @@ class Application:
 		self.session.createTable()
 		self.model = self.session.model.copy()
 		self.sessionPool.model = self.model.copy()
-
-	def __del__(self):
-		self.close()
 
 	def close(self):
 		print(">>> Application Close")
@@ -231,14 +236,20 @@ class Application:
 		for name in self.browseModule(directory):
 			if name[-10:] != 'Controller': continue
 			try:
+				start = time.time()
+				startMemory = getMemory()
 				module = importlib.import_module(f"{modulePath}.{name}")
-				# print(f"{modulePath}.{name} {round(getMemory(), 2)}")
 				controllerClass = getattr(module, name)
 				controllerClass.extension = modulePath
 				controllerList.append(controllerClass(self))
 				name = controllerClass.__name__
 				self.controllerPool[name] = [controllerClass(self)]
 				self.controllerClass[name] = controllerClass
+				currentMemory = round(getMemory(), 2)
+				usedMemory = round(currentMemory - startMemory)
+				elapsed = round(time.time()-start, 2)
+				if self.applicationID <= 0 and (usedMemory > 2.5 or elapsed > 0.2):
+					self.logger.warning(f'*** Heavy Controller detected {modulePath}.{name} {elapsed}s {usedMemory}MB/{currentMemory}MB')
 			except:
 				print(traceback.format_exc())
 		return controllerList		
@@ -268,3 +279,10 @@ class Application:
 	def run(self):
 		config = self.config
 		self.application.run(host=config["host"], port=config["port"])
+
+	def checkProcessNumber(self):
+		if self.isDevelop:
+			self.processNumber = 1
+		else:
+			self.processNumber = self.config.get("processNumber", -1)
+			if self.processNumber < 0 : self.processNumber = cpu_count()

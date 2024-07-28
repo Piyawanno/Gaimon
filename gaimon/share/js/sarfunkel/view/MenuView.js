@@ -66,7 +66,7 @@ class MenuView{
 				main.selectedSubMenu.push(dom.dom.menu);
 				SHOW_LOADING_DIALOG(async function(){
 					await page.onPrepareState();
-					if(object.addCallBack == undefined) await page.renderInsert();
+					if(object.addCallBack == undefined) await page.render(ViewType.INSERT);
 					else await object.addCallBack(page);
 				});
 				main.home.dom.subMenuContainer.hide();

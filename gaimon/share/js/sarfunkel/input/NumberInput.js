@@ -37,7 +37,7 @@ class NumberInput extends InputMetaData{
 		if(this.detail == null){
 			let parameter = {...this};
 			this.detail = new DOMObject(TEMPLATE.DetailInputView, parameter);
-			this.setInputPerLine(this.detail, 1);
+			this.setInputPerLine(this.detail, 2);
 		}
 		if(record) this.setDetailValue(this.detail, record, reference);
 		return this.detail;
@@ -56,12 +56,19 @@ class NumberInput extends InputMetaData{
 	}
 
 	async renderDialogForm(record){
-		let parameter = {...this};
-		let input = new InputDOMObject(TEMPLATE.input.NumberInput, parameter);
-		this.setInputPerLine(input);
-		this.checkEditable(input);
-		if(record) this.setFormValue(input, record);
-		return input;
+		// let parameter = {...this};
+		// let input = new InputDOMObject(TEMPLATE.input.NumberInput, parameter);
+		// this.setInputPerLine(input);
+		// this.checkEditable(input);
+		// if(record) this.setFormValue(input, record);
+		// return input;
+		if(this.input == null){
+			let parameter = {...this};
+			this.input = new InputDOMObject(TEMPLATE.input.NumberInput, parameter);
+		}
+		this.checkEditable(this.input);
+		if(record) this.setFormValue(this.input, record);
+		return this.input;
 	}
 
 	async renderCell(record, reference) {

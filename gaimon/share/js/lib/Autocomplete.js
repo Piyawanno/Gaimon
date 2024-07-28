@@ -66,7 +66,7 @@ let Autocomplete = function() {
 			if (config.parameter != undefined) object.parameter = config.parameter;
 			if (config.isTag != undefined) object.isTag = config.isTag;
 		}
-		if (object.template == undefined || object.template.length == 0) object.template = "{{label}}";
+		if (object.template == undefined || object.template.length == 0) object.template = "{{{label}}}";
 		if (object.isFetch) object.autocomplete = object.autocompleteFetch;
 		else object.autocomplete = object.autocompleteLocal;
 	}
@@ -142,7 +142,8 @@ let Autocomplete = function() {
 	this.renderLabel = async function(data, value, callback) {
 		let isObject = typeof(value) == 'object';
 		if (isObject && object.template.length > 0) {
-			object.tag.value = Mustache.render(object.template, value);
+			if(value.label) object.tag.value = Mustache.render('{{{label}}}', value);
+			else object.tag.value = Mustache.render(object.template, value);
 			object.tag.currentValue = value;
 		} else if (isObject) {
 			object.tag.value = value.label != undefined ? value.label: value;
@@ -286,7 +287,8 @@ let Autocomplete = function() {
 					let data = {
 						name: val,
 						limit: object.limit,
-						parameter: object.parameter
+						parameter: object.parameter,
+						template: object.template
 					}
 					let response = await POST(object.data, data);
 					object.autocompleteTag.innerHTML = '';

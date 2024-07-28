@@ -5,7 +5,6 @@ class DialogContainer{
 		this.dialog = null;
 		this.child = null;
 		this.view = null;
-		this.dialog = null;
 	}
 
 	setView(view){
@@ -22,10 +21,12 @@ class DialogContainer{
 	}
 
 	appendChild(dialog){
-		if(!this.child){
-			this.child = new DialogContainer(this, dialog);
-			this.main.currentDialog = this.child;
-		}
+		// if(!this.child){
+			// this.child = new DialogContainer(this, dialog);
+			// this.main.currentDialog = this.child;
+		// }
+		this.child = new DialogContainer(this, dialog);
+		this.main.currentDialog = this.child;
 		return this.child;
 	}
 

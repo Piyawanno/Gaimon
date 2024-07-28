@@ -29,6 +29,8 @@ class NotificationHandler:
 	async def registerSocket(self, request, socket: Websocket, parameter=None):
 		await self.websocket.register(request, socket)
 		await socket.wait_for_connection_lost()
+		print(201, request, id(request))
+		print(201, socket, id(socket))
 		return {'isSuccess': True}
 
 	@POST('/benchmark', hasDBSession=False)

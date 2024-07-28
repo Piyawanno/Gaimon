@@ -2,19 +2,25 @@ from gaimon.core.Service import Service
 from gaimon.core.AsyncServicePermissionChecker import AsyncServicePermissionChecker
 from gaimon.core.Route import Route
 from gaimon.core.DBPoolLoader import DBPoolLoader
-
-import logging, importlib
+from multiprocessing import cpu_count
+from sanic import Sanic
+from packaging.version import Version
+import logging, importlib, os, sanic
 
 
 class AsyncService(Service):
 	def __init__(self, config: dict, namespace: str = ''):
 		Service.__init__(self, config, namespace)
+		self.name = self.__class__.__name__
 		self.poolLoader: DBPoolLoader = None
+		self.isDevelop: bool = config.get('isDevelop', False)
 
 	def createApplication(self):
-		from sanic import Sanic
-		self.application = Sanic(self.__class__.__name__)
-		self.application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
+		version = Version(sanic.__version__)
+		if version.major < 23:
+			from sanic import Sanic
+			self.application = Sanic(self.__class__.__name__)
+			self.application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
 	
 	def setDBPoolLoader(self, modulePath: str=None) :
 		if modulePath is None :
@@ -113,6 +119,7 @@ class AsyncService(Service):
 					)
 
 				if route.method == 'SOCKET':
+					# NOTE Disable due to bug of Sanic 23.12.1 @ Service Side
 					self.routeSocket(handler, attributeName, route)
 				else:
 					self.routeRegular(handler, attributeName, route)
@@ -146,3 +153,48 @@ class AsyncService(Service):
 			self.isCheckPermission
 		)
 		self.application.route(route.rule, name=name, **route.option)(permission.run)
+	
+	def prepareWorker(self):
+		self.setHandler()
+		self.map()
+		logging.basicConfig(
+			level=self.config.get("logLevel", logging.INFO),
+			format="[%(asctime)s] %(levelname)s %(message)s"
+		)
+
+		@self.application.listener('before_server_start')
+		async def loadListener(application, loop):
+			self.initLoop(loop)
+			await self.prepare()
+			await self.load()
+			await self.reconnect()
+
+		@self.application.listener('after_server_stop')
+		async def closeListener(application, loop):
+			await self.close()
+
+	def checkProcessNumber(self):
+		if self.isDevelop:
+			self.processNumber = 1
+		else:
+			self.processNumber = self.config.get("processNumber", -1)
+			if self.processNumber < 0 : self.processNumber = cpu_count()
+
+	def create(self, isWorker=True):
+		application = Sanic(self.name)
+		application.enable_websocket()
+		if isWorker:
+			self.application = application
+			self.prepareWorker()
+		application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
+		return application
+
+	def prepareApplication(self, application: Sanic):
+		self.checkProcessNumber()
+		application.prepare(
+			host=self.config['host'],
+			port=self.config['port'],
+			workers=self.processNumber,
+			dev=self.isDevelop,
+			access_log=self.isDevelop
+		)

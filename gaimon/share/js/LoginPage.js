@@ -15,9 +15,9 @@ const LoginPage = function() {
 		object.body.innerHTML = '';
 		object.home = new InputDOMObject(TEMPLATE.Login, {
 			'title': TITLE,
-			'authentication': authentication
+			'authentication': window.authentication
 		});
-		if(authentication.isExternal){
+		if(window.authentication?.isExternal){
 			object.external = new ExternalLoginProtocol();
 			object.external.initialize();
 		}

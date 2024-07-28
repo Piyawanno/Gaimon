@@ -103,7 +103,9 @@ const AbstractPage = function(main, parent) {
 	}
 
 	this.onPrepareState = async function() {
+		main.home.dom.container.classList.add('fullContainer');
 		main.home.dom.tabContainer.classList.add('hidden');
+		main.home.dom.stepContainer.classList.add('hidden');
 		await object.preload();
 		await object.prepare();
 		await object.initStep();

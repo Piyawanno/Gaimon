@@ -19,8 +19,8 @@ from gaimon.core.StaticFileHandler import StaticFileHandler
 from gaimon.core.CommonDecorator import CommonDecoratorRule
 from gaimon.core.ReplaceDecorator import ReplaceRule
 from gaimon.core.UserHandler import UserHandler
-from gaimon.core.ManagedServer import ManagedServer
-from gaimon.util.PathUtil import copy
+from gaimon.core.HTTPSession import HTTPSession
+from gaimon.util.PathUtil import copy, conform
 from gaimon.util.ProcessUtil import getMemory
 from gaimon.service.monitor.MonitorClient import MonitorClient
 
@@ -28,13 +28,14 @@ from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 from xerial.Record import Record
 
-from multiprocessing import cpu_count
+from multiprocessing import shared_memory
+from threading import Thread
 from typing import List, Dict, Callable
 from sanic import Sanic
 from sanic_session import Session, RedisSessionInterface
 from packaging.version import Version
 
-import os, sys, logging, json, psutil, asyncio, importlib, traceback, time
+import os, sys, logging, logging.config, json, asyncio, importlib, traceback, time, sanic, pyuca
 import redis.asyncio as redis
 
 
@@ -48,15 +49,19 @@ else:
 
 def processRouteEmpty(route:Route) :
 	return route
+
 class AsyncApplication(Application):
 	def __init__(self, config: dict, namespace: str, isEnableShare=True):
-		from gaimon.core.Extension import TabExtension
 		from gaimon.util.PathUtil import conform
-		self.config = config
-		self.isDevelop = config.get("isDevelop", True)
-		self.isCompress = config.get("isCompress", False)
-		self.isWebSocket = config.get("isWebSocket", True)
-		self.isPreload = config.get("isPreload", False)
+		self.routeExtensionMap:Dict = {}
+		self.application = None
+		self.config:Dict = config
+		self.isDevelop:bool = config.get("isDevelop", True)
+		self.isCompress:bool = config.get("isCompress", False)
+		self.isWebSocket:bool = config.get("isWebSocket", True)
+		self.isPreload:bool = config.get("isPreload", False)
+		self.isMonitor:bool = config.get("isMonitor", False)
+		self.isProduction:bool = not self.isDevelop
 		if self.isPreload and not self.isWebSocket:
 			logging.warning(
 				"*** Preload is disabled. To enable preload, websocket must be enabled."
@@ -65,13 +70,6 @@ class AsyncApplication(Application):
 		Application.BASE_CONFIG = config
 		self.userConfig = {}
 		self.setNamespace(namespace)
-		logConfig = self.setLog()
-		self.sanicName = self.config.get("sanicName", self.__class__.__name__)
-		if logConfig is not None:
-			self.application = ManagedServer(self.sanicName, log_config=logConfig)
-		else:
-			self.application = ManagedServer(self.sanicName)
-		self.isLocalConfig = True
 		self.isEnableShare = isEnableShare
 		if isEnableShare:
 			self.application.static('/share', conform(f'{self.resourcePath}/share/'))
@@ -81,21 +79,14 @@ class AsyncApplication(Application):
 		self.homeMethod = None
 		self.serviceWorkerMethod = None
 		self.modelModule = None
-		self.extension = ExtensionLoader(self)
-		self.configHandler = ConfigHandler(
-			self.resourcePath,
-			self.configPath,
-			self.extension
-		)
-		self.theme = ThemeHandler(config['theme'], self.resourcePath, self.extension)
 		self.title = config['title']
 		self.config['language'] = config.get('language', 'th')
 		self.icon = config.get('icon', '/share/icon/logo.png')
 		self.favicon = config.get('favicon', '')
 		self.horizontalLogo = config.get('horizontalLogo', '/share/icon/ximple_dark.png')
 		self.fullTitle = config.get('fullTitle', self.title)
+		self.sessionPool = None
 		self.session = None
-		self.httpSession = Session()
 		self.startSubroutine = []
 		self.userConfig = {}
 		self.modelVersion = {}
@@ -103,18 +94,39 @@ class AsyncApplication(Application):
 		self.applicationID: int = None
 		self.monitor = None
 		self.monitorTask = None
-		self.websocket = WebSocketManagement(self)
 		self.taskList: List[asyncio.Task] = []
+		self.logFlusher: LogFlusher = None
+		self.authen: Authentication = None
+		self.application: Sanic = None
+		self.isRedisPool = True
+		self.isSanicSession = False
+		self.isLocalConfig = True
+		self.applicationID = -1
+		self.redis = None
+		self.collator = pyuca.Collator()
+		self.logger = logging.getLogger("sanic.root")
+		self.processAge = self.config.get("processAge", 30)
+
+	def initialHandler(self):
+		from gaimon.core.Extension import TabExtension
+		if self.isSanicSession:
+			self.httpSession = Session(self.application)
+		else:
+			self.httpSession: HTTPSession = HTTPSession(self)
+		self.extension = ExtensionLoader(self)
+		self.configHandler = ConfigHandler(
+			self.resourcePath,
+			self.configPath,
+			self.extension
+		)
+		self.theme = ThemeHandler(self.config['theme'], self.resourcePath, self.extension)
+		self.websocket = WebSocketManagement(self)
 		self.static = StaticFileHandler(self)
 		self.userHandler = UserHandler(self)
 		self.pageTabExtension:TabExtension = {}
 		self.replaceMap: Dict[str, ReplaceRule] = {}
 		self.middlewareMap: Dict[str, PermissionChecker] = {}
 		if not hasattr(self, 'middlewareClass') : self.middlewareClass = PermissionChecker
-		self.initialDecorator()
-
-	def __del__(self):
-		pass
 
 	async def getLanguage(self):
 		return self.config['country']
@@ -138,6 +150,7 @@ class AsyncApplication(Application):
 		return AsyncPushServiceClient(self.config['notification'])
 
 	def loadController(self):
+		start = time.time()
 		self.controllerPool = {}
 		self.controllerClass = {}
 		self.controller = []
@@ -145,6 +158,8 @@ class AsyncApplication(Application):
 			self.extension.loadController(i)
 			self.extension.loadWebSocketHandler(i)
 		self.map(self.controller)
+		elapsed = round(time.time() - start, 2)
+		self.logger.info(f'>>> Controllers of {len(self.controller)} are Loaded [{round(getMemory(), 2)}MB in {elapsed}s] - {os.getpid()}')
 
 	def browseWebSocket(self, directory, modulePath):
 		for name in self.browseModule(directory) :
@@ -161,18 +176,41 @@ class AsyncApplication(Application):
 	def startMainLoop(self, loop: asyncio.BaseEventLoop):
 		self.loop = loop
 
+	def startManageLoop(self, application: Sanic, isStop: Callable):
+		application.manager
+		def startLoop():
+			p = 0
+			n = 0
+			while True:
+				time.sleep(1)
+				if isStop(): break
+				if n > self.processAge:
+					i = 0
+					for process in application.manager.processes:
+						if "Reloader" in process.name: continue
+						if f"-{p}-0" in process.name:
+							self.logger.info(f">>> Restart Process {process.name}")
+							process.restart()
+							p = (p+1)%self.processNumber
+							break
+						i += 1
+					n = 0
+				n += 1
+		thread = Thread(target=startLoop)
+		thread.start()
+
 	def startWorkerLoop(self, loop: asyncio.BaseEventLoop):
 		if self.logFlusher is not None:
 			task = loop.create_task(self.logFlusher.startFlushLoop())
 			self.taskList.append(task)
 
-		if self.isProduction:
+		if self.isProduction and self.isMonitor:
 			name = f"GaimonApplication.{self.applicationID}"
 			self.monitor = MonitorClient(name, self.config['monitor'])
 			task = loop.create_task(self.monitor.startLoop())
 			self.taskList.append(task)
 
-	async def load(self, loop):
+	async def load(self, loop, isCheckModification: bool=False, isCreateTable: bool=False, isStartSubRoutine=True):
 		self.connectionCount = 0
 		await self.connect(loop)
 		self.authen = Authentication(self)
@@ -182,15 +220,16 @@ class AsyncApplication(Application):
 			await self.extension.load(i, self.session)
 
 		await self.configHandler.load()
-		await self.initORM()
+		await self.initORM(isCheckModification, isCreateTable)
 		for i in self.config['extension']:
 			await self.extension.prepare(self.session)
 		await self.theme.load()
 		await self.extendInput()
 		self.extendJSPageTab()
 
-		for i in self.startSubroutine:
-			await i(self, self.session)
+		if isStartSubRoutine:
+			for i in self.startSubroutine:
+				await i(self, self.session)
 	
 	async def extendInput(self) :
 		from gaimon.core.Extension import InputExtension
@@ -228,15 +267,52 @@ class AsyncApplication(Application):
 		self.startSubroutine.append(subroutine)
 
 	async def connect(self, loop):
+		if self.redis is None:
+			self.connectRedis()
+		if self.sessionPool is None:
+			await self.connectDB()
+	
+	def connectRedis(self):
+		self.logger.info(">>> Connecting Redis")
 		redisConfig = self.config['redis']
 		redisURL = f"redis://{redisConfig['host']}:{redisConfig['port']}"
-		if 'db' in redisConfig:
-			redisURL = f'{redisURL}/{redisConfig["db"]}'
-		
-		self.isRedisPool = True
+		if 'db' in redisConfig: redisURL = f'{redisURL}/{redisConfig["db"]}'
 		if self.isRedisPool:
 			self.redisPool = redis.ConnectionPool.from_url(redisURL, decode_responses=True)
 			self.redis = redis.Redis(connection_pool=self.redisPool, decode_responses=True)
+		else:
+			import aioredis
+			self.redis = aioredis.from_url(redisURL, decode_responses=True)
+	
+	async def connectDB(self):
+		self.logger.info(">>> Connecting Database")
+		self.sessionPool = AsyncDBSessionPool(self.config["DB"])
+		await self.sessionPool.createConnection()
+		self.session = await self.sessionPool.getSession()
+	
+	async def close(self):
+		self.logger.info(f">>> Application Close")
+		if self.logFlusher is not None:
+			await self.logFlusher.flush()
+		for task in self.taskList:
+			if not task.done():
+				task.cancel()
+		self.taskList = []
+	
+	async def closeDBSession(self):
+		await self.sessionPool.release(self.session)
+		await self.sessionPool.close()
+
+	async def closeRedis(self):
+		if self.isRedisPool:
+			if hasattr(self.redisPool, 'aclose'):
+				await self.redisPool.aclose()
+		else:
+			await self.redis.close()
+	
+	# NOTE Legacy using sanic_session
+	def createHTTPSession(self):
+		if self.isRedisPool:
 			async def getConnection():
 				return redis.Redis(connection_pool=self.redisPool)
 			self.httpSession.init_app(
@@ -245,17 +321,10 @@ class AsyncApplication(Application):
 			)
 		else:
 			from sanic_session import AIORedisSessionInterface
-			import aioredis
-			self.redis = aioredis.from_url(redisURL, decode_responses=True)
 			self.httpSession.init_app(
 				self.application,
 				interface=AIORedisSessionInterface(self.redis)
 			)
-		
-		self.sessionPool = AsyncDBSessionPool(self.config["DB"])
-		logging.info(">>> Connecting Database")
-		await self.sessionPool.createConnection()
-		self.session = await self.sessionPool.getSession()
 	
 	def getRedis(self):
 		if self.isRedisPool:
@@ -267,17 +336,24 @@ class AsyncApplication(Application):
 		await self.connect(loop)
 		self.websocket.startLoop()
 
-	async def initORM(self):
+	async def initORM(self, isCheckModification:bool=False, isCreateTable:bool=False):
 		self.dynamicHandler = DynamicModelHandler(self)
+		await self.session.init(f'{self.resourcePath}/ModelVersion.json')
 		self.model = self.session.model.copy()
 		self.sessionPool.model = self.model.copy()
-		await self.checkModelModification(self.session)
-		await self.session.createTable()
-		await self.session.injectModel()
 		dynamicModels = await self.dynamicHandler.checkModel(True, self.session, "main")
 		[self.session.appendModel(i) for i in dynamicModels]
+		if isCheckModification:
+			await self.checkModelModification(self.session)
+			self.logger.info(">>> DB Tables are checked for modification.")
+		if isCreateTable:
+			await self.session.createTable()
+			self.logger.info(">>> DB Tables are checked for creation.")
+		await self.session.injectModel()
 		self.sessionPool.model = self.session.model.copy()
 		self.session.checkModelLinking()
+		self.logger.info(f">>> Models of {len(self.session.model)} are processed and prepared.")
+
 
 	async def readModelModification(self):
 		path = f'{self.resourcePath}/ModelVersion.json'
@@ -323,10 +399,14 @@ class AsyncApplication(Application):
 	def map(self, controllerList, processRoute:Callable=processRouteEmpty):
 		self.mappedController = {}
 		for controller in controllerList:
-			# isMapped = getattr(controller.__class__, '__is_mapped__', False)
+			routeNumber = 0
+			if self.isDevelop:
+				start = time.time()
+				startMemory = getMemory()
 			isMapped = self.mappedController.get(controller.__class__, False)
-			if  isMapped :
-				print(f"*** Warning {controller.__class__.__name__} is already mapped.")
+			if isMapped :
+				if self.applicationID < 0:
+					self.logger.warning(f"*** Warning {controller.__class__.__name__} is already mapped.")
 				continue
 			if not hasattr(controller.__class__, 'extensionPath'):
 				controller.__class__.extensionPath = 'gaimon'
@@ -338,21 +418,30 @@ class AsyncApplication(Application):
 				route: Route = attribute.__ROUTE__
 				route = processRoute(route)
 				if route.rule in self.mappedRoute:
-					logging.warning(
-						f"*** Route {route.rule}@{controller.__class__.__name__} is already mapped."
-					)
+					if self.applicationID < 0 :
+						controllerName = controller.__class__.__name__
+						self.logger.warning(
+							f"WARNING *** Route {route.rule}@{controllerName} is already mapped."
+						)
 					continue
 				self.mappedRoute.add(route.rule)
 				if route.rule[0] != '/':
-					logging.warning(
-						f"*** Route {route.rule}@{controller.__class__.__name__} is not conformed."
+					self.logger.warning(
+						f"WARNING *** Route {route.rule}@{controller.__class__.__name__} is not conformed."
 					)
 					continue
 				if route.method == 'SOCKET':
 					self.routeSocket(controller, attributeName, route)
 				else:
 					self.routeRegular(controller, attributeName, route)
-			# controller.__class__.__is_mapped__ = True
+				routeNumber += 1
+			if self.isDevelop:
+				elapsed = round(time.time() - start, 2)
+				currentMemory = round(getMemory(), 2)
+				memory = round(currentMemory - startMemory,2 )
+				if memory > 0.5 or elapsed > 0.2:
+					signature = f'{controller.__class__.extensionPath}.{controller.__class__.__name__}'
+					self.logger.warning(f'*** Heavy Controller {signature} detected: load in {elapsed}s {memory}MB/{currentMemory}MB {routeNumber} route')
 			self.mappedController[controller.__class__] = True
 		self.replaceRoute()
 
@@ -458,54 +547,26 @@ class AsyncApplication(Application):
 		permissionList.sort(key=lambda x: x.order)
 		return permissionList
 
-	async def close(self):
-		logging.info(">>> Application Close")
-		if self.logFlusher is not None:
-			await self.logFlusher.flush()
-		for task in self.taskList:
-			if not task.done():
-				task.cancel()
-		self.taskList = []
-		await self.sessionPool.release(self.session)
-		await self.sessionPool.close()
-
 	def setLog(self):
 		self.logLevel = self.config.get("logLevel", logging.INFO)
-		self.isProduction = not self.isDevelop
-		self.logFlusher: LogFlusher = None
-		if self.isDevelop:
-			logging.basicConfig(
-				level=self.logLevel,
-				format="[%(asctime)s] %(levelname)s %(message)s"
-			)
-			return None
-		else:
+		if self.isProduction :
 			logFlusherClass = getattr(self, 'logFlusherClass', LogFlusher)
 			self.logFlusher = logFlusherClass(self.config, self)
-			logConfig = LOGGING_CONFIG.copy()
-			path = f'{CONFIG_ROOT}/Log.json'
-			if os.path.isfile(path):
-				with open(path) as fd:
-					logConfig.update(json.load(fd))
-			logging.setLoggerClass(Logger)
-			logging.basicConfig(
-				level=self.logLevel,
-				format="[%(asctime)s] %(levelname)s %(message)s"
-			)
-			formatter = logging.root.handlers[0].formatter
-			logging.root = Logger("gaimon", self.logLevel)
-			logging.root.handler.formatter = formatter
-			self.logger = logging.root
-			return logConfig
+	
+	def createLogger(self):
+		return Logger("gaimon")
 
-	async def setSequence(self):
+	async def setSequence(self, applicationID: int=None):
 		key = f"GaimonProcessSequence.{self.namespace}"
 		while True:
 			ID = await self.redis.rpop(key)
 			if ID is None: break
 
-		for i in range(self.processNumber):
-			await self.redis.rpush(key, i)
+		if applicationID is not None:
+			await self.redis.rpush(key, applicationID)
+		else:
+			for i in range(self.processNumber):
+				await self.redis.rpush(key, i)
 
 	async def getSequence(self):
 		key = f"GaimonProcessSequence.{self.namespace}"
@@ -522,37 +583,35 @@ class AsyncApplication(Application):
 		]
 
 		for source, destination in dataMap :
-			sourcePath = f'{rootPath}/{source}'
-			destinationPath = f'{resourcePath}/{destination}'
+			sourcePath = conform(f'{rootPath}/{source}')
+			destinationPath = conform(f'{resourcePath}/{destination}')
 			exist = not os.path.isfile(sourcePath)
 			sourceTime = os.stat(sourcePath).st_mtime
 			destinationTIme = os.stat(destinationPath).st_mtime
 			if exist or sourceTime > destinationTIme :
 				copy(sourcePath, destinationPath)
-
-	def prepare(self):
-		config = self.config
-		if self.isDevelop:
-			self.processNumber = 1
-		else:
-			self.processNumber = config.get("processNumber", -1)
-			if self.processNumber < 0 : self.processNumber = cpu_count()
+	
+	def prepare(self, isPrepareMain=False):
+		self.extension.isPrintController = True
+		self.setLog()
+		self.checkProcessNumber()
 		self.checkData()
 		self.loadController()
 		self.application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
 
-		@self.application.main_process_start
-		async def prepare(application: Sanic, loop):
-			await self.load(loop)
-			await self.setSequence()
-			self.startMainLoop(loop)
-			await self.close()
-
+		if isPrepareMain:
+			loop = asyncio.get_event_loop()
+			asyncio.run(self.prepareMain(loop))
+		else:
+			@self.application.main_process_start
+			async def prepare(application: Sanic, loop):
+				await self.prepareMain(loop)
+			
 		@self.application.after_server_start
 		async def reconnect(application: Sanic, loop):
 			await self.reconnect(loop)
 			await self.getSequence()
-			logging.info(
+			print(
 				f"Process {os.getpid()} ID={self.applicationID} memory : {round(getMemory(), 2)}MB"
 			)
 			self.startWorkerLoop(loop)
@@ -561,8 +620,55 @@ class AsyncApplication(Application):
 		async def stop(application: Sanic, loop):
 			self.websocket.stopTask()
 			await self.close()
+			await self.closeDBSession()
+			await self.closeRedis()
 
-		self.sanicHandler = {'prepare': prepare, 'reconnect': reconnect, 'stop': stop}
+	async def prepareMain(self, loop):
+		await self.load(loop, True, True)
+		await self.setSequence()
+		self.startMainLoop(loop)
+		await self.closeDBSession()
+		await self.closeRedis()
+
+	def prepareManager(self, application: Sanic):
+		stop = []
+		isStop = lambda: len(stop)
+		@application.main_process_ready
+		async def prepare(application: Sanic, loop):
+			self.startManageLoop(application, isStop)
+
+		@application.main_process_stop
+		async def close(application: Sanic, loop):
+			stop.append(True)
+			await self.close()
+
+	def prepareWorker(self):
+		self.setLog()
+		self.connectRedis()
+		async def getSequence():
+			await self.getSequence()
+			await self.closeRedis()
+		asyncio.run(getSequence())
+		if self.applicationID == 0: self.extension.isPrintController = True
+		self.loadController()
+		@self.application.after_server_start
+		async def reconnect(application: Sanic, loop):
+			await self.reconnect(loop)
+			await self.load(loop)
+			logging.info(
+				f"Process {os.getpid()} ID={self.applicationID} memory : {round(getMemory(), 2)}MB"
+			)
+			self.startWorkerLoop(loop)
+
+		@self.application.before_server_stop
+		async def stop(application: Sanic, loop: asyncio.BaseEventLoop):
+			await self.setSequence(self.applicationID)
+			self.logger.info('>>> Stop Application')
+			self.websocket.stopTask()
+			await self.close()
+			await self.closeDBSession()
+			await self.closeRedis()
+
 
 	def run(self):
 		self.prepare()
@@ -570,6 +676,39 @@ class AsyncApplication(Application):
 			host=self.config['host'],
 			port=self.config['port'],
 			workers=self.processNumber,
-			dev=self.logLevel == logging.DEBUG,
-			access_log=True
+			dev=self.isDevelop,
+			access_log=self.isDevelop,
+		)
+	
+	def runSingleProcess(self):
+		self.prepare(True)
+		self.application.run(
+			host=self.config['host'],
+			port=self.config['port'],
+			workers=1,
+			access_log=self.isDevelop,
+			single_process=self.isDevelop,
+		)
+	
+	def create(self, isWorker=True, isManage:bool=False) -> Sanic:
+		application = Sanic('GaimonApplication')
+		application.enable_websocket()
+		if isWorker:
+			self.application = application
+			self.initialHandler()
+			self.initialDecorator()
+			self.prepareWorker()
+		elif not self.isDevelop and isManage:
+			self.prepareManager(application)
+		application.config.REQUEST_TIMEOUT = self.config.get("timeOut", 60)
+		return application
+	
+	def prepareApplication(self, application: Sanic):
+		self.checkProcessNumber()
+		application.prepare(
+			host=self.config['host'],
+			port=self.config['port'],
+			workers=self.processNumber,
+			auto_reload=self.isDevelop,
+			access_log=self.isDevelop,
 		)

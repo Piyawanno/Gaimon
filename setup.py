@@ -189,11 +189,18 @@ class GaimonSetup :
 		os.system(command)
 
 	def setupPIP(self) :
+		
 		print(">>> Installing pip package.")
 		with open('requirements.txt', encoding="utf-8") as fd :
 			content = fd.read()
 
-		command = "pip3 install %s"%(content.replace("\n", " "))
+		import platform
+		subversion = int(platform.python_version().split('.')[1])
+		if subversion >= 11:
+			command = "pip3 install --break-system-packages %s"%(content.replace("\n", " "))
+		else:
+			command = "pip3 install %s"%(content.replace("\n", " "))
+
 		print(command)
 		os.system(command)
 		

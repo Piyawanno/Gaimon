@@ -21,7 +21,8 @@ class Authentication:
 		self.GROUP_ROLE_KEY = "GaimonGroupRole"
 		self.TOKEN_REDIS_KEY = "GaimonToken"
 		self.TOKEN_TIME_REDIS_KEY = "GaimonTokenTime"
-		self.SIGNING_KEY = "sx5AL5uk0CkfmFQ8Kda7HbWDdupLaOksEj3sXMvY9tM="
+		# TODO get config over configuration handler
+		self.SIGNING_KEY = self.application.config['JWTSigningKey']
 		self.PERMISSION_REDIS_KEY = 'GaimonPermission'
 
 	async def triggerRole(self, session: AsyncDBSessionBase, entity: str):
@@ -100,6 +101,7 @@ class Authentication:
 		isExpire = await self.isExpire(token)
 		if isExpire: return
 		payload = await self.decodeJWT(token)
+		if payload is None: return None
 		now = datetime.now(timezone.utc)
 		delta = now - datetime.fromtimestamp(payload['iat'], timezone.utc)
 		if delta.days == 0: return token

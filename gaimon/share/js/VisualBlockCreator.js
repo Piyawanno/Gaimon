@@ -373,9 +373,10 @@ const VisualBlockCreator = function() {
 					config.data = data[item.id];
 				}
 				if(data != undefined) {
-					const table = await config.getTableForm(config, data[item.id]);
+					const table = await config.getTableForm(config);
 					group.dom[body].append(table);
 					form.dom.visualblock_form_container.append(group);
+					table.createMultipleRecord(data[item.id]);
 					group.setData(data[item.id]);
 				}else{
 					const table = await config.getTableForm(config);
@@ -384,7 +385,7 @@ const VisualBlockCreator = function() {
 					// group.setData(data[item.id]);
 				}
 			} else {
-				let inputList = ''
+				let inputList = '';
 				if(data != undefined) {
 					inputList = await object.sanitizeInput(item.input, item.modelName, data[item.id]);
 					group.setData(data[item.id]);
@@ -435,6 +436,7 @@ const VisualBlockCreator = function() {
 	};
 
 	this.sanitizeInput = async function(inputList, modelName, data) {
+		console.log(inputList);
 
 		let form = await object.page.getForm(modelName, {
 			isSetState: false,
@@ -442,6 +444,12 @@ const VisualBlockCreator = function() {
 			title: '',
 			inputs: inputList,
 			inputPerLine: 3});
+		console.log(form.dom);
+		for (let input of inputList){
+			if (input.onInit){
+				await input.onInit(form.dom);
+			}
+		}
 		// return new DOMObject(form.dom.form.html);
 		// return form.dom.form;
 		form.html = form.dom.form;

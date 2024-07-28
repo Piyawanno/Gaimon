@@ -31,6 +31,18 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 		return this.input;
 	}
 
+	async renderFormCell(record, reference) {
+		this.currentRecord = record;
+		let parameter = {...this};
+		let cell = new InputDOMObject(TEMPLATE.input.TableFormSelectInput, parameter);
+		if (this.config.prerequisite) this.setPrerequisite(this, cell);
+		this.checkTableFormEditable(cell);
+		// await this.getOption();
+		this.setOption(cell.dom[this.columnName], this.option);
+		if(record) this.setTableFormValue(cell, record);
+		return cell;
+	}
+
 	setFormValue(inputForm, record){
 		let object = this;
 		if(record != undefined){
@@ -43,8 +55,10 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 					else this.disableEdit(inputForm);
 					object.setOption(inputForm.dom[object.columnName], object.option);
 					if (object.prerequisite != null) object.callPrerequisite(object, inputForm);
-					let value = object.optionMap[object.currentRecord[object.columnName]].value;
-					input.value = value;
+					if (object.optionMap[object.currentRecord[object.columnName]]) {
+						let value = object.optionMap[object.currentRecord[object.columnName]].value;
+						input.value = value;
+					}
 				});
 			}
 		}
@@ -60,6 +74,7 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 				this.getPrerequisiteOption(prerequisite).then(isSuccess => {
 					if (isSuccess) object.enableEdit(detail);
 					else this.disableEdit(detail);
+					if (object.optionMap[record[object.columnName]] == undefined) return;
 					let label = object.optionMap[record[object.columnName]].label;
 					input.innerHTML = label;
 				});
@@ -77,6 +92,7 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 				this.getPrerequisiteOption(prerequisite).then(isSuccess => {
 					if (isSuccess) object.enableEdit(cell);
 					else this.disableEdit(cell);
+					if (object.optionMap[attribute] == undefined) return;
 					input.innerHTML = object.optionMap[attribute].label;
 					if (object.optionMap[attribute]?.avatar?.url) {
 						cell.dom.avatar.onerror = function() {
@@ -87,7 +103,7 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 						if (object.optionMap[attribute]?.avatar?.default) {
 							cell.dom.avatar.src = object.optionMap[attribute]?.avatar?.default;
 						} else {
-							cell.dom.avatar.src = "share/icon/logo_padding.png";
+							cell.dom.avatar.src = `${rootURL}share/icon/logo_padding.png`;
 							cell.dom.avatarContainer.hide();
 						}
 						
@@ -100,18 +116,21 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 
 	async handlePrerequisite(input, dom, inputForm) {
 		let data = {};
-		input.getFormValue(input.formView, dom, data);
+		input.getFormValue(input.formView, dom, data, new FormData(), []);
 		let isSuccess = await this.getPrerequisiteOption(data[input.columnName]);
 		if (isSuccess) this.enableEdit(inputForm);
 		else this.disableEdit(inputForm);
-		this.setOption(this.input.dom[this.columnName], this.option);
+		this.setOption(inputForm.dom[this.columnName], this.option);
 		if (this.currentRecord) {
-			let value = this.optionMap[this.currentRecord[this.columnName]].value;
-			inputForm.dom[this.columnName].value = value;
+			if (this.optionMap[this.currentRecord[this.columnName]]) {
+				let value = this.optionMap[this.currentRecord[this.columnName]].value;
+				inputForm.dom[this.columnName].value = value;
+			}
 		}
 	}
 
 	async getPrerequisiteOption(value){
+		if (value == undefined) return false;
 		let response = await GET(`${this.url}${value}`);
 		if(!response.isSuccess){
 			console.error(`Error by getting option ${this.columnName} ${this.url}.`);

@@ -20,19 +20,20 @@ class AddSideIcon extends SideIcon{
                 await object.input.fetch(object.dom, id);
             }
         }
-        let callback = async function(event) {
-            let modelName = object.input.column.foreignModelName;
-            if (modelName == undefined) return;
-            let page = main.pageModelDict[modelName];
-            if (page == undefined) return;
-            if (page.renderInsertDialog) {
-                await page.onPrepareState();
-                await page.renderInsertDialog.bind(page)(undefined, object.handlerInsert);
-            } else if (page.renderDialog) {
-                await page.prepare();
-                await page.renderDialog(modelName, {});
-            }
-        }
-		this.svg.DOM.dom.icon.onclick = callback;
+		this.svg.DOM.dom.icon.onclick = this.renderDialog.bind(this);
+	}
+
+	async renderDialog(event){
+		let modelName = this.input.column.foreignModelName;
+		if (modelName == undefined) return;
+		let page = main.pageModelDict[modelName];
+		if (page == undefined) return;
+		if (page.renderInsertDialog) {
+			await page.onPrepareState();
+			await page.renderInsertDialog.bind(page)(undefined, this.handlerInsert);
+		} else if (page.renderDialog) {
+			await page.prepare();
+			await page.renderDialog(modelName, {});
+		}
 	}
 }

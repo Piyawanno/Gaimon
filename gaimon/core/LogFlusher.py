@@ -1,4 +1,5 @@
 from gaimon.util.DateTimeUtil import getCurrentDateID, DAY_SECONDS
+from gaimon.util.ProcessUtil import getMemory
 from datetime import datetime
 
 import asyncio, time, logging, os, json, traceback, io, zlib, psutil, copy
@@ -37,8 +38,9 @@ class LogFlusher:
 		if len(LOG) == 0: return
 		LOG_INFO['count'] = 0
 		LOG_INFO['lastFlush'] = time.time()
-		logging.info(
-			f"Flush Log {os.getpid()} ID={self.application.applicationID} memory : {int(psutil.Process().memory_info().rss / (1024 * 1024))}MB"
+		memory = round(getMemory(), 2)
+		print(
+			f"Flush Log {os.getpid()} ID={self.application.applicationID} {memory}MB"
 		)
 		for level, nameMap in LOG.items():
 			for name, logList in nameMap.items():

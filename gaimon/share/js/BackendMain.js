@@ -60,7 +60,7 @@ const BackendMain = function() {
 		for(let process of BACKEND_PREPROCESS){
 			await process(object);
 		}
-		let result = await GLOBAL.AUTHEN.checkLogin();
+		let result = await GLOBAL.AUTHEN.checkLogin(IS_MOBILE_APP || isInStandaloneMode());
 		if (!result.isSuccess) {
 			let url = `${window.location.search}${window.location.pathname}`;
 			url.encodeHex();
@@ -100,10 +100,12 @@ const BackendMain = function() {
 
 	this.getENUM = async function(){
 		let ENUM = await GET('enum/get');
+		console.log(ENUM);
 		if(ENUM){
 			for(let i in ENUM.result){
 				if(window[i]) continue;
 				window[i] = ENUM.result[i];
+				console.log(i);
 			}
 		}
 	}
@@ -122,6 +124,7 @@ const BackendMain = function() {
 		object.body.innerHTML = '';
 		object.body.classList.add('abstract');
 		object.body.appendChild(object.home.html);
+		object.processStep(STEP_FLOW);
 		await object.renderMenu();
 		await object.personalBar.renderPersonalBar();
 		if (DEFAULT_MENU.length != 0) {
@@ -143,6 +146,32 @@ const BackendMain = function() {
 		// }
 	}
 
+	this.processStep = async function(steps) {
+		this.stepPageIDMap = {};
+		this.stepViewMap = {};
+		for (let code in steps) {
+			let flow = steps[code];
+			flow.item = flow.item.sort((a, b) => {
+				VersionParser.compare(new VersionParser(a.stepOrder), new VersionParser(b.stepOrder))
+			})
+			for (let step of flow.item) {
+				step.stepOrder = new VersionParser(step.stepOrder);
+				if (this.stepPageIDMap[step.code] == undefined) {
+					this.stepPageIDMap[step.code] = {};
+				}
+				if (this.stepPageIDMap[step.code][code] == undefined) {
+					this.stepPageIDMap[step.code][code] = {};
+					this.stepPageIDMap[step.code][code].code = code;
+				}
+				if (this.stepPageIDMap[step.code][code].items == undefined) {
+					this.stepPageIDMap[step.code][code].items = [];
+				}
+				this.stepPageIDMap[step.code][code].items.push(step);
+				this.stepPageIDMap[step.code][code].stepViewMap = this.stepViewMap;
+			}
+		}
+	}
+
 	this.prepareExtension = async function() {
 		for (let extension in JS_EXTENSION) {
 			for (let scriptName in JS_EXTENSION[extension]) {
@@ -155,9 +184,10 @@ const BackendMain = function() {
 		object.componentComposer = [];
 		for(let composerName of COMPONENT.composer){
 			try{
-				let composer = eval(`new ${composerName}()`);
+				let composer = eval(`new ${composerName}()`);;
 				composer.isCreated = false;
 				await composer.onCreate(object.pageIDDict);
+				if (composer.setStep) composer.setStep(STEP_FLOW);
 				composer.isCreated = true;
 				object.componentComposer.push(composer);
 			}catch(error){
@@ -170,6 +200,7 @@ const BackendMain = function() {
 				let creator = eval(`new ${creatorName}(object)`);
 				creator.isCreated = false;
 				await creator.onCreate();
+				if (creator.setStep) creator.setStep(STEP_FLOW);
 				creator.isCreated = true;
 				if(creator.pageID){
 					object.pageIDDict[creator.pageID] = creator;
@@ -217,6 +248,8 @@ const BackendMain = function() {
 			if(page.onCreate){
 				if (page.isCreated == undefined) page.isCreated = false;
 				if (!page.isCreated) await page.onCreate();
+				// if (page.setStep) page.setStep(object.stepPageIDMap[page.pageID]);
+				if (page.setStep) page.setStep(STEP_FLOW);
 				page.isCreated = true;
 			}
 		}
@@ -580,5 +613,16 @@ const BackendMain = function() {
 			this.home.dom.dialog.html('');
 		}
 		return this.currentDialog;
+	}
+
+	this.renderDetailByModel = async function(modelName, ID) {
+		await main.pageModelDict[modelName]?.onPrepareState()
+		if (main.pageModelDict[modelName]) {
+			if (main.pageModelDict[modelName].renderDetail) {
+				main.pageModelDict[modelName]?.renderDetail(ID)
+			} else {
+				main.pageModelDict[modelName]?.renderViewFromExternal(modelName, {data: {id: ID}, isView: true}, 'Form')
+			}
+		}
 	}
 }

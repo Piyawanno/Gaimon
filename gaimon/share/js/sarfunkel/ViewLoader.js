@@ -11,6 +11,7 @@ class ViewLoader{
 			PermissionType.UPDATE, PermissionType.DROP,
 		];
 		this.permissionList = [];
+		this.isRegistered = false;
 
 		this.form = null;
 		this.detail = null;
@@ -42,8 +43,16 @@ class ViewLoader{
 		this.navigation = new NavigationView();
 		this.defaultNavigationIndex = 2;
 
+		this.stepProtocol = null;
+
 		this.currentRecord = null;
+		this.currentViewType = null;
 	}
+
+	async onCreate(){
+		this.register();
+	}
+
 	async createMeta(config){
 		if (!this.isCreated) {
 			this.isCreated = true;
@@ -68,6 +77,7 @@ class ViewLoader{
 	}
 
 	appendModelComponent(component){
+		component.parent = this;
 		this.modelComponent[component.ID] = component;
 		if (component.isTableForm) {
 			let viewTypes = [ViewType.INSERT, ViewType.INSERT_DIALOG, ViewType.UPDATE, ViewType.UPDATE_DIALOG];
@@ -88,6 +98,13 @@ class ViewLoader{
 			for (let viewType of viewTypes) {
 				if (this.modelComponentViewMap[viewType] == undefined) this.modelComponentViewMap[viewType] = []
 				this.modelComponentViewMap[viewType].push(new ModelComponent(component, ViewType.TABLE));
+			}
+		}
+		if (component.isDetail) {
+			let viewTypes = [ViewType.DETAIL, ViewType.DETAIL_DIALOG];
+			for (let viewType of viewTypes) {
+				if (this.modelComponentViewMap[viewType] == undefined) this.modelComponentViewMap[viewType] = []
+				this.modelComponentViewMap[viewType].push(new ModelComponent(component, ViewType.DETAIL));
 			}
 		}
 		if (component.isForm) {
@@ -142,6 +159,16 @@ class ViewLoader{
 	}
 
 	register(){
+		if (!this.isRegistered) {
+			this.isRegistered = true;
+			this.registerStep();
+		}
+	}
+
+	registerStep() {
+		if (this.renderStepViewMap == null) return;
+		if (Object.keys(this.renderStepViewMap).length == 0) return;
+		
 	}
 
 	async renderInsertContent(selectedData){
@@ -152,6 +179,7 @@ class ViewLoader{
 			selectedData,
 			this.handleInsert.bind(this)
 		);
+		this.currentViewType = ViewType.INSERT;
 		await this.renderComponent(ViewType.INSERT, selectedData, rendered.dom.additional_form);
 		return rendered;
 	}
@@ -165,6 +193,7 @@ class ViewLoader{
 			record,
 			this.handleUpdate.bind(this)
 		);
+		this.currentViewType = ViewType.UPDATE;
 		await this.renderComponent(ViewType.UPDATE, ID, rendered.dom.additional_form);
 		return rendered;
 	}
@@ -172,9 +201,11 @@ class ViewLoader{
 	async renderDetailContent(ID){
 		let data = ID;
 		if(typeof data != 'object') data = await this.protocol.getByID(ID);
+		this.currentRecord = data;
 		this.checkDetail();
 		let title = this.getDetailTitle(data);
 		let rendered = await this.detail.render(title, data);
+		this.currentViewType = ViewType.DETAIL;
 		await this.renderComponent(ViewType.DETAIL, ID, rendered.dom.additional_form);
 		return rendered;
 	}
@@ -184,7 +215,7 @@ class ViewLoader{
 	}
 
 	async getTable(filter, isView=false) {
-		this.checkTable();
+		await this.checkTable();
 		if (isView) {
 			this.table?.addOperation?.operation?.html.hide();
 			this.table.editOperation.isEnabled = false;
@@ -195,12 +226,14 @@ class ViewLoader{
 			this.table.deleteOperation.isEnabled = true;
 		}
 		let rendered = await this.table.render(this.title, filter);
+		this.currentViewType = ViewType.TABLE;
 		return rendered;
 	}
 
 	async getTableForm(filter) {
 		this.checkTableForm();
 		let rendered = await this.tableForm.render(this.title, filter);
+		this.currentViewType = ViewType.TABLE_FORM;
 		return rendered;
 	}
 
@@ -283,7 +316,7 @@ class ViewLoader{
 			this.tabViewMap[item.view] = new TabView();
 			let mainTab = new TabViewItem(this.pageID, this.title, '0.1', item.view);
 			mainTab.isMain = true;
-			mainTab.render = async function(tabView, data) {
+			mainTab.renderFunction = async function(tabView, data) {
 				SHOW_LOADING_DIALOG(async function() {
 					await object.onPrepareState();
 					let renderFuntion = object.renderMap[item.view].bind(object);
@@ -310,37 +343,55 @@ class ViewLoader{
 		return tab;
 	}
 
-	appendStep(item) {
-		let object = this;
-		if (this.stepViewMap[item.view] == undefined) {
-			this.stepViewMap[item.view] = new StepView();
-			let mainStep = new StepViewItem(this.pageID, this.title, '0.1', item.view);
-			mainStep.isMain = true;
-			mainStep.render = async function(stepView, data) {
-				SHOW_LOADING_DIALOG(async function() {
-					await object.onPrepareState();
-					let renderFuntion = object.renderMap[item.view].bind(object);
-					await renderFuntion(data);	
-				});
+	setStep(steps) {
+		if (steps  == undefined) return;
+		if (this.renderStepViewMap == null) return;
+		if (Object.keys(this.renderStepViewMap).length == 0) return;
+		this.stepViewMap = {};
+		for (let flowCode in this.renderStepViewMap) {
+			if (steps[flowCode] == undefined) continue;
+			if (steps[flowCode].stepViewMap == undefined) steps[flowCode].stepViewMap = {};
+			if (steps[flowCode].stepViewMap[flowCode] == undefined) {
+				steps[flowCode].stepViewMap[flowCode] = new StepView(flowCode);
+				Object.id(steps[flowCode].stepViewMap[flowCode]);
 			}
-			this.stepViewMap[item.view].appendItem(mainStep);
+			this.stepViewMap = steps[flowCode].stepViewMap;
+			for (let item of steps[flowCode].item) {
+				if (this.renderStepViewMap[flowCode][item.code] == undefined) continue;
+				let renderFunction = this.renderStepViewMap[flowCode][item.code];
+				item.stepItem = new StepViewItem(item.code, item.title, flowCode, item.stepOrder.origin, renderFunction, this);
+				this.stepViewMap[flowCode].appendItem(item.stepItem);
+			}
 		}
-		this.stepViewMap[item.view].appendItem(item);
 	}
 
-	async renderStep(viewType, activeItem) {
-		let stepView = this.stepViewMap[viewType];
-		if (stepView == undefined) {
+	async renderStep(flowCode, activeItem, parameter) {
+		if (this.stepViewMap == undefined || this.stepViewMap == null) {
 			this.hideStep();
 			return;
 		}
-		if (activeItem == undefined || activeItem.length > 0) {
-			stepView.activeItem = stepView.mainItem;
+		this.currentFlowCode = flowCode;
+		this.currentStep = activeItem;
+		let stepView = this.stepViewMap[flowCode];
+		stepView.activeItem = stepView.itemMap[activeItem];
+		stepView.activeItem.parameter = parameter;
+		if (parameter != undefined && parameter.logFlow != undefined) {
+			stepView.setLogFlow(parameter.logFlow);
 		} else {
-			stepView.activeItem = stepView.itemMap[activeItem];
+			stepView.setLogFlow(undefined);
 		}
 		let step = await stepView.render(activeItem);
+		this.renderComponent("LOG_FLOW", parameter?.logFlow)
 		return step;
+	}
+
+	getStepData(flowCode, step) {
+		if (this.stepViewMap == undefined || this.stepViewMap == null) return;
+		let stepView = this.stepViewMap[flowCode];
+		if (stepView == undefined) return;
+		let item = stepView.itemMap[step];
+		if (item == undefined) return;
+		return item.data;
 	}
 
 	hideTab() {
@@ -348,7 +399,7 @@ class ViewLoader{
 	}
 
 	hideStep() {
-		main.home.dom.tabContainer.classList.add('hidden');
+		main.home.dom.stepContainer.classList.add('hidden');
 	}
 
 	checkForm(){
@@ -397,6 +448,7 @@ class ViewLoader{
 	}
 
 	setToDialog(result) {
+		console.log(result);
 		main.appendDialog(result);
 	}
 

@@ -1,6 +1,4 @@
 #!/usr/bin/python3
 
 from gaimon.util.creator.ControllerCreator import ControllerCreator
-
-creator = ControllerCreator()
-creator.start()
+if __name__ == '__main__': ControllerCreator().start()

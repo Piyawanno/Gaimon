@@ -9,6 +9,7 @@ class CurrencyInput extends NumberInput{
 		}else{
 			this.isFloatingPoint = config.isFloatingPoint;
 		}
+		this.isShowCurrency = false;
 	}
 	/**
 	 * @param {NumberInputConfig} config 
@@ -21,18 +22,20 @@ class CurrencyInput extends NumberInput{
 	}
 
 	async renderForm(record){
-		let parameter = {...this};
-		let cell = new InputDOMObject(TEMPLATE.input.CurrencyViewInput, parameter);
-		this.checkFormEditable(cell);
-		if(record) this.setFormValue(cell, record);
-		return cell;
+		if(this.input == null){
+			let parameter = {...this};
+			this.input = new DOMObject(TEMPLATE.input.CurrencyViewInput, parameter);
+		}
+		this.checkEditable(this.input);
+		if(record) this.setFormValue(this.input, record);
+		return this.input;
 	}
 
 	async renderDetail(record, reference){
 		if(this.detail == null){
 			let parameter = {...this};
 			this.detail = new DOMObject(TEMPLATE.DetailInputView, parameter);
-			this.setInputPerLine(this.detail, 1);
+			this.setInputPerLine(this.detail, 2);
 		}
 		if(record) this.setDetailValue(this.detail, record, reference);
 		return this.detail;
@@ -46,10 +49,20 @@ class CurrencyInput extends NumberInput{
 		return cell;
 	}
 
+	async renderDialogForm(record){
+		if(this.input == null){
+			let parameter = {...this};
+			this.input = new DOMObject(TEMPLATE.input.CurrencyViewInput, parameter);
+		}
+		this.checkEditable(this.input);
+		if(record) this.setFormValue(this.input, record);
+		return this.input;
+	}
+
 	setFormValue(inputForm, record){
 		if(record != undefined){
 			let attribute = record[this.columnName];
-			let input = inputForm.dom[this.columnName];
+			let input = inputForm == undefined ? undefined : inputForm.dom[this.columnName];
 			if(attribute != undefined && input != undefined) {
 				inputForm.dom.currency.value = attribute.originCurrency;
 				input.value = Fraction(attribute.origin[0], attribute.origin[1]).toString();
@@ -57,15 +70,8 @@ class CurrencyInput extends NumberInput{
 		}
 	}
 
-	setDetailValue(inputForm, record){
-		if(record != undefined){
-			let attribute = record[this.columnName];
-			let input = inputForm.dom[this.columnName];
-			if(attribute != undefined && input != undefined) {
-				if (attribute.length == 0) attribute = '-';
-				item.innerHTML = this.column.toDisplay(attribute);
-			}
-		}
+	setDetailValue(cell, record, reference){
+		super.setDetailValue(cell, record, reference);
 	}
 
 	setTableFormValue(cell, record){
@@ -107,6 +113,4 @@ class CurrencyInput extends NumberInput{
 			return true;
 		}
 	}
-
-	
 }

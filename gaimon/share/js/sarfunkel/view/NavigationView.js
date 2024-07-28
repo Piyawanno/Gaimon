@@ -31,6 +31,7 @@ class NavigationView{
 		for(let i=0;i<n;i++){
 			let item = this.itemList[i];
 			let isClickable = i < n-1 && i > 0;
+			if (item.isClickable != undefined) isClickable = item.isClickable;
 			let rendered = await item.render(isClickable);
 			container.appendChild(rendered.html);
 			if (i != n - 1) {

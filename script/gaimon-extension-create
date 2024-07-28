@@ -1,6 +1,4 @@
 #!/usr/bin/python3
 
 from gaimon.util.creator.ExtensionCreator import ExtensionCreator
-
-creator = ExtensionCreator()
-creator.start()
+if __name__ == '__main__': ExtensionCreator().start()

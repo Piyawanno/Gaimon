@@ -1,3 +1,4 @@
+import typing
 from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from xerial.Column import Column
 from xerial.StringColumn import StringColumn
@@ -15,7 +16,8 @@ from typing import Tuple, Awaitable, List, Dict, Any, Callable
 from sanic.request import RequestParameters, Request, File
 from dataclasses import dataclass
 
-import json, math, string, random, copy
+import json, math, string, random, copy, pystache, re
+T = typing.TypeVar("T")
 
 __SELECT_INPUT__ = {ReferenceSelectInput, EnumSelectInput}
 
@@ -30,6 +32,12 @@ class ClauseState :
 	def isReference(self) -> bool :
 		input = getattr(self.meta, 'input', None)
 		return  input.__class__ in __SELECT_INPUT__
+	
+def getRequestData(request) -> Dict:
+	if 'data' in request.form:
+		return json.loads(request.form['data'][0])
+	else:
+		return request.json
 
 def processLimitOffset(request) -> Tuple[int, int] :
 	limit: int = request.get('limit', None)
@@ -94,19 +102,21 @@ def processRequestQuery(request, modelClass, isOrder=False) -> Tuple[str, list, 
 	clause = 'WHERE ' + (' AND '.join(clause)) if len(clause) else ''
 	if isOrder:
 		orderBy = request.get('orderBy', 'id')
+		orderBy = processOrderBy(orderBy, modelClass)
 		isDecreasing = request.get('isDecreasing', True)
 		direction = 'DESC' if isDecreasing else 'ASC'
 		clause = f'{clause} ORDER BY {orderBy} {direction}'
 	return clause, parameter, limit, offset
 
 def createSelectHandler(modelClass: type, isRelated=False):
-	async def handleSelect(session: AsyncDBSessionBase, data: dict):
+	async def handleSelect(session: AsyncDBSessionBase, data: dict) -> List[Dict]:
 		data = copy.copy(data)
 		item = data.get('data', data)
 		if item is None: item = {}
 		item['isDrop'] = 0
 		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
 		orderBy = data.get('orderBy', 'id')
+		orderBy = processOrderBy(orderBy, modelClass)
 		isDecreasing = data.get('isDecreasing', True)
 		direction = 'DESC' if isDecreasing else 'ASC'
 		fetched = await session.select(
@@ -120,16 +130,49 @@ def createSelectHandler(modelClass: type, isRelated=False):
 		return [i.toDict() for i in fetched]
 	return handleSelect
 
+def createSelectHandlerByParameter(modelClass: type, isRelated=False):
+	async def handleSelect(session: AsyncDBSessionBase, data: dict) -> List[Dict]:
+		data = copy.copy(data)
+		item = data.get('data', data)
+		if item is None: item = {}
+		item['isDrop'] = 0
+		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
+		orderBy = data.get('orderBy', 'id')
+		orderBy = processOrderBy(orderBy, modelClass)
+		isDecreasing = data.get('isDecreasing', True)
+		direction = 'DESC' if isDecreasing else 'ASC'
+		fetched = await session.select(
+			modelClass,
+			f"{clause} ORDER BY {orderBy} {direction}",
+			isRelated=isRelated,
+			parameter=parameter,
+			limit=limit,
+			offset=offset
+		)
+		return [i.toDict() for i in fetched]
+	return handleSelect
+
+def processOrderBy(orderBy: str, modelClass: type):
+	column = modelClass.metaMap.get(orderBy, None)
+	if column is not None:
+		if isinstance(column, CurrencyColumn):
+			orderBy = f"CAST({orderBy}->>'originValue' AS FLOAT)"
+		elif isinstance(column, JSONColumn) and column.orderAttribute is not None:
+			orderBy = f"CAST({orderBy}->>'{column.orderAttribute}' AS {column.orderType})"
+	return orderBy
+
 def createSelectWithPageHandler(modelClass: type):
-	async def handleSelectWithPage(session: AsyncDBSessionBase, data: dict):
+	async def handleSelectWithPage(session: AsyncDBSessionBase, data: dict) -> Dict:
 		data = copy.copy(data)
 		item = data.get('data', data)
 		item['isDrop'] = 0
 		orderBy = data.get('orderBy', 'id')
 		clause, parameter, limit, offset = processRequestQuery(data, modelClass)
+		orderBy = processOrderBy(orderBy, modelClass)
+		direction = 'DESC' if data.get('isDecreasing', False) else 'ASC'
 		fetched = await session.select(
 			modelClass,
-			f"{clause} ORDER BY {orderBy} DESC",
+			f"{clause} ORDER BY {orderBy} {direction}",
 			isRelated=False,
 			parameter=parameter,
 			limit=limit,
@@ -142,16 +185,16 @@ def createSelectWithPageHandler(modelClass: type):
 		}
 	return handleSelectWithPage
 
-def createSelectByIDHandler(modelClass: type):
-	async def handleSelectByID(session: AsyncDBSessionBase, ID: int):
+def createSelectByIDHandler(modelClass: T):
+	async def handleSelectByID(session: AsyncDBSessionBase, ID: int) -> T:
 		fetched = await session.selectByID(modelClass, ID, isRelated=False, hasChildren=True)
 		if fetched is None: return None
 		if hasattr(modelClass, 'isDrop') and fetched.isDrop: return None
 		return fetched
 	return handleSelectByID
 
-def createSelectByAttributeHandler(modelClass: type):
-	async def handleSelectByAttribute(session: AsyncDBSessionBase, data: dict):
+def createSelectByAttributeHandler(modelClass: T):
+	async def handleSelectByAttribute(session: AsyncDBSessionBase, data: dict) -> T:
 		data = copy.copy(data)
 		item = data.get('data', data)
 		item['isDrop'] = 0
@@ -207,7 +250,8 @@ def createOptionByIDHandler(modelClass: type):
 		else:
 			dropClause = ''
 		if len(IDList) == 0: return {}
-		IDList = [int(i) for i in IDList]
+		try: IDList = [int(i) for i in IDList if len(i) > 0]
+		except: pass
 		IDclause = ",".join(len(IDList)*'?')
 		clause = f"WHERE {modelClass.primary} IN ({IDclause}) {dropClause}"
 		fetched = await session.select(modelClass, clause, parameter=IDList, isRelated=False)
@@ -220,7 +264,9 @@ def createAutocompleteHandler(modelClass: type):
 		data = copy.copy(data)
 		wildcard = data.get('name', '')
 		limit = int(data.get('limit', 10))
-		representativeMeta = modelClass.representativeMeta
+		template = data.get('template', None)
+		if template == '{{{label}}}' or template == '': template = None
+		representativeMeta = modelClass.representativeMeta		
 		if representativeMeta is None: return []
 		columns = []
 		for key in getattr(modelClass, 'metaMap', {}):
@@ -235,7 +281,15 @@ def createAutocompleteHandler(modelClass: type):
 			clause = f"WHERE {columnsClause} AND isDrop = 0"
 			parameter = [wildcard+'%' for i in columns]
 		items = await session.select(modelClass, clause, parameter=parameter, limit=limit)
-		return [{'id': item.id, 'value': item.id, 'label': getattr(item, columnName, '')} for item in items]
+		if template is None: return [{'id': item.id, 'value': item.id, 'label': getattr(item, columnName, '')} for item in items]
+		result = []
+		for item in items:
+			result.append({
+				'id': item.id,
+				'value': item.id,
+				'label': pystache.render(template, item),
+			})
+		return result
 	return handleAutocomplete
 
 def createAutocompleteByReferenceHandler(modelClass: type):
@@ -245,6 +299,8 @@ def createAutocompleteByReferenceHandler(modelClass: type):
 		if representativeMeta is None: return []
 		columnName = representativeMeta.name
 		reference = data.get('reference', '')
+		template = data.get('template', None)
+		if template == '{{{label}}}' or template == '': template = None
 		referenceColumn = getattr(modelClass, '__REFERENCE__', 'id')
 		items = await session.select(modelClass, f"WHERE {referenceColumn} = {reference}", limit=1)
 		result = {}
@@ -252,12 +308,13 @@ def createAutocompleteByReferenceHandler(modelClass: type):
 			item = items[0]
 			result['id'] = item.id
 			result['value'] = item.id
-			result['label'] = getattr(item, columnName, '')
+			if template is None: result['label'] = getattr(item, columnName, '')
+			else: result['label'] = pystache.render(template, item)
 		return result
 	return handleAutocompleteByReference
 
-def createIngestHandler(modelClass: type):
-	async def handleIngest(session: AsyncDBSessionBase, data: dict):
+def createIngestHandler(modelClass: T):
+	async def handleIngest(session: AsyncDBSessionBase, data: dict) -> T:
 		isUpdate = False
 		if 'id' in data:
 			record = await session.selectByID(modelClass, data['id'])
@@ -274,7 +331,7 @@ def createIngestHandler(modelClass: type):
 
 	return handleIngest
 
-def createInsertWithFileHandler(application, modelClass: type):
+def createInsertWithFileHandler(application, modelClass: T):
 	initStatus = []
 	storeFileMap = {}
 	def getFileInput() :
@@ -285,7 +342,7 @@ def createInsertWithFileHandler(application, modelClass: type):
 			isShare = i.isShare
 			storeFileMap[i.columnName] = createFileStore(application, i.path, isShare)
 	handleInsert = createInsertHandler(modelClass)
-	async def handle(session: AsyncDBSessionBase, data: dict, request:Request) -> Record:
+	async def handle(session: AsyncDBSessionBase, data: dict, request:Request) -> T:
 		if getattr(request, 'form', None) is None:
 			record = await handleInsert(session, data)
 			return record
@@ -310,21 +367,21 @@ def createInsertWithFileHandler(application, modelClass: type):
 		return record
 	return handle
 
-def createInsertHandler(modelClass: type):
-	async def handleInsert(session: AsyncDBSessionBase, data: dict) -> Record:
+def createInsertHandler(modelClass: T):
+	async def handleInsert(session: AsyncDBSessionBase, data: dict) -> T:
 		record = modelClass().fromDict(data)
 		await session.insert(record)
 		return record
 	return handleInsert
 
-def createInsertMultipleHandler(modelClass: type):
-	async def handleInsert(session: AsyncDBSessionBase, data: List[Dict[str, Any]]) -> List[Record]:
+def createInsertMultipleHandler(modelClass: T):
+	async def handleInsert(session: AsyncDBSessionBase, data: List[Dict[str, Any]]) -> List[T]:
 		recordList = [modelClass().fromDict(i) for i in data]
 		await session.insertMultiple(recordList, isReturningID=True, isAutoID=True)
 		return recordList
 	return handleInsert
 
-def createUpdateWithFileHandler(application, modelClass: type):
+def createUpdateWithFileHandler(application, modelClass: T):
 	from gaimon.core.StaticFileHandler import StaticFileHandler
 	initStatus = []
 	storeFileMap = {}
@@ -344,7 +401,7 @@ def createUpdateWithFileHandler(application, modelClass: type):
 			else :
 				removeFileMap[i.columnName] = fileHandler.removeStaticFile
 	
-	async def handle(session: AsyncDBSessionBase, data: dict, request:Request) -> Record:
+	async def handle(session: AsyncDBSessionBase, data: dict, request:Request) -> T:
 		if getattr(request, 'form', None) is None: 
 			record = await handleUpdate(session, data)
 			return record
@@ -381,8 +438,8 @@ def createUpdateWithFileHandler(application, modelClass: type):
 	return handle
 
 
-def createUpdateHandler(modelClass: type):
-	async def handleUpdate(session: AsyncDBSessionBase, data: dict, handleMixin: Callable=None) -> Record:
+def createUpdateHandler(modelClass: T):
+	async def handleUpdate(session: AsyncDBSessionBase, data: dict, handleMixin: Callable=None) -> T:
 		id = data.get('id', None)
 		if id is None : return None
 		record = await session.selectByID(modelClass, data['id'], hasChildren=True)
@@ -420,7 +477,7 @@ def createUpdateHandler(modelClass: type):
 
 	return handleUpdate
 
-def createIngestHandlerWithDynamicModel(modelClass: type, getDynamicModel: Awaitable):
+def createIngestHandlerWithDynamicModel(modelClass: T, getDynamicModel: Awaitable):
 	async def ingestDynamicModel(session: AsyncDBSessionBase, record: Record, data: dict):
 		data['detailTable'] = int(data['detailTable'])
 		if data['detailTable'] <= 0: return
@@ -452,7 +509,7 @@ def createIngestHandlerWithDynamicModel(modelClass: type, getDynamicModel: Await
 		record.detail = json.dumps(dynamic.toDict())
 		await session.update(record)
 
-	async def handleIngest(session: AsyncDBSessionBase, data: dict):
+	async def handleIngest(session: AsyncDBSessionBase, data: dict) -> T:
 		record = modelClass()
 		if 'id' in data:
 			parameter = [data['id']]
@@ -480,8 +537,8 @@ def createIngestHandlerWithDynamicModel(modelClass: type, getDynamicModel: Await
 	return handleIngest
 
 
-def createDropHandler(modelClass: type):
-	async def handleDrop(session:AsyncDBSessionBase, data):
+def createDropHandler(modelClass: T):
+	async def handleDrop(session:AsyncDBSessionBase, data) -> T:
 		if 'id' not in data: return
 		record = await session.selectByID(modelClass, data['id'])
 		if record is None : return
@@ -500,13 +557,19 @@ def createFileStore(application, path:str, isShare:bool=False) :
 	from gaimon.core.StaticFileHandler import StaticFileHandler
 	static:StaticFileHandler = application.static
 	store = static.storeStaticShare if isShare else static.storeStaticFile
-	async def storeFile(request:Request, key:str) :
+	async def storeFile(request:Request, key:str, currentList:List[List[str]] = [], deleteList: List[List[str]] = []) :
+		if type(currentList) == str: currentList = json.loads(currentList)
+		if type(deleteList) == str: deleteList = json.loads(deleteList)
+		currentList = currentList.copy()
+		deleteList = deleteList.copy()
+		for i in deleteList:
+			if i in currentList: currentList.remove(i)
 		files = getattr(request, 'files', None)
-		if files is None: return []
+		if files is None: return currentList
 		requestFile:RequestParameters = request.files.get(key, None)
-		if key not in request.files: return []
+		if key not in request.files: return currentList
 		requestFile = request.files[key]
-		if requestFile is None : return []
+		if requestFile is None : return currentList
 		pathList = []
 
 		if isinstance(requestFile, list) :
@@ -522,7 +585,8 @@ def createFileStore(application, path:str, isShare:bool=False) :
 			fileName = fileName + "." + fileUpload
 			await store(path+fileName, file.body)
 			pathList.append([file.name, path + fileName])
-		return pathList
+		currentList.extend(pathList)
+		return currentList
 	return storeFile
 
 def createFileRemove(application) :

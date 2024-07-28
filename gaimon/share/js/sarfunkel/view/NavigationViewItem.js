@@ -16,8 +16,10 @@ class NavigationViewItem{
 			this.item = new DOMObject(TEMPLATE.NavigationViewItem, data);
 		}
 		let object = this;
+		if (isClickable) this.item.html.classList.add('item');
+		else this.item.html.classList.remove('item');
 		this.item.html.onclick = async function() {
-			if (object.callback) object.callback()
+			if (!isClickable && object.callback) object.callback()
 		}
 		return this.item;
 	}

@@ -108,7 +108,6 @@ let InputSetterState = function(parent){
 		if(tag.dom.view){
 			tag.dom.view.onclick = async function() {
 				let url = tbody.getAttribute('url');
-				console.log(tbody);
 				if (url == undefined) return;
 				if (url.length == 0) return;
 				let blob = await GET(`${url}${data.id}/${tag.dom[column].index}`, undefined, 'blob');
@@ -142,7 +141,7 @@ let InputSetterState = function(parent){
 			tag.dom[name].index = index;
 			if (isView) tag.dom[name].readonly();
 			else tag.dom[name].disable();
-			object.initFileMatrixEvent(tbody, tag, data, name)
+			object.initFileMatrixEvent(tbody, tag, data, name);
 			if (tbody.fileMap[fileItem[1]]) {
 				tbody.fileIgnoreList.push(tbody.fileMap[fileItem[1]].dom[i]);
 			}
@@ -154,10 +153,6 @@ let InputSetterState = function(parent){
 
 	this.getInputByName = function(name){
 		let parent = object.parent;
-		if(name == 'religion'){
-			console.log(parent);
-			console.log(parent.requireTag[name]);
-		}
 		if(name in parent.__timeSpan_input__){
 			return ['timeSpan', parent.__timeSpan_input__[name]];
 		}else if(name in parent.__fraction_input__){

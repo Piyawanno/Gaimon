@@ -6,7 +6,7 @@
 	</div>
 	<div class="abstract_input_box input_per_line_{{{inputPerLine}}} full" rel="confirm_{{{columnName}}}_box">
 		<div localize>Confirm {{{label}}}</div>
-		<div><input class="{{#config.isView}}abstract_input_view{{/config.isView}}" type="password" rel="confirm_{{{columnName}}}" autocomplete="off" {{^hasEdit}}{{#isRequired}}required{{/isRequired}}{{/hasEdit}} {{^isEditable}}disabled{{/isEditable}}></div>
+		<div><input class="{{#config.isView}}abstract_input_view{{/config.isView}}" type="password" rel="confirm_{{{columnName}}}" autocomplete="off" {{^hasEdit}}{{#isRequired}}required{{/isRequired}}{{/hasEdit}} {{^isEditable}}disabled{{/isEditable}} placeholder="{{placeHolder}}"></div>
 		<div class="error text-align-center hidden" rel="confirm_{{{columnName}}}_error"></div>
 	</div>
 </div>

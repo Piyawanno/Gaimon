@@ -1,4 +1,7 @@
 function createDocumentNumberEvent(input, icon, callback){
+	icon.style.backgroundColor = '';
+	input.enable();
+	input.classList.remove('disabled');
 	icon.onclick = async function(){
 		let data = await callback();
 		input.value = data;

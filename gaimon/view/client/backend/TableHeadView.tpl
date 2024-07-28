@@ -3,7 +3,20 @@
 	<th style="width:0;"><input type="checkbox" rel="checkAll"/></th>
 	{{/hasSelect}}
 	{{#hasIndex}}
-	<th style="text-align:center;width:0;"></th>
+	<th rel="id" style="text-align:center;width:0;">
+		<div class="table_head_column">
+			<div localize>{{{label}}}</div>
+			<div rel="id_sort" class="table_sort_icon">
+				<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,6L7,11H17L12,6M7,13L12,18L17,13H7Z" /></svg>
+			</div>
+			<div rel="id_sort_asc" class="table_sort_icon hidden">
+				<svg viewBox="0 0 24 24"><path fill="currentColor" d="M7,15L12,10L17,15H7Z" /></svg>
+			</div>
+			<div rel="id_sort_desc" class="table_sort_icon hidden">
+				<svg viewBox="0 0 24 24"><path fill="currentColor" d="M7,10L12,15L17,10H7Z" /></svg>
+			</div>
+		</div>
+	</th>
 	{{/hasIndex}}
 	{{#hasAvatar}}
 	<th style="width:0;">

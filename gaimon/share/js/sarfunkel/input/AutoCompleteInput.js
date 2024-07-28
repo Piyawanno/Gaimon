@@ -56,10 +56,26 @@ class AutoCompleteInput extends ReferenceSelectInput{
 		return this.filterInput;
 	}
 
+	async renderDialogForm(record){
+		if(this.input == null){
+			let parameter = {...this};
+			this.input = new DOMObject(TEMPLATE.input.AutoCompleteInput, parameter);
+			this.setFormSideIcon(this.input, record);
+			this.setFormEvent(this.input);
+			if (this.config.prerequisite) this.setPrerequisite(this, this.input);
+		}
+		this.checkEditable(this.input);
+		if(record) this.setFormValue(this.input, record);
+		else if (this.config.prerequisite) {
+			this.disableEdit(this.input);
+		}
+		return this.input;
+	}
+
 	async renderFormCell(record, reference) {
 		let parameter = {...this};
 		let cell = new InputDOMObject(TEMPLATE.input.TableFormAutoCompleteInput, parameter);
-		this.setFormSideIcon(cell, record);
+		this.setFormCellSideIcon(cell, record);
 		this.checkTableFormEditable(cell);
 		this.setFormEvent(cell);
 		// await this.getOption();
@@ -93,17 +109,18 @@ class AutoCompleteInput extends ReferenceSelectInput{
 				if (typeof attribute == 'object') {
 					cell.dom[this.columnName].innerHTML = Mustache.render(template, attribute);
 				} else {
-					POST(url, {'reference': attribute}, undefined, 'json', true).then(response => {
+					POST(url, {'reference': attribute, 'template': template}, undefined, 'json', true).then(response => {
 						if (response.isSuccess) {
-							cell.dom[this.columnName].innerHTML = Mustache.render(template, response.result);
+							if(response.result.label) cell.dom[this.columnName].innerHTML = Mustache.render('{{{label}}}', response.result);
+							else cell.dom[this.columnName].innerHTML = Mustache.render(template, response.result);
 							if (response.result.__avatar__ == null) {
 								cell.dom.avatarContainer.hide();
 							}
 							if (response.result?.__avatar__?.url) {
 								cell.dom.avatar.onerror = function() {
-									this.src = response.result?.__avatar__?.default;
+									this.src = `${rootURL}${response.result?.__avatar__?.default}`;
 								}
-								cell.dom.avatar.src = response.result?.__avatar__?.url;
+								cell.dom.avatar.src = `${rootURL}${response.result?.__avatar__?.url}`;
 							}
 						} else {
 							cell.dom.avatarContainer.hide();
@@ -129,6 +146,9 @@ class AutoCompleteInput extends ReferenceSelectInput{
 			input.autocompleteObject.limit = 10;
 			input.autocompleteObject.autocomplete(this.config);
 			input.autocompleteObject.data = this.config.url;
+			input.autocompleteObject.callback = async function() {
+				if (object.prerequisite != null) object.callPrerequisite(object, input);
+			}
 		}
 		input.complete = async function(data, callback, dom = undefined) {
 			input.autocompleteObject.setData(data, callback);
@@ -137,19 +157,22 @@ class AutoCompleteInput extends ReferenceSelectInput{
 
 	setFormValue(inputForm, record){
 		let object = this;
-		if(record != undefined){
+		if(record != undefined&& inputForm != undefined){
 			let attribute = record[this.columnName];
 			let input = inputForm.dom[this.columnName];
+			let template = this.config.template;
 			if(attribute != undefined && input != undefined){
 				let url = `${inputForm.autocompleteObject.data}/by/reference`;
+				if (attribute == -1) return;
 				if (typeof attribute == 'object') {
 					input.value = Mustache.render(inputForm.autocompleteObject.template, attribute);
 					input.currentValue = attribute;
 					if (object.prerequisite != null) object.callPrerequisite(object, inputForm);
 				} else {
-					POST(url, {'reference': attribute}, undefined, 'json', true).then(response => {
+					POST(url, {'reference': attribute, 'template': template}, undefined, 'json', true).then(response => {
 						if (response.isSuccess) {
-							input.value = Mustache.render(inputForm.autocompleteObject.template, response.result);
+							if(response.result.label) input.value = Mustache.render('{{{label}}}', response.result);
+							else input.value = Mustache.render(template, response.result);
 							input.currentValue = response.result;
 							if (object.prerequisite != null) object.callPrerequisite(object, inputForm);
 						}
@@ -160,15 +183,40 @@ class AutoCompleteInput extends ReferenceSelectInput{
 		}
 	}
 
-	getFormValue(form, inputForm, data, file, message){
+	setDetailValue(detail, record, reference) {
+		let object = this;
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			let item = detail.dom[this.columnName];
+			let template = this.config.template;
+			if(attribute != undefined && item != undefined){
+				let url = `${this.url}/by/reference`;
+				if (attribute == -1) return;
+				if (typeof attribute == 'object') {
+					item.innerHTML = Mustache.render(this.config.template, attribute);
+				} else {
+					POST(url, {'reference': attribute, 'template': template}, undefined, 'json', true).then(response => {
+						if (response.isSuccess) {
+							item.innerHTML = Mustache.render('{{{label}}}', response.result);
+						}
+					});
+				}
+				
+			}
+		}
+	}
+
+	getFormValue(form, inputForm, data, file, message, key = null){
 		let input = inputForm.dom[this.columnName];
 		let currentValue = inputForm.autocompleteObject.tag != undefined ? input.currentValue: null;
 		let result = currentValue != undefined ? currentValue.value != undefined ? currentValue.value: currentValue.id: null;
+		if(key != null) result = currentValue != undefined ? currentValue.value != undefined ? currentValue.value: currentValue[key]: null;
 		this.isPass = true;
 		data[this.columnName] = result;
 		if(this.isRequired && (result == null || result.length == 0)){
 			input.classList.add('error');
 			message.push(`Required field "${this.label}" is not set.`);
+			if(result == null) result = inputForm.data.default;
 			this.isPass = false;
 			return false;
 		}else{
@@ -188,5 +236,13 @@ class AutoCompleteInput extends ReferenceSelectInput{
 	}
 
 	async getOption(){
+	}
+
+	clearFormValue(inputForm) {
+		let input = inputForm.dom[this.columnName];
+		if(input != undefined){
+			input.value = '';
+			input.currentValue = {};
+		}
 	}
 }

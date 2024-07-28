@@ -30,12 +30,12 @@
 	<div class="abstract_dialog hidden" rel="{{{columnName}}}_cropper">
 		<div class="hidden" rel="{{{columnName}}}_canvas"></div>
 		<div class="abstract_image_previewer {{size}}">
-			<div class="flex-column gap-20px width-100-percent">
+			<div class="flex-column width-100-percent">
 				<div class="abstract_dialog_topic">Image</div>
-				<div class="width-100-percent" style="max-height:calc(100% - 200px) !important;text-align:center;">
+				<div class="width-100-percent flex" style="max-height:calc(100% - 200px) !important;text-align:center;">
 					<img rel="{{{columnName}}}_image">
 				</div>
-				<div class="flex gap-5px flex-end">
+				<div class="flex gap-5px flex-end operation">
 					<div class="abstract_button submit_button" rel="{{{columnName}}}_confirm" localize>Confirm</div>
 					<div class="abstract_button cancel_button" rel="{{{columnName}}}_cancel" localize>Cancel</div>
 				</div>
@@ -45,15 +45,15 @@
 	<div class="abstract_dialog hidden" rel="{{{columnName}}}_previewer">
 		<div class="hidden" rel="{{{columnName}}}_canvas"></div>
 		<div class="abstract_image_previewer {{size}}">
-			<div class="flex-column gap-20px width-100-percent">
+			<div class="flex-column width-100-percent">
 				<div class="abstract_dialog_topic" localize>Previewer</div>
-				<div class="width-100-percent" style="max-height:calc(100% - 200px) !important;text-align:center;" rel="{{{columnName}}}_original">
+				<div class="width-100-percent flex" style="max-height:calc(100% - 200px) !important;text-align:center;" rel="{{{columnName}}}_original">
 					<img rel="{{{columnName}}}_originalImage" src="{{{rootURL}}}{{{url}}}">
 				</div>
 				<div class="width-100-percent hidden" style="max-height:calc(100% - 200px) !important;" rel="{{{columnName}}}_cropped">
 					<img rel="{{{columnName}}}_croppedImage" src="{{{rootURL}}}{{{url}}}cropped">
 				</div>
-				<div class="flex gap-5px space-between">
+				<div class="flex gap-5px space-between operation">
 					<div class="flex gap-5px">
 						<div class="abstract_button submit_button" rel="{{{columnName}}}_originalButton" localize>Original</div>
 						<div class="abstract_button submit_button disabled" rel="{{{columnName}}}_croppedButton" localize>Cropped</div>

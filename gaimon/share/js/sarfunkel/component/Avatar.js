@@ -13,7 +13,7 @@ class Avatar{
 
 	render(record){
 		let URL = this.column == null? this.url: this.getURL(record);
-		let rendered = new DOMObject(TEMPLATE.TableAvatarCell, {URL});
+		let rendered = new DOMObject(TEMPLATE.TableAvatarCell, {rootURL, URL});
 		return rendered;
 	}
 

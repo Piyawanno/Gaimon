@@ -1138,3 +1138,8 @@ Object.id = function(o) {
 // 	if(!this.event[a][b]) this._addEventListener(a, b, c);
 // 	this.event[a][b] = b;
 // };
+
+function NUMBER_WITH_COMMAS(num){
+	if(!num) return num;
+	return num.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+}

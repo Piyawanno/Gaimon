@@ -7,8 +7,8 @@
 			<div class="abstract_form_input" rel="form">
 			
 			</div>
-			<div class="abstract_form_input" rel="additionalForm"></div>
-			<div class="flex gap-5px flex-end" rel="operation">
+			<div class="abstract_form_input abstract_dialog_input" rel="additionalForm"></div>
+			<div class="flex gap-5px flex-end abstract_dialog_operation" rel="operation">
 				<div class="abstract_button submit_button" rel="submit">
 					<div class="flex-column-center">
 						<svg style="width:15px;height:15px" viewBox="0 0 24 24">

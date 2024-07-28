@@ -590,12 +590,12 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 			input.html('');
 			let option = document.createElement("OPTION");
 			option.value = -1;
-			option.text = "None";
+			option.text = locale('None');
 			input.appendChild(option);
 			for (let i in result) {
 				let option = document.createElement("OPTION");
 				option.value = result[i].value;
-				option.text = result[i].label;
+				option.text = locale(result[i].label);
 				input.appendChild(option);
 			}
 			if (value != undefined) {
@@ -605,6 +605,14 @@ AbstractInputUtil.prototype.setPrerequisiteEvent = async function(prerequisite, 
 			if (this.value == -1) {
 				input.selectedIndex = 0;
 				if (input.onchange != undefined) input.onchange();
+			}
+			function locale(val){
+				if (LOCALE[val] == undefined) {
+					setTextLocale(val);
+					return val;
+				} else {
+					return LOCALE[val];
+				}
 			}
 		}
 	}
@@ -856,7 +864,6 @@ AbstractInputUtil.prototype.setImageMap = async function(view, imageMap) {
 				view.dom[`${i}_originalButton`].classList.add('disabled');
 			}
 		}else if (view.dom[`${i}_croppedButton`]) {
-			console.log(view.dom[`${i}_croppedButton`]);
 			// view.dom[`${i}_croppedButton`].remove();
 		}
 		view.dom[`${i}_previwerCancel`].onclick = async function(){
@@ -972,6 +979,7 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 }
 
 AbstractInputUtil.prototype.getRenderedTemplate = function(value, template) {
+	console.log(value);
 	if (value == undefined) return;
 	if (value.__avatar__) {
 		let preRendered = Mustache.render(template, value);
@@ -1000,6 +1008,6 @@ AbstractInputUtil.prototype.getRenderedTemplate = function(value, template) {
 		}
 		return rendered;
 	} else {
-		return Mustache.render(template, value);
+		return Mustache.render('{{{label}}}', value);
 	}
 }

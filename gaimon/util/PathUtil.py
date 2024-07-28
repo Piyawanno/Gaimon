@@ -8,6 +8,7 @@ def conform(path):
 	rootPrefix = ('etc', 'var', 'usr', 'home')
 	if splitted[1] in rootPrefix or path[0] == "/": isRootPath = True
 	if sys.platform == 'win32':
+		from pathlib import Path
 		result = os.sep.join([i for i in splitted if len(i)])
 		if isRootPath: result = str(Path.home()) + os.sep + result
 		if path[-1] == "/": result = result + os.sep

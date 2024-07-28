@@ -30,7 +30,7 @@ class ModelTabPage extends ModelPage{
 			let renderFunction = this.renderMap[viewType].bind(this);
 			let item = this.tabItemMap[viewType];
 			this.tabPage.appendTab(item);
-			item.render = async function(tabView, data) {
+			item.renderFunction = async function(tabView, data) {
 				SHOW_LOADING_DIALOG(async function() {
 					await object.onPrepareState();
 					await renderFunction(data, item.ID);

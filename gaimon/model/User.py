@@ -1,22 +1,19 @@
 from xerial.Record import Record
 from xerial.DateTimeColumn import DateTimeColumn
-from xerial.DateColumn import DateColumn
 from xerial.IntegerColumn import IntegerColumn
 from xerial.StringColumn import StringColumn
 from xerial.input.TextInput import TextInput
 from xerial.input.EmailInput import EmailInput
 from xerial.input.PasswordInput import PasswordInput
-from xerial.input.NumberInput import NumberInput
-from xerial.input.FileInput import FileInput
 from xerial.input.HiddenInput import HiddenInput
 from xerial.input.ReferenceSelectInput import ReferenceSelectInput
 from xerial.input.ImageInput import ImageInput
 
 from enum import IntEnum
 
-import hashlib, secrets, os
+import hashlib, secrets
 
-HASH_ITERATION = 1_000
+HASH_ITERATION = 1000
 HASH_LENGTH = 64
 SALT_LENGTH = 64
 

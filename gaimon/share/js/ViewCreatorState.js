@@ -243,7 +243,7 @@ let ViewCreatorState = function(parent, modelName, config, viewType){
 		if(!config.showAvatar) return;
 		let avatarConfig = await AbstractInputUtil.prototype.getAvatar(object.modelName);
 		if(avatarConfig == undefined || avatarConfig == null){
-			avatarConfig = 'share/icon/logo_padding.png';
+			avatarConfig = `${rootURL}share/icon/logo_padding.png`;
 		}
 		let avatar = new Image();
 		let isDefault = false;

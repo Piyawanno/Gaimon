@@ -47,7 +47,7 @@ class DialogViewInstance extends DialogView{
 		await this.render(title);
 		this.setData(selectedData);
 		this.viewType = ViewType.INSERT_DIALOG;
-		this.dialog.instance = this;
+		this.dialog.__instance__ = this;
 		return this.dialog;
 	}
 

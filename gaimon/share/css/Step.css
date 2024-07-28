@@ -196,6 +196,10 @@ section h2 {
 		background-color: #96c03d;
 		border-color: #96c03d;
 	}
+	.cd-breadcrumb.triangle li:is(.hidden):first-of-type ~ li:is(.hidden) + li > * {
+		border-top-left-radius: 10px;
+		border-bottom-left-radius: 10px;
+	}
 	.cd-breadcrumb.triangle li:first-of-type > * {
 		padding-left: 1.6em;
 		border-top-left-radius: 10px;

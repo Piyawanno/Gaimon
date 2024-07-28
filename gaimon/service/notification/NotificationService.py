@@ -1,7 +1,3 @@
-
-
-import gaimon.model as MainModel
-
 from gaimon.core.AsyncService import AsyncService
 from gaimon.core.WebSocketManagement import WebSocketManagement
 from gaimon.service.notification.NotificationHandler import NotificationHandler
@@ -9,12 +5,12 @@ from gaimon.service.notification.NotificationManagement import NotificationManag
 from gaimon.service.notification.NotificationWebSocketHandler import NotificationWebSocketHandler
 
 from xerial.Vendor import Vendor
-from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
 
 from typing import Dict, List
 from asyncio import Task
 
+import gaimon.model as MainModel
 import os, logging
 
 class NotificationService(AsyncService):

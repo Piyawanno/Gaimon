@@ -153,4 +153,12 @@ const UserProtocol = function(main) {
 		if (response.isSuccess) return response.result;
 		return result;
 	}
+
+	this.getUserDisplayNameByIDList = async function(idList){
+		let result = [];
+		let response = await POST(`user/displayname/by/id/list/get`, {idList});
+		if (response == undefined) return result;
+		if (response.isSuccess) return response.result;
+		return result;
+	}
 }

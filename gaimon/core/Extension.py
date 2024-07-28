@@ -1,5 +1,6 @@
 from gaimon.core.ExtensionConfigHandler import ExtensionConfigHandler
 from gaimon.util.PathUtil import conform, copy, link
+from gaimon.model.StepFlowItem import StepFlowItem
 from xerial.Input import Input
 from xerial.AsyncDBSessionBase import AsyncDBSessionBase
 from typing import Dict, List
@@ -11,6 +12,8 @@ InputExtension = Dict[str, List[Input]]
 
 # NOTE JS Page class name -> List of addition Tab -> Tab Information
 TabExtension = Dict[str, List[Dict[str, str]]]
+
+StepConfig = Dict[str, List[StepFlowItem]]
 
 class Extension:
 	resourcePath: str
@@ -117,11 +120,12 @@ class Extension:
 
 		for source, destination in path:
 			destination = conform(destination)
-			if not os.path.isdir(destination):
+			if not os.path.isdir(conform(destination)):
 				link(source, destination)
 
 		source, destination = (f"{self.path}/file", f"{self.resourcePath}/file/{self.ID}")
-		if not os.path.isdir(destination): copy(source, destination, isFolder=True)
+		if not os.path.isdir(conform(destination)) and not os.path.exists(conform(destination)): 
+			copy(source, destination, isFolder=True)
 
 	def checkPath(self) -> bool:
 		result = True
@@ -186,5 +190,8 @@ class Extension:
 	def getJSPageTabExtension(self) -> TabExtension :
 		return {}
 	
-	async def prepare(self, application, session):
+	async def prepare(self, application, session: AsyncDBSessionBase):
 		pass
+
+	def getStepFlowConfig(self) -> StepConfig:
+		return {}

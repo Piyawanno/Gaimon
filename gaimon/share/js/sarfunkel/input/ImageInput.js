@@ -57,7 +57,7 @@ class ImageInput extends TextInput{
 
 	/// Not Tested
 	getTableFormInputTemplate(){
-		return TEMPLATE.input.TableFormTextInput;
+		return TEMPLATE.input.TableFormImageInput;
 	}
 
 	async initCropperEvent(image){
@@ -80,7 +80,7 @@ class ImageInput extends TextInput{
 	setPreviewImage(input) {
 		let record = this.currentRecord;
 		if (record != undefined && record[this.columnName] != undefined) {
-			this.imageURL = record[this.columnName];
+			if(!this.imageURL) this.imageURL = record[this.columnName];
 			this.hasImage = true;
 			input.dom.originalImage.src = `${rootURL}share/${this.imageURL}`;
 		} else {
@@ -134,6 +134,7 @@ class ImageInput extends TextInput{
 				input.dom.fileInput.type = 'file';
 				input.dom.fileName.html('No File Chosen');
 				input.dom.preview.classList.add('disabled');
+				input.removed = true;
 				object.removed = true;
 				object.hasImage = false;
 				if(object.cropper) object.cropper.destroy();
@@ -150,6 +151,7 @@ class ImageInput extends TextInput{
 			if(!input.dom.fileInput.files.length) return;
 			input.dom.preview.classList.remove('disabled');
 			input.dom.fileName.html(input.dom.fileInput.files[0].name);
+			input.removed = false;
 			object.removed = false;
 			object.hasImage = true;
 			object.fileUpload = input.dom.fileInput.files;
@@ -189,6 +191,10 @@ class ImageInput extends TextInput{
 		}
 	}
 
+	setTableFormEvent(input){
+		this.setFormEvent(input);
+	}
+
 	getFormValue(form, inputForm, data, file, message){
 		let input = inputForm.dom[this.columnName];
 		this.isPass = true;
@@ -222,10 +228,27 @@ class ImageInput extends TextInput{
 	clearFormValue(inputForm) {
 		inputForm.dom.fileName.html("No File Chosen");
 		inputForm.dom.preview.classList.add('disabled');
+		inputForm.removed = false;
 		this.imageURL = undefined;
 		this.removed = false;
 		this.hasImage = false;
 		this.fileUpload = [];
 		this.cropper = null;
+	}
+
+	setTableFormValue(cell, record){
+		this.currentRecord = record;
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			let formCell = cell.dom.fileName;
+			if(attribute != undefined && formCell != undefined){
+				let value = JSON.parse(attribute);
+				if(value.length == 0) return;
+				formCell.innerHTML = this.column.toInput(JSON.parse(attribute)[0][0]);
+				this.imageURL = JSON.parse(attribute)[0][1];
+				this.hasImage = true;
+				cell.dom.preview.classList.remove('disabled');
+			}
+		}
 	}
 }

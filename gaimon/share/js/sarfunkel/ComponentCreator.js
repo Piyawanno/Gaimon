@@ -24,6 +24,9 @@ class ComponentCreator extends ViewLoader{
 		// this.renderMap[ViewType.TABLE_DIALOG] = this.renderTableDialog;
 		// this.renderMap[ViewType.DETAIL_DIALOG] = this.renderDetailDialog;
 		// this.renderMap[ViewType.SUMMARY_DIALOG] = this.renderSummaryDialog;
+
+		/* NOTE async function for append rendered component to parent */
+		/* appendParent */
 	}
 
 	async onCreate() {

@@ -56,7 +56,7 @@ class TextInput extends InputMetaData{
 		if(this.detail == null){
 			let parameter = {...this};
 			this.detail = new DOMObject(this.getDetailTemplate(), parameter);
-			this.setInputPerLine(this.detail, 1);
+			this.setInputPerLine(this.detail, 2);
 		}
 		if(record){
 			this.setDetailValue(this.detail, record, reference);
@@ -79,14 +79,30 @@ class TextInput extends InputMetaData{
 	}
 
 	async renderDialogForm(record){
-		let parameter = {...this};
-		let input = new InputDOMObject(this.getInputTemplate(), parameter);
-		this.setInputPerLine(input);
-		this.checkEditable(input);
-		if(record){
-			this.setFormValue(input, record);
+		// let parameter = {...this};
+		// let input = new InputDOMObject(this.getInputTemplate(), parameter);
+		// this.setInputPerLine(input);
+		// this.checkEditable(input);
+		// if(record){
+		// 	this.setFormValue(input, record);
+		// }
+		// return this.input;
+		this.currentRecord = record;
+		if (this.input == null){
+			let parameter = {...this};
+			/// Do we need InputDOMObject?
+			this.input = new InputDOMObject(this.getInputTemplate(), parameter);
+			this.setInputPerLine(this.input);
+			this.setFormSideIcon(this.input, record);
+			this.setFormEvent(this.input);
 		}
-		return input;
+		this.checkEditable(this.input);
+		if (record == undefined || record == null || Object.keys(record).length == 0) {
+			this.clearFormValue(this.input)
+		} else if(record){
+			this.setFormValue(this.input, record);
+		}
+		return this.input;
 	}
 
 	async renderCell(record, reference) {
@@ -111,6 +127,7 @@ class TextInput extends InputMetaData{
 		let parameter = {...this};
 		let formCell = new InputDOMObject(this.getTableFormInputTemplate(), parameter);
 		this.checkTableFormEditable(formCell);
+		this.setTableFormEvent(formCell);
 		if(record){
 			this.setTableFormValue(formCell, record);
 		}

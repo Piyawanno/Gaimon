@@ -4,6 +4,7 @@ class TableRecordOperation extends Button{
 		this.icon = new SVGIcon(icon);
 		this.isLabel = false;
 		this.urlPath = undefined;
+		this.rendered = undefined;
 	}
 
 	async render(row, record){
@@ -19,8 +20,9 @@ class TableRecordOperation extends Button{
 		}
 		if(!this.isEnabled)operation.html.hide();
 		operation.dom.operation.onclick = async (event) => {
-			await this.callback(event, record, row);
+			await this.callback(event, record, row, operation.dom.operation);
 		};
+		this.rendered = operation;
 		return operation;
 	}
 

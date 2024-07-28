@@ -249,6 +249,10 @@ body{
 	vertical-align: middle;
 }
 
+.abstract_table.abstract_formTable table, .abstract_table.abstract_formTable td, .abstract_table.abstract_formTable th{
+	vertical-align: top;
+}
+
 .abstract_form_table table, .abstract_form_table td, .abstract_form_table th{
 	border: 1px solid #afc6c9;	
 }

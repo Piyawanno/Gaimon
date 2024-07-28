@@ -267,5 +267,6 @@
 	"StockPackageCapacity" : "ความจุของแพ็คเกจ",
 	"StockItemCategory" : "หมวดหมู่",
 	"CustomerStock" : "สต็อกพร้อมขาย",
-	"machine" : "เครื่องจักร"
+	"machine" : "เครื่องจักร",
+	"Not Select": "ไม่ได้เลือก"
 }

@@ -1,6 +1,7 @@
 class VersionParser{
 	constructor(version){
 		let splitted = version.split(".");
+		this.origin = version;
 		this.version = [];
 		for(let i of splitted){
 			this.version.push(parseInt(i));

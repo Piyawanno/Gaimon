@@ -78,6 +78,14 @@ class UserHandler :
 			limit=limit
 		)
 		return users
+
+	async def getUserByCluase(self, session: AsyncDBSessionBase, clause: str, parameter: list, entity:str=None) -> List[User]:
+		users: List[User] = await session.select(
+			User,
+			clause,
+			parameter=parameter
+		)
+		return users
 	
 	async def insertUser(self, session: AsyncDBSessionBase, data: dict, entity:str=None) -> User:
 		user = User()

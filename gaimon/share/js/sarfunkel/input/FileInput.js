@@ -45,7 +45,35 @@ class FileInput extends TextInput{
 		return TEMPLATE.input.TableFormFileInput;
 	}
 
+	async renderDetail(record, reference){
+		if(this.detail == null){
+			this.config.isLink = true;
+			let parameter = {...this};
+			this.detail = new DOMObject(TEMPLATE.DetailInputView, parameter);
+			this.setInputPerLine(this.detail, 1);
+		}
+		if(record) this.setDetailValue(this.detail, record, reference);
+		return this.detail;
+	}
+
+	setDetailValue(detail, record, reference) {
+		let object = this;
+		if(record != undefined){
+			let attribute = record[this.columnName];
+			let item = detail.dom[this.columnName];
+			if(attribute != undefined && item != undefined){
+				item.innerHTML = '';
+				attribute = JSON.parse(attribute);
+				for(let i in attribute){
+					let content = `<div><a class="hotLink" href="${this.config.url}${record.id}/${i}">${attribute[i][0]}</a></div>`;
+					item.append(content);
+				}			
+			}
+		}
+	}
+
 	setFormEvent(input){
+		if (input.__file_upload__ == undefined) input.__file_upload__ = [];
 		input.dom.file.onclick = async function(){
 			input.dom.fileInput.click();
 		}
@@ -75,7 +103,15 @@ class FileInput extends TextInput{
 				}
 				if(file != undefined) reader.readAsDataURL(file);
 			} else {
-				let url = object.config.url;
+				let record = JSON.parse(object.currentRecord);
+				let tag = document.createElement("a");
+				tag.href = `${rootURL}share/${record[1]}`;
+				tag.download = record[0];
+				tag.target = "_blank";
+				tag.classList.add("hidden");
+				document.body.appendChild(tag);
+				tag.click();
+				document.body.removeChild(tag);
 			}
 			
 		}
@@ -118,6 +154,7 @@ class FileInput extends TextInput{
 		}else{
 			if (inputForm.__file_upload__.length) {
 				file.append(this.columnName, inputForm.__file_upload__[0]);
+				if (inputForm.dom['remark']) file.append(`${this.columnName}_remark`, inputForm.dom['remark'].value);
 			}
 			return true;
 		}

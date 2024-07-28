@@ -5,7 +5,7 @@
 	</div>
 	<div class="flex gap-5px">
 		<div class="width-100-percent">
-			<input type="text" rel="{{{columnName}}}" label="{{{label}}}" class="{{#config.isView}}hidden{{/config.isView}}" autocomplete="off" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}}>
+			<input type="text" rel="{{{columnName}}}" label="{{{label}}}" class="{{#config.isView}}hidden{{/config.isView}}" autocomplete="off" {{#isRequired}}required{{/isRequired}} {{^isEditable}}disabled{{/isEditable}} placeholder="{{placeHolder}}">
 			{{#config.isView}}
 			<div class="abstract_input_view" rel="{{{columnName}}}_view"></div>
 			{{/config.isView}}

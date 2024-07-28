@@ -12,6 +12,15 @@ class TableView{
 		this.hasIndex = true;
 		this.hasAvatar = true;
 
+		this.hasSwitchView = true;
+		this.hasAdd = true;
+		this.hasFilter = true;
+		this.hasLimit = true;
+		this.hasSearch = true;
+
+		this.hasEditRecord = true;
+		this.hasDeleteRecord = true;
+
 		this.viewMode = TableViewMode.TABLE;
 
 		this.currentPage = 1;
@@ -49,10 +58,88 @@ class TableView{
 	}
 
 	setTableOperation(){
-		this.setSwitchViewOperation();
-		this.setPageLimitOperation();
-		this.setAddOperation();
-		this.setFilterOperation();
+		if (this.hasSearch) this.setSearchOperation();
+		if (this.hasSwitchView) this.setSwitchViewOperation();
+		if (this.hasAdd) this.setAddOperation();
+		if (this.hasFilter) this.setFilterOperation();
+		if (this.hasLimit) this.setPageLimitOperation();
+	}
+
+	reloadOperation() {
+		this.tableOperation = [];
+		this.recordOperation = [];
+		this.setTableOperation();
+		this.setRecordOperation();
+	}
+
+	setSearchOperation() {
+		let object = this;
+		this.searchOperation = new TableOperation(
+			TEMPLATE.TableSearchOperation, '0.1',
+			async (event) => {}
+		)
+		this.tableOperation.push(this.searchOperation);
+		let searchOperation = this.searchOperation.render();
+
+		function renderSearchColumn() {
+			let option = document.createElement("option");
+			option.label = "Field Name";
+			option.value = -1;
+			option.hidden = true;
+			option.selected = true;
+			searchOperation.dom.search.appendChild(option);
+			for (let column of object.meta.filterInputList) {
+				if (column.config.filter == undefined || column.config.filter == null) continue;
+				let option = document.createElement("option");
+				option.label = column.label;
+				option.value = column.columnName;
+				searchOperation.dom.search.appendChild(option);
+			}
+			searchOperation.dom.search_operation.style.width = "0";
+		}
+		
+		searchOperation.dom.operation.onclick = async function() {
+			searchOperation.html.classList.add('expanded');
+			searchOperation.dom.search.innerHTML = "";
+			searchOperation.dom.search_box.innerHTML = "";
+			renderSearchColumn();
+		}
+		searchOperation.dom.search.onchange = async function() {
+			let value = this.value;
+			let input = object.meta.inputMap[value];
+			if (input == undefined) return;
+			let select = searchOperation.dom.search_operation;
+			select.innerHTML = "";
+			let option = document.createElement("option");
+			option.label = "Operation";
+			option.value = -1;
+			option.hidden = true;
+			option.selected = true;
+			select.appendChild(option);
+			for (let item of input.config.filter.operations) {
+				let option = document.createElement("option");
+				option.label = item.label;
+				option.value = item.value;
+				select.appendChild(option);
+			}
+			select.style.width = "120px";
+			// searchOperation.dom.search_box.style.width = "0px";
+			searchOperation.dom.search_box.innerHTML = "";
+		}
+
+		searchOperation.dom.search_operation.onchange = async function() {
+			let value = searchOperation.dom.search.value;
+			let input = object.meta.inputMap[value];
+			searchOperation.dom.search_box.innerHTML = "";
+			if (input == undefined) return;
+			if (input.config.filter.typeName == 'Text') {
+				let item = document.createElement("input");
+				item.type = "text";
+				searchOperation.dom.search_box.appendChild(item);
+				item.style.width = "160px";
+			}
+		}	
+		renderSearchColumn();	
 	}
 
 	setSwitchViewOperation(){
@@ -106,11 +193,8 @@ class TableView{
 		});
 		this.filterOperation = new TableOperation(
 			filterButton, '3.0',
-			async (event) => {object.page.renderInsert()},
-			async () => {
-				if (object.page.getInsertURL) return object.page.getInsertURL();
-				return;
-			},
+			async (event) => {},
+			async () => {},
 		);
 		this.tableOperation.push(this.filterOperation);
 		let filterOperation = this.filterOperation.render();
@@ -130,7 +214,8 @@ class TableView{
 		});
 		this.addOperation = new TableOperation(
 			addButton, '4.0',
-			async (event) => {object.page.renderInsert()},
+			async (event) => {
+			},
 			async () => {
 				if (object.page.getInsertURL) return object.page.getInsertURL();
 				return;
@@ -139,7 +224,7 @@ class TableView{
 		this.tableOperation.push(this.addOperation);
 		let addOperation = this.addOperation.render();
 		addOperation.html.onclick = async function() {
-			object.page.renderInsert();
+			object.page.render(ViewType.INSERT);
 		}
 	}
 	
@@ -148,14 +233,16 @@ class TableView{
 		
 		this.editOperation = new TableRecordOperation(
 			'Edit', 'Edit', '1.0',
-			async (event, record) => {await object.page.renderUpdate(record.id)},
+			async (event, record) => {
+				object.page.render(ViewType.UPDATE, record.id);
+			},
 			async (id) => {
 				if (object.page.getUpdateURL) return object.page.getUpdateURL(id)
 				return;
 			}
 		);
 		this.editOperation.classList = ["edit_mobile_button"];
-		this.appendRecordOperation(this.editOperation);
+		if (this.hasEditRecord) this.appendRecordOperation(this.editOperation);
 		
 		this.deleteOperation = new TableRecordOperation(
 			'Delete', 'Delete', '2.0',
@@ -166,10 +253,11 @@ class TableView{
 			}
 		)
 		this.deleteOperation.classList = ["delete_mobile_button"];
-		this.appendRecordOperation(this.deleteOperation);
+		if (this.hasDeleteRecord) this.appendRecordOperation(this.deleteOperation);
 	}
 
 	async render(title, filter){
+		this.currentRowMap = {};
 		this.currentFilter = filter;
 		if(this.container == null){
 			this.page.onPrepareTable();
@@ -210,9 +298,17 @@ class TableView{
 	}
 
 	async renderTableOperation() {
+		this.container?.dom.operationContainer.html('');
 		for (let tableOperation of this.tableOperation) {
-			this.container.dom.operationContainer.appendChild(tableOperation.operation.html);
+			this.container?.dom.operationContainer.appendChild(tableOperation.operation.html);
 		}
+	}
+
+	async onCreateRecord(row, record) {
+	}
+
+	async hideOperation(row, label) {
+		this.row.hideOperation(row, label)
 	}
 
 	async renderRowList(){
@@ -226,6 +322,7 @@ class TableView{
 			let row = await this.row.render(record, this.currentReferencedData, i);
 			this.appendRow(row);
 			this.mapRowRecord(row, record);
+			this.onCreateRecord(row, record);
 			this.table.dom.tbody.appendChild(row.html);
 			i += 1;
 		}
@@ -400,6 +497,7 @@ class TableView{
 			if (IDColumnMap[i.columnName] == undefined) IDColumnMap[i.columnName] = [];
 			if(!i.isReferenced) continue;
 			for(let raw of this.currentRawList){
+				if (raw[i.columnName] == undefined || raw[i.columnName] == null) continue;
 				IDColumnMap[i.columnName].push(raw[i.columnName]);
 			}
 		}
@@ -413,7 +511,8 @@ class TableView{
 					if (response.isSuccess) {
 						this.currentReferencedData[i.columnName] = response.result;
 					}
-				}else if (i.config.typeName != "PrerequisiteReferenceSelect"){
+				} else if (i.config.typeName == 'AutoComplete') {
+				} else if (i.config.typeName != "PrerequisiteReferenceSelect"){
 					this.currentReferencedData[i.columnName] = {};
 					if (i.url == undefined) continue;
 					let response = await GET(i.url);
@@ -472,7 +571,7 @@ class TableView{
 
 	getTableColumn(){
 		this.tableColumn = [];
-		let excludeList = this.meta.excludeInputViewMap[ViewType.TABLE_FORM];
+		let excludeList = this.meta.excludeInputViewMap[ViewType.TABLE];
 		excludeList = excludeList != undefined ? excludeList : [];
 		for(let input of this.meta.inputList){
 			if (excludeList.indexOf(input.columnName) != -1) continue;

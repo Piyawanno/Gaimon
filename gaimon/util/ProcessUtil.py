@@ -25,7 +25,7 @@ def readConfig(
 		with open(path, encoding="utf-8") as fd:
 			loaded = json.load(fd)
 			config.update(loaded)
-
+		
 	for name, configPath in sideConfig.items():
 		path = conform(f'{basePath}/{configPath}')
 		if not os.path.isfile(path) : continue

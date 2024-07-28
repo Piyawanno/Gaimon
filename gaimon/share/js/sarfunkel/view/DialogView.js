@@ -71,7 +71,11 @@ class DialogView{
 
 	async setInput(record){
 		let container = this.dialog.dom.form;
+		let excludeList = this.meta.excludeInputViewMap[ViewType.INSERT_DIALOG];
+		excludeList = excludeList != undefined ? excludeList : [];
 		for(let input of this.meta.inputList){
+			if (!input.config.isForm) continue;
+			if (excludeList.indexOf(input.columnName) != -1) continue;
 			if(!input.isGrouped){
 				let rendered = await input.renderDialogForm(record);
 				this.inputMapper[input.columnName] = rendered;
@@ -81,8 +85,9 @@ class DialogView{
 		}
 		for(let group of this.meta.groupList){
 			let rendered = await group.renderDialogForm(record);
-			this.inputMapper[group.columnName] = rendered;
+			this.inputMapper[group.label] = rendered;
 			for (let columnName in group.inputMapper) {
+				if (excludeList.indexOf(columnName) != -1) continue;
 				this.inputMapper[columnName] = group.inputMapper[columnName];
 			}
 			container.appendChild(rendered.html);
@@ -95,6 +100,7 @@ class DialogView{
 	}
 
 	async setButton(){
+		this.dialog.dom.operation.html('');
 		for(let i of this.button){
 			let rendered = await i.render();
 			this.dialog.dom.operation.appendChild(rendered.html);
@@ -112,40 +118,66 @@ class DialogView{
 		return isPass;
 	}
 
+	// async submit(){
+	// 	this.data = {};
+	// 	if(this.record == undefined) this.record = {};
+	// 	if (Object.keys(this.record).length > 0) this.data = this.record;
+	// 	this.file = new FormData();
+	// 	let isPass = this.isPass;
+	// 	this.message = [];
+	// 	isPass = this.getFormValue(this.dialog, this.data, this.file, this.message) && isPass;
+	// 	let components = this.page.modelComponentViewMap[this.viewType];
+	// 	components = components != undefined ? components:[];
+	// 	for (let item of components) {
+	// 		if (item.viewType == ViewType.TABLE || item.viewType == ViewType.TABLE_FORM) {
+	// 			this.data[item.component.modelName] = [];
+	// 		} else {
+	// 			this.data[item.component.modelName] = {};
+	// 		}
+	// 		let file = new FormData();
+	// 		isPass = item.getFormValue(this.form, this.data[item.component.modelName], file, this.message) && isPass;
+	// 		if (this.formData != undefined) {
+	// 			if (!file.isEmpty()) {
+	// 				this.file.append(`data_${item.component.modelName}`, this.data[item.component.modelName]);
+	// 				let iterator = file.keys();
+	// 				while (true) {
+	// 					let result = iterator.next();
+	// 					if (result.value != 'data') {
+	// 						let items = file.getAll(result.value);
+	// 						for (let item of items) {
+	// 							this.file.append(`${item.component.modelName}_${result.value}`, item);
+	// 						}
+	// 					}
+	// 					if (result.done) break;
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	if(isPass){
+	// 		let id = undefined;
+	// 		if (!this.file.isEmpty()) {
+	// 			if (this.file.get('data') == null) {
+	// 				this.file.append('data', JSON.stringify(this.data));
+	// 			}
+	// 			id = await this.handleSubmit(this.file);
+	// 		} else {
+	// 			id = await this.handleSubmit(this.data);
+	// 		}
+	// 		if (id != undefined && this.callback != undefined) {
+	// 			this.callback(id);
+	// 		}
+	// 	}else{
+	// 		for(let i of this.meta.inputList){
+	// 			if (i.message == undefined) continue;
+	// 			if(i.message.length > 0) this.message.push(i.message);
+	// 		}
+	// 		console.error(this.message);
+	// 		this.page.handleSubmitError(this.message);
+	// 	}
+	// }
+
 	async submit(){
-		this.data = {};
-		if (Object.keys(this.record).length > 0) this.data = this.record;
-		this.file = new FormData();
-		let isPass = this.isPass;
-		this.message = [];
-		isPass = this.getFormValue(this.dialog, this.data, this.file, this.message) && isPass;
-		let components = this.page.modelComponentViewMap[this.viewType];
-		components = components != undefined ? components:[];
-		for (let item of components) {
-			if (item.viewType == ViewType.TABLE || item.viewType == ViewType.TABLE_FORM) {
-				this.data[item.component.modelName] = [];
-			} else {
-				this.data[item.component.modelName] = {};
-			}
-			let file = new FormData();
-			isPass = item.getFormValue(this.form, this.data[item.component.modelName], file, this.message) && isPass;
-			if (this.formData != undefined) {
-				if (!file.isEmpty()) {
-					this.file.append(`data_${item.component.modelName}`, this.data[item.component.modelName]);
-					let iterator = file.keys();
-					while (true) {
-						let result = iterator.next();
-						if (result.value != 'data') {
-							let items = file.getAll(result.value);
-							for (let item of items) {
-								this.file.append(`${item.component.modelName}_${result.value}`, item);
-							}
-						}
-						if (result.done) break;
-					}
-				}
-			}
-		}
+		let isPass = await this.getValue();
 		if(isPass){
 			let id = undefined;
 			if (!this.file.isEmpty()) {
@@ -158,10 +190,10 @@ class DialogView{
 			}
 			if (id != undefined && this.callback != undefined) {
 				this.callback(id);
-				console.log(this.callback);
 			}
 		}else{
 			for(let i of this.meta.inputList){
+				if (!input.config.isForm) continue;
 				if (i.message == undefined) continue;
 				if(i.message.length > 0) this.message.push(i.message);
 			}
@@ -170,9 +202,46 @@ class DialogView{
 		}
 	}
 
+	async getValue(){
+		this.data = {};
+		this.file = new FormData();
+		let isPass = this.isPass;
+		this.message = [];
+		isPass = this.getFormValue(this.form, this.data, this.file, this.message) && isPass;
+		let components = this.page.modelComponentViewMap[this.viewType];
+		components = components != undefined ? components:[];
+		for (let item of components) {
+			if (item.viewType == ViewType.TABLE || item.viewType == ViewType.TABLE_FORM) {
+				this.data[item.component.modelName] = [];
+			} else {
+				this.data[item.component.modelName] = {};
+			}
+			let modelName = item.component.modelName;
+			let file = new FormData();
+			isPass = item.getFormValue(this.form, this.data[modelName], file, this.message) && isPass;
+			if (!file.isEmpty()) {
+				this.file.append(`data_${modelName}`, this.data[modelName]);
+				let iterator = file.keys();
+				while (true) {
+					let result = iterator.next();
+					if (result.value != 'data') {
+						let items = file.getAll(result.value);
+						for (let item of items) {
+							this.file.append(`${modelName}_${result.value}`, item);
+						}
+					}
+					if (result.done) break;
+				}
+			}
+		}
+		console.log(this.data);
+		console.log(this.file);
+		return isPass;
+	}
+
 	async close() {
 		if (this.main) this.main.closeDialog();
-		if (main) main.closeDialog();
+		else if (main) main.closeDialog();
 	}
 
 	setData(record){

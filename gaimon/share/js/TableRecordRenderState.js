@@ -191,7 +191,6 @@ let TableRecordRenderState = function(parent, modelName, config, column, table, 
 	}
 
 	this.createRecord = async function(option){
-		console.log(option);
 		let record = new InputDOMObject(object.recordTemplate, option);
 		await object.parent.setMouseOverOnStatus(record);
 		record.id = object.data.id;

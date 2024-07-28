@@ -21,6 +21,7 @@ class InputMetaData{
 		this.isNegative = config.isNegative;
 		this.isNumber = config.isNumber;
 		this.isRequired = config.isRequired;
+		this.placeHolder = config.placeHolder;
 		this.isEnabled = true;
 		this.isGrouped = false;
 
@@ -39,6 +40,8 @@ class InputMetaData{
 		this.formSideIconMap = {};
 		this.dialogSideIconList = [];
 		this.dialogSideIconMap = {};
+		this.formCellSideIconList = [];
+		this.formCellSideIconMap = {};
 	}
 
 	enable(){
@@ -154,7 +157,7 @@ class InputMetaData{
 	setFormValue(inputForm, record){
 		if(record != undefined){
 			let attribute = record[this.columnName];
-			let input = inputForm.dom[this.columnName];
+			let input = inputForm == undefined ? undefined : inputForm.dom[this.columnName];
 			if(attribute != undefined && input != undefined){
 				input.value = this.column.toInput(attribute);
 				if (this.prerequisite != null) this.callPrerequisite(this, inputForm);
@@ -167,6 +170,38 @@ class InputMetaData{
 		if(input != undefined){
 			input.value = '';
 		}
+	}
+
+	async initLinkEvent(cell, column, record) {
+		if (!column.isLink) return;
+		let object = this;
+		cell.html.onclick = async function() {
+			if (column.column.foreignColumn == undefined && column.column.foreignModelName == undefined) {
+				object.page.renderDetail(record.id);
+			} else {
+				let ID = record[column.columnName];
+				await main.pageModelDict[column.column.foreignModelName]?.onPrepareState()
+				if (main.pageModelDict[column.column.foreignModelName]) {
+					if (main.pageModelDict[column.column.foreignModelName].renderDetail) {
+						main.pageModelDict[column.column.foreignModelName]?.renderDetail(ID)
+					} else {
+						main.pageModelDict[column.column.foreignModelName]?.renderViewFromExternal(column.column.foreignModelName, {data: {id: ID}, isView: true}, 'Form')
+					}
+				}
+				
+			}
+		}
+	}
+
+	async renderDetail(record, reference){
+		if(this.detail == null){
+			let parameter = {...this};
+			this.detail = new DOMObject(TEMPLATE.DetailInputView, parameter);
+			this.setInputPerLine(this.detail, 2);
+			this.initLinkEvent(this.detail, parameter, record);
+		}
+		if(record) this.setDetailValue(this.detail, record, reference);
+		return this.detail;
 	}
 
 	setDetailValue(detail, record, reference) {
@@ -236,8 +271,8 @@ class InputMetaData{
 	}
 
 	setOption(select, option){
-		select.innerHTML = '';
-		select.html(`<option value="-1" selected>Not Select</option>`);
+		// select.innerHTML = '';
+		select.html(`<option value="-1" localized selected>Not Select</option>`);
 		for(let data of option){
 			select.append(`<option value="${data.value}">${data.label}</option>`);
 		}
@@ -287,7 +322,7 @@ class InputMetaData{
 		this.sideIconMap = {};
 		for(let icon of this.rawSideIcon){
 			let renderClass = (Function(`return ${icon.renderClass}`))();
-			if(!renderClass) continue;
+			if(!renderClass || icon.isAdd == true) continue;
 			let sideIcon = new renderClass(icon.name, icon.icon, icon.order, this, input);
 			this.appendFormSideIcon(sideIcon);
 		}
@@ -304,6 +339,13 @@ class InputMetaData{
 		if (this.dialogSideIconMap[sideIcon.name] == undefined) {
 			this.dialogSideIconList.push(sideIcon);
 			this.dialogSideIconMap[sideIcon.name] = sideIcon;
+		}
+	}
+
+	appendFormCellSideIcon(sideIcon){
+		if (this.formCellSideIconMap[sideIcon.name] == undefined) {
+			this.formCellSideIconList.push(sideIcon);
+			this.formCellSideIconMap[sideIcon.name] = sideIcon;
 		}
 	}
 
@@ -325,13 +367,22 @@ class InputMetaData{
 		return rendered;
 	}
 
-	async setFormSideIcon(inputForm, record) {
-		let sideIconList = await this.renderFormSideIcon(record);
-		console.log(inputForm, sideIconList);
-		for (let sideIcon of sideIconList) {
-			inputForm.dom.sideIconContainer.appendChild(sideIcon.html);
+	async renderFormCellSideIcon(record){
+		this.formCellSideIconList.sort((a, b) => VersionParser.compare(a.order, b.order));
+		let rendered = [];
+		for(let icon of this.formCellSideIconList){
+			rendered.push(await icon.render(record));
 		}
+		return rendered;
 	}
+
+	// async setFormSideIcon(inputForm, record) {
+	// 	let sideIconList = await this.renderFormSideIcon(record);
+	// 	console.log(inputForm, sideIconList);
+	// 	for (let sideIcon of sideIconList) {
+	// 		inputForm.dom.sideIconContainer.appendChild(sideIcon.html);
+	// 	}
+	// }
 
 	async setDialogSideIcon(inputForm, record) {
 		if (this.column.foreignModelName != null && this.column.foreignColumn != null) {

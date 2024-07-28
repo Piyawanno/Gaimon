@@ -7,6 +7,42 @@ class DetailView{
 		this.currentReferencedData = {};
 
 		let object = this;
+		this.hasEdit = true;
+		this.hasCancel = true;
+		this.operation = [];
+	}
+
+	async render(title, record){
+		await this.getRelatedData();
+		this.record = record;
+		if(this.detail == null){
+			this.template = TEMPLATE.FormView;
+			this.detail = new DOMObject(this.template, {title});
+			await this.setInput(this.record);
+			this.page.onCreateDetail(this);
+			this.setButton();
+			this.setOperation(record);
+		} else{
+			await this.setInput(this.record);
+			this.detail.dom.title.innerHTML = title;
+		}
+		return this.detail;
+	}
+
+	appendButton(button){
+		this.button.push(button);
+		this.button.sort((a, b) => VersionParser.compare(a.order, b.order));
+	}
+
+	appendOperation(operation){
+		this.operation.push(operation);
+		this.operation.sort((a, b) => VersionParser.compare(a.order, b.order));
+	}
+
+	async getOperation(){}
+	
+	async setButton(){
+		let object = this;
 		this.editButton = new Button(
 			"Edit",
 			'1.0',
@@ -19,35 +55,51 @@ class DetailView{
 			async () => {await object.close();},
 			["cancel_button"],
 		);
-		this.button = [this.editButton, this.cancelButton];
-	}
-
-	async render(title, record){
-		await this.getRelatedData();
-		this.record = record;
-		if(this.detail == null){
-			this.template = TEMPLATE.FormView;
-			this.detail = new DOMObject(this.template, {title});
-			await this.setInput(this.record);
-			this.page.onCreateDetail(this);
-			this.setButton();
-		} else{
-			await this.setInput(this.record);
-			this.detail.dom.title.innerHTML = title;
+		this.button = [];
+		if (this.hasEdit) {
+			this.button.push(this.editButton);
 		}
-		return this.detail;
-	}
-
-	appendButton(button){
-		this.button.push(button);
-		this.button.sort((a, b) => VersionParser.compare(a.order, b.order));
-	}
-	
-	async setButton(){
+		if (this.hasCancel) {
+			this.button.push(this.cancelButton);
+		}
 		for(let i of this.button){
 			let rendered = await i.render();
 			this.detail.dom.operation.appendChild(rendered.html);
 		}
+	}
+
+	async reloadButton(){
+		if(this.editButton) this.editButton.isRendered = false;
+		if(this.cancelButton) this.cancelButton.isRendered = false;
+		this.button = [];
+		await this.setButton();
+	}
+
+	async showEditButton() {
+		this.editButton.button.html.show();
+	}
+
+	async hideEditButton() {
+		this.editButton.button.html.hide();
+	}
+
+	async showCancelButton() {
+		this.cancelButton.button.html.show();
+	}
+
+	async hideCancelButton() {
+		this.cancelButton.button.html.hide();
+	}
+
+	async setOperation(record){
+		await this.getOperation();
+		if(this.operation.length == 0) return;
+		this.menu = new DOMObject(TEMPLATE.DetailMenu);
+		this.detail.dom.operationContainer.append(this.menu);
+		for(let i of this.operation){
+			let rendered = await i.render(record);
+			this.menu.dom.operation.appendChild(rendered.html);
+		}		
 	}
 
 	async setInput(record){
@@ -66,7 +118,7 @@ class DetailView{
 	}
 
 	async callEditPage(){
-		await this.page.renderUpdate(this.record.id);
+		await this.page.render(ViewType.UPDATE, this.record.id);
 	}
 
 	async close() {
@@ -79,8 +131,11 @@ class DetailView{
 			let i = input.column.input;
 			if(i.isReferenced){
 				if (i.isTagReferenced) {
+				} else if (i.config.typeName == 'AutoComplete') {
 				} else {
 					this.currentReferencedData[i.columnName] = {};
+					if (i.url == undefined || i.url == null) continue;
+					if (i.prerequisiteColumn != undefined || i.prerequisiteColumn != null) continue;
 					let response = await GET(i.url);
 					if (!response.isSuccess) continue;
 					let option = response.result;

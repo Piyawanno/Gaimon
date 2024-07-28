@@ -35,7 +35,7 @@ class FileMatrixInput extends FileInput {
 
 	/// Not Tested
 	getTableFormInputTemplate(){
-		return TEMPLATE.input.TableFormTextInput;
+		return TEMPLATE.input.TableFormFileMatrixViewInput;
 	}
 
 	/**
@@ -51,9 +51,36 @@ class FileMatrixInput extends FileInput {
 	setFormEvent(input){
 		let object = this;
 		if (input.recordList == undefined) input.recordList = [];
+		if (input.deleteList == undefined) input.deleteList = [];
 		this.fileInput = new FileInput(object.config, object.config);
 		input.dom.add.onclick = async function() {
 			let {record, dom} = await object.createFileRecord.bind(object)()
+			dom.dom.delete.onclick = async function() {
+				let ID = Object.id(dom);
+				input.recordList = input.recordList.filter((item) => {
+					return ID != Object.id(item)
+				});
+				record.html.remove();
+			}
+			input.dom.tbody.appendChild(record.html);
+			input.recordList.push(dom);
+		}
+	}
+
+	setTableFormEvent(input) {
+		let object = this;
+		if (input.recordList == undefined) input.recordList = [];
+		if (input.deleteList == undefined) input.deleteList = [];
+		this.fileInput = new FileInput(object.config, object.config);
+		input.dom.add.onclick = async function() {
+			let {record, dom} = await object.createFileRecord.bind(object)()
+			dom.dom.delete.onclick = async function() {
+				let ID = Object.id(dom);
+				input.recordList = input.recordList.filter((item) => {
+					return ID != Object.id(item)
+				});
+				record.html.remove();
+			}
 			input.dom.tbody.appendChild(record.html);
 			input.recordList.push(dom);
 		}
@@ -63,6 +90,7 @@ class FileMatrixInput extends FileInput {
 		let record = new DOMObject(TEMPLATE.input.TableFormFileMatrixViewInputRecord, {});
 		let fileInput = new FileInput(this.config, this.config);
 		let dom = await fileInput.renderFormCell();
+		Object.id(dom);
 		fileInput.setFormEvent(dom);
 		dom.dom.file_box.style.width = "100%";
 		dom.dom.file_box.style.maxWidth = "100%";
@@ -78,6 +106,7 @@ class FileMatrixInput extends FileInput {
 
 	setFormValue(inputForm, record){
 		let object = this;
+		inputForm.recordList = [];
 		if(record != undefined){
 			let attribute = record[this.columnName];
 			if (attribute == null || attribute == undefined) return;
@@ -87,6 +116,15 @@ class FileMatrixInput extends FileInput {
 			if (items == null) return;
 			for (let item of items) {
 				object.createFileRecord(item).then(({record, dom}) => {
+					record.currentRecord = item;
+					dom.dom.delete.onclick = async function() {
+						let ID = Object.id(dom);
+						inputForm.recordList = inputForm.recordList.filter((item) => {
+							return ID != Object.id(item)
+						});
+						record.html.remove();
+						object.deleteRecord(inputForm, record);
+					}
 					inputForm.dom.tbody.appendChild(record.html);
 					inputForm.recordList.push(dom);
 				});
@@ -94,9 +132,14 @@ class FileMatrixInput extends FileInput {
 		}
 	}
 
+	setTableFormValue(inputForm, record) {
+		this.setFormValue(inputForm, record);
+	}
+
 	getFormValue(form, inputForm, data, file, message){
 		let ID = Object.id(data);
 		data.__ID__ = ID;
+		this.isPass = true;
 		for (let record of inputForm.recordList) {
 			let fileMatrix = new FormData();
 			this.isPass = this.fileInput.getFormValue.bind(this.fileInput)(form, record, data, fileMatrix, message);
@@ -112,7 +155,7 @@ class FileMatrixInput extends FileInput {
 					if (result.value != 'data') {
 						let items = fileMatrix.getAll(result.value);
 						for (let item of items) {
-							file.append(`${ID}_${result.value}`, item);
+							file.append(`${result.value}`, item);
 							fileResult.push([item.name, ""])
 						}
 					}
@@ -121,7 +164,16 @@ class FileMatrixInput extends FileInput {
 				data[this.columnName] = JSON.stringify(fileResult);
 			}
 		}
+		data[`${this.columnName}_deleteList`] = inputForm.deleteList;
 		return this.isPass;
+	}
+
+	getTableFormValue(form, inputForm, data, file, message){
+		return this.getFormValue.bind(this)(form, inputForm, data, file, message);
+	}
+
+	deleteRecord(inputForm, record) {
+		inputForm.deleteList.push(record.currentRecord);
 	}
 	
 }

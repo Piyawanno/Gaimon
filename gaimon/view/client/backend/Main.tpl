@@ -43,11 +43,11 @@
 		</div>
 		<div rel="personalBar"></div>
 		<div class="abstract_menu_container abstract_tab_container hidden" rel="tabContainer"></div>
+		<div class="abstract_tab_container hidden" rel="stepContainer"></div>
 		<div class="flex">
 			<div class="data_container" rel="container"></div>
 			<div class="abstract_overlay hidden" rel="overlay"></div>
 		</div>
-		<div class="abstract_tab_container hidden" rel="stepContainer"></div>
 		<div rel="statusBar"></div>
 		<div rel="dialog"></div>
 		<div class="alertDialog" rel="alertDialog"></div>

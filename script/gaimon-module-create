@@ -1,6 +1,4 @@
 #!/usr/bin/python3
 
 from gaimon.util.creator.ModuleCreator import ModuleCreator
-
-creator = ModuleCreator()
-creator.start()
+if __name__ == '__main__': ModuleCreator().start()

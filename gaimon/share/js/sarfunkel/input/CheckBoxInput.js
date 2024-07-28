@@ -30,19 +30,33 @@ class CheckBoxInput extends SelectInput{
 	}
 
 	async renderDialogForm(record){
-		let parameter = {...this};
-		let input = new InputDOMObject(this.getInputTemplate(), parameter);
-		this.setFormSideIcon(input, record);
-		this.setFormEvent(input);
-		this.checkEditable(input);
-		this.setOption(input, this.option);
-		if (record == undefined || record == null || Object.keys(record).length == 0) {
-			this.clearFormValue(input)
-		} else if(record){
-			this.setFormValue(input, record);
-		}
+		// let parameter = {...this};
+		// let input = new InputDOMObject(this.getInputTemplate(), parameter);
+		// this.setFormSideIcon(input, record);
+		// this.setFormEvent(input);
+		// this.checkEditable(input);
+		// this.setOption(input, this.option);
+		// if (record == undefined || record == null || Object.keys(record).length == 0) {
+		// 	this.clearFormValue(input)
+		// } else if(record){
+		// 	this.setFormValue(input, record);
+		// }
         
-		return input;
+		// return input;
+		if(this.input == null){
+			let parameter = {...this};
+			this.input = new InputDOMObject(this.getInputTemplate(), parameter);
+			this.setFormSideIcon(this.input, record);
+			this.setFormEvent(this.input);
+		}
+		this.checkEditable(this.input);
+		this.setOption(this.input, this.option);
+		if (record == undefined || record == null || Object.keys(record).length == 0) {
+			this.clearFormValue(this.input)
+		} else if(record){
+			this.setFormValue(this.input, record);
+		}
+		return this.input;
 	}
 
     setOption(input, option) {
@@ -58,5 +72,13 @@ class CheckBoxInput extends SelectInput{
 				if(option) item.html(option.label);
 			}
 		}
+	}
+
+	async renderFormCell(record){
+		let parameter = {...this};
+		let cell = new InputDOMObject(TEMPLATE.input.TableFormCheckBoxInput, parameter);
+		this.checkTableFormEditable(cell);
+		if(record) this.setTableFormValue(cell, record);
+		return cell;
 	}
 }

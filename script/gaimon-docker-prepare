@@ -3,6 +3,7 @@
 from gaimon.util.DockerPreparation import DockerPreparation
 import os, sys, logging
 
-logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(message)s")
-prepare = DockerPreparation(os.path.abspath(sys.argv[-2]))
-prepare.prepare(sys.argv[-1])
+if __name__ == '__main__':
+	logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(message)s")
+	prepare = DockerPreparation(os.path.abspath(sys.argv[-2]))
+	prepare.prepare(sys.argv[-1])

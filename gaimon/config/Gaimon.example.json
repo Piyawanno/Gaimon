@@ -56,6 +56,9 @@
 		"email": "",
 		"password": ""
 	},
+	"enabledCurrency": ["THB", "USD"],
+	"defaultCurrency": "THB",
+	"JWTSigningKey": "JWT_SIGNING_KEY",
 	"menu": {
 		"disable": [],
 		"enable": [],

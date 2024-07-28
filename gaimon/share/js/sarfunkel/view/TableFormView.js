@@ -11,6 +11,11 @@ class TableFormView{
 		this.hasSelect = false;
 		this.hasIndex = true;
 		this.hasAvatar = true;
+		this.hasAdd = true;
+		this.hasLimit = true;
+		this.hasDeleteRecord = true;
+
+		this.isSetOperation = false;
 
 		this.viewMode = TableFormViewMode.TABLE;
 
@@ -28,6 +33,8 @@ class TableFormView{
 		this.currentRowRecordMap = {};
 		this.currentRecordRowMap = {};
 
+		this.eventColumnMapper = {};
+
 		this.pagination = new PaginationView(this);
 		this.filter = new TableFilterView(this);
 		this.header = new TableFormHeaderView(this);
@@ -35,13 +42,16 @@ class TableFormView{
 
 		this.tableOperation = [];
 		this.recordOperation = [];
-		this.setTableOperation();
+		// this.setTableOperation();
 		this.setRecordOperation();
 	}
 
 	setTableOperation(){
-		this.setPageLimitOperation();
-		this.setAddOperation();
+		if (!this.isSetOperation) {
+			if (this.hasLimit) this.setPageLimitOperation();
+			if (this.hasAdd) this.setAddOperation();
+		}
+		this.isSetOperation = true;
 	}
 
 	setPageLimitOperation(){
@@ -82,19 +92,29 @@ class TableFormView{
 	
 	setRecordOperation(){
 		let object = this;
-		
-		this.deleteOperation = new TableRecordOperation(
-			'Delete', 'Delete', '2.0',
-			async (event, record, row) => {
-				SHOW_CONFIRM_DELETE_DIALOG("Do you want to delete this data?", async function() {
-					object.deleteRow(row);
-				});
-			}
-		)
-		this.recordOperation.push(this.deleteOperation);
+		if(this.hasDeleteRecord){
+			this.deleteOperation = new TableRecordOperation(
+				'Delete', 'Delete', '2.0',
+				async (event, record, row) => {
+					SHOW_CONFIRM_DELETE_DIALOG("Do you want to delete this data?", async function() {
+						object.deleteRow(row);
+					});
+				}
+			)
+			this.recordOperation.push(this.deleteOperation);
+		}
+	}
+
+	reloadOperation() {
+		this.tableOperation = [];
+		this.recordOperation = [];
+		this.setTableOperation();
+		this.setRecordOperation();
 	}
 
 	async render(title, filter){
+		this.currentRowMap = {};
+		this.setTableOperation();
 		this.currentFilter = filter;
 		if(this.container == null){
 			this.getTableColumn();
@@ -146,6 +166,7 @@ class TableFormView{
 		excludeList = excludeList != undefined ? excludeList : [];
 		for(let record of this.currentRecordList){
 			let row = await this.row.render(record, this.currentReferencedData, i);
+			this.initEvent(row);
 			this.appendRow(row);
 			this.mapRowRecord(row, record);
 			if (excludeList.indexOf(this.row.columnName) != -1) continue;
@@ -165,7 +186,6 @@ class TableFormView{
 	async createRecordList(filter){
 		if (filter == undefined) filter = {};
 		let data = await this.fetchAll(filter);
-		console.log(data);
 		let count = undefined;
 		if(!data){
 			console.error('No data can be fetched.');
@@ -179,6 +199,7 @@ class TableFormView{
 		this.currentRawList = data;
 		this.currentRecordList = [];
 		this.currentRecordMap = {};
+		this.currentRowRecordMap = {};
 		let recordClass = this.recordClass;
 		let createFunction = !recordClass? (i) => new recordClass(i): (i) => i;
 		for(let i of data){
@@ -193,8 +214,8 @@ class TableFormView{
 	}
 
 	deleteRow(row) {
+		this.onDeleteRecord();
 		let id = Object.id(row);
-		console.log(id);
 		if (this.currentRowMap[id] != undefined) {
 			delete this.currentRowMap[id];
 			this.currentRowList = this.currentRowList.filter((item) => Object.id(item) != id);
@@ -219,6 +240,8 @@ class TableFormView{
 			delete this.currentRecordRowMap[id];
 		}
 	}
+
+	onDeleteRecord() {}
 
 	appendRow(row) {
 		let id = Object.id(row);
@@ -254,10 +277,12 @@ class TableFormView{
 		this.appendRecord(record);
 		let i = ((this.currentPage - 1) * this.limit) + 1;
 		let row = await this.row.render(record, this.currentReferencedData, i);
+		this.initEvent(row)
 		this.appendRow(row);
 		this.mapRowRecord(row, record);
 		this.table.dom.tbody.appendChild(row.html);
 		i += 1;
+		return row;
 	}
 
 	appendOperation(operation){
@@ -265,12 +290,42 @@ class TableFormView{
 		this.operation.sort((a, b) => VersionParser.compare(a.order, b.order));
 	}
 
+	appendTableOperation(operation){
+		this.tableOperation.push(operation);
+		this.tableOperation.sort((a, b) => VersionParser.compare(a.order, b.order));
+	}
+
+	initEvent(row) {
+		for (let columnName in this.eventColumnMapper) {
+			if (row.columns[columnName] == undefined) continue;
+			let input = row.columns[columnName];
+			let items = this.eventColumnMapper[columnName];
+			for (let item of items) {
+				this.setEachColumnEvent(input, columnName, item);
+			}
+			
+		}
+	}
+
+	setEachColumnEvent(input, columnName, item) {
+		input.dom[columnName].addEventListener(item.event, async function(ev) {
+			item.callback.bind(input.dom[columnName])(ev, input);
+		});
+	}
+
+	registerColumnEvent(columnName, event, callback) {
+		if (this.eventColumnMapper[columnName] == undefined) {
+			this.eventColumnMapper[columnName] = [];
+		}
+		this.eventColumnMapper[columnName].push({event, callback});
+	}
+
 	getTableColumn(){
 		this.tableColumn = [];
 		let excludeList = this.meta.excludeInputViewMap[ViewType.TABLE_FORM];
 		excludeList = excludeList != undefined ? excludeList : [];
 		for(let input of this.meta.inputList){
-			if (excludeList.indexOf(input.columnName) != -1) continue;
+			if (excludeList.indexOf(input.columnName) != -1 || !input.config.isForm) continue;
 			this.tableColumn.push(input.column.input);
 		}
 	}
@@ -297,6 +352,8 @@ class TableFormView{
 		for (let row of this.currentRowList) {
 			let item = {};
 			let ID = Object.id(row);
+			let originID = this.currentRowRecordMap[ID] != undefined ? this.currentRowRecordMap[ID].id: undefined;
+			item.id = originID;
 			if (fetched[ID] != undefined) continue;
 			for(let column of this.tableColumn){
 				if (excludeList.indexOf(column.columnName) != -1) continue;

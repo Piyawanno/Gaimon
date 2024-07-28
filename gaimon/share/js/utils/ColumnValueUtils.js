@@ -116,6 +116,7 @@ async function getPrerequisiteColumnValue(object, column, data){
 }
 
 async function getAutoCompleteColumnValue(column, data){
+	let value = "";
 	if (column.tableURL) return '-';
 	if(data[column.columnName] == '') return value;
 	let response = await POST(`${column.url}/by/reference`, {'reference': data[column.columnName]}, undefined, 'json', true);

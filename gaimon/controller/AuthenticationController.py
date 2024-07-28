@@ -16,7 +16,7 @@ import struct, time, pystache, re, string, random, logging
 import redis.asyncio as redis
 
 
-__SALT_TIME_LIMIT__ = 300.0
+__SALT_TIME_LIMIT__ = 1000000.0
 __CACHED_PAGE__ = {}
 
 EMAIL_PATTERN = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
@@ -111,7 +111,7 @@ class AuthenticationController:
 				"message": "User %s cannot be found." % (username)
 			})
 	
-	@POST("/authentication/user/autoComplete/get", role=['guest'])
+	@POST("/authentication/user/autocomplete/get", role=['guest'])
 	async def getUserAutoComplete(self, request) :
 		username = request.json['username']
 		userList:List[User] = await self.session.select(
@@ -328,6 +328,8 @@ class AuthenticationController:
 		encodedTime = bytes.fromhex(data['encodedTime'])
 		hashTime, = struct.unpack('<d', encodedTime)
 		now = time.time()
+		# print(hashTime, now)
+		# print((now - hashTime), __SALT_TIME_LIMIT__)
 		if (now - hashTime) > __SALT_TIME_LIMIT__:
 			return RESTResponse({
 				"isSuccess": False,

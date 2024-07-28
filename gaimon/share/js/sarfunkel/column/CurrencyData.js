@@ -1,5 +1,6 @@
 class CurrencyData{
 	constructor(origin, originCurrency="THB", exchanged=undefined, exchangedCurrency=undefined, rate="1.0", exchangeDate=undefined){
+		origin = origin != '' ? origin : 0.0;
 		let value = Fraction(origin);
 		this.origin = [value.n, value.d];
 		this.originString = `${this.origin[0]}/${this.origin[1]}`

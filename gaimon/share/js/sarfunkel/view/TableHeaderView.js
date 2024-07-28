@@ -10,6 +10,7 @@ class TableHeaderView{
 	}
 
 	async render(){
+		this.hasSelect = this.table.hasSelect;
 		this.tableColumn = this.table.tableColumn;
 		this.hasIndex = this.table.hasIndex;
 		this.hasAvatar = this.table.hasAvatar;
@@ -41,6 +42,7 @@ class TableHeaderView{
 	}
 
 	initSortEvent() {
+		this.initSortIconEvent({columnName: "id"});
 		for (let column of this.tableColumn) {
 			let tag = this.header.dom[column.columnName];
 			if (tag == undefined) continue;
@@ -51,6 +53,7 @@ class TableHeaderView{
 	initSortIconEvent(column) {
 		let object = this;
 		let tag = this.header.dom[`${column.columnName}`];
+		if (tag == undefined) return;
 		let header = this.header;
 		tag.onclick = async function() {
 			let isDecreasing = tag.isDecreasing;
@@ -82,6 +85,11 @@ class TableHeaderView{
 	}
 
 	resetSortIcon() {
+		let tag = this.header.dom["id"];
+		if (tag != undefined) {
+			tag.isDecreasing = undefined;
+			this.resetSortIconByColumnName("id");
+		};
 		for (let column of this.tableColumn) {
 			let tag = this.header.dom[column.columnName];
 			if (tag == undefined) continue;

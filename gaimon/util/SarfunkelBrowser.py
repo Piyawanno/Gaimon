@@ -1,4 +1,5 @@
 from typing import List
+from gaimon.util.PathUtil import conform
 
 import os
 
@@ -110,7 +111,7 @@ class SarfunkelBrowser:
 		content = []
 		for i in fileList:
 			path = f'{root}/{i}'
-			with open(path) as fd :
+			with open(conform(path)) as fd :
 				content.append(fd.read())
 		return content
 	
@@ -118,7 +119,7 @@ class SarfunkelBrowser:
 		nameList = []
 		for i in base:
 			nameList.append(f'{prefix}{i}')
-		for i in os.listdir(root) :
+		for i in os.listdir(conform(root)) :
 			if i in base: continue
 			nameList.append(f'{prefix}{i}')
 		return nameList
@@ -130,12 +131,12 @@ class SarfunkelBrowser:
 		content = []
 		for i in base:
 			path = f'{root}{i}'
-			with open(path) as fd :
+			with open(conform(path)) as fd :
 				content.append(fd.read())
-		for i in os.listdir(root) :
+		for i in os.listdir(conform(root)) :
 			if i in base: continue
 			path = f'{root}{i}'
-			with open(path) as fd :
+			with open(conform(path)) as fd :
 				content.append(fd.read())
 		return content
 

@@ -41,7 +41,7 @@ class ReferenceSelectInput extends SelectInput{
 		if(this.detail == null){
 			let parameter = {...this};
 			this.detail = new DOMObject(TEMPLATE.DetailInputView, parameter);
-			this.setInputPerLine(this.detail, 1);
+			this.setInputPerLine(this.detail, 2);
 		}
 		if(record) this.setDetailValue(this.detail, record, reference);
 		return this.detail;
@@ -62,15 +62,28 @@ class ReferenceSelectInput extends SelectInput{
 	}
 
 	async renderDialogForm(record){
-		let parameter = {...this};
-		let input = new InputDOMObject(TEMPLATE.input.SelectInput, parameter);
-		this.setDialogSideIcon(input, record);
-		this.setFormEvent(input);
-		this.checkEditable(input);
+		// let parameter = {...this};
+		// let input = new InputDOMObject(TEMPLATE.input.SelectInput, parameter);
+		// this.setDialogSideIcon(input, record);
+		// this.setFormEvent(input);
+		// if (this.config.prerequisite) this.setPrerequisite(this, input);
+		// this.checkEditable(input);
+		// await this.getOption();
+		// this.setOption(input.dom[this.columnName], this.option);
+		// if(record) this.setFormValue(input, record);
+		// return input;
+		if(this.input == null){
+			let parameter = {...this};
+			this.input = new InputDOMObject(TEMPLATE.input.SelectInput, parameter);
+			this.setFormSideIcon(this.input, record);
+			this.setFormEvent(this.input);
+			if (this.config.prerequisite) this.setPrerequisite(this, this.input);
+		}
+		this.checkEditable(this.input);
 		await this.getOption();
-		this.setOption(input.dom[this.columnName], this.option);
-		if(record) this.setFormValue(input, record);
-		return input;
+		this.setOption(this.input.dom[this.columnName], this.option);
+		if(record) this.setFormValue(this.input, record);
+		return this.input;
 	}
 
 	async renderCell(record, reference) {
@@ -106,11 +119,17 @@ class ReferenceSelectInput extends SelectInput{
 	}
 
 	async getOption(){
+		if (this.url == undefined || this.url.length == 0) {
+			this.option = [];
+			this.optionMap = {};
+			return;
+		}
 		let response = await GET(this.url);
 		if(!response.isSuccess){
 			console.error(`Error by getting option ${this.columnName} ${this.url}.`);
 		}
 		this.option = response.result == undefined ? response.results: response.result;
+		this.option = this.option == undefined ? [] : this.option;
 		this.optionMap = {};
 		for(let option of this.option){
 			this.optionMap[option.value] = option;
@@ -126,6 +145,8 @@ class ReferenceSelectInput extends SelectInput{
 				input.classList.add('error');
 				message.push(`Required field "${this.label}" is not selected.`);
 			}
+			console.log(message);
+			if(result == null) result = inputForm.data.default;
 			return false;
 		}else{
 			input.classList.remove('error');
@@ -150,7 +171,6 @@ class ReferenceSelectInput extends SelectInput{
 		if(record != undefined){
 			let attribute = record[this.columnName];
 			let item = cell.dom[this.columnName];
-			console.log(record);
 			let data = reference[this.columnName];
 			if (data != undefined && item != undefined) {
 				item.innerHTML = data[attribute] != undefined ? data[attribute].label: '-';
@@ -174,7 +194,7 @@ class ReferenceSelectInput extends SelectInput{
 					if (data[attribute]?.avatar?.default) {
 						cell.dom.avatar.src = data[attribute]?.avatar?.default;
 					} else {
-						cell.dom.avatar.src = "share/icon/logo_padding.png";
+						cell.dom.avatar.src = `${rootURL}share/icon/logo_padding.png`;
 						cell.dom.avatarContainer.hide();
 					}
 					
@@ -221,6 +241,25 @@ class ReferenceSelectInput extends SelectInput{
 		}
 	}
 
+	async setFormCellSideIcon(inputForm, record) {
+		this.createFormSideIcon();
+		let sideIcons = [];
+		if (this.formSideIconMap['add'] == undefined) {
+			if (this.column.foreignModelName != null && this.column.foreignColumn != null) {
+				let addIcon = new AddSideIcon('add', 'Add', '1.0', this, inputForm);
+				sideIcons.push(addIcon);
+			}
+		}
+		sideIcons.sort((a, b) => VersionParser.compare(a.order, b.order));
+		let sideIconList = [];
+		for(let icon of sideIcons){
+			sideIconList.push(await icon.render(record));
+		}
+		for (let sideIcon of sideIconList) {
+			inputForm.dom.sideIconContainer.appendChild(sideIcon.html);
+		}
+	}
+
 	enableEdit(inputForm){
 		this.isEditable = true;
 		if (inputForm == undefined) {
@@ -231,12 +270,12 @@ class ReferenceSelectInput extends SelectInput{
 			inputForm.dom[this.columnName].disabled = false;
 			for (let sideIcon of this.formSideIconList) {
 				if (sideIcon.svg) {
-					sideIcon.svg.html.show();
+					if (sideIcon.svg.html) sideIcon.svg.html.show();
 				}
 			}
 			for (let sideIcon of this.dialogSideIconList) {
 				if (sideIcon.svg) {
-					sideIcon.svg.html.show();
+					if (sideIcon.svg.html) sideIcon.svg.html.show();
 				}
 			}
 		}

@@ -3,7 +3,7 @@
 	let LANGUAGE = 'en';
 	async function startPage() {
 		GLOBAL.AUTHEN = new Authentication();
-		GLOBAL.AUTHEN.checkLogin();
+		// GLOBAL.AUTHEN.checkLogin(IS_MOBILE_APP);
 		TEMPLATE = await getMustacheTemplate('backend');
 		TEMPLATE.get = GET_TEMPLATE;
 		let language = localStorage.getItem('LANGUAGE');

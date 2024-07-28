@@ -1,3 +1,4 @@
+import re
 from gaimon.core.AsyncServiceClient import AsyncServiceClient
 from gaimon.core.Route import GET, POST, ROLE
 from gaimon.core.UserHandler import UserHandler
@@ -112,12 +113,12 @@ class UserController:
 		result['gaimon'] = __GAIMON_ROLE__
 		return REST({'isSuccess': True, 'result': result})
 
-	@POST('/user/autoComplete/get', permission=[PT.READ])
+	@POST('/user/autocomplete/get', permission=[PT.READ])
 	async def getUser(self, request: Request):
 		users:List[User] = await self.userHandler.getUserByWildcard(self.session, request.json, self.entity)
 		return Success([i.toDict() for i in users])
 
-	@POST('/user/autoComplete/get/by/reference', permission=[PT.READ])
+	@POST('/user/autocomplete/get/by/reference', permission=[PT.READ])
 	async def getAutoCompleteUserByID(self, request: Request):
 		user: User = await self.userHandler.getUserByID(self.session, int(request.json['reference']), self.entity)
 		fullName = ''
@@ -213,7 +214,8 @@ class UserController:
 
 	@POST("/user/option/getByIDList", permission=[PT.READ])
 	async def getUserOptionByIDList(self, request: Request):
-		IDList = [int(i) for i in request.json['IDList']]
+		if request.json.get('IDList', None) is None: return Success([])
+		IDList = [int(i) for i in request.json['IDList'] if not i is None]
 		result = await self.userHandler.getUserOptionByIDList(self.session, IDList, self.entity)
 		return Success(result)
 	
@@ -226,3 +228,11 @@ class UserController:
 	async def isEmailExist(self, request: Request):
 		result = await self.userHandler.isEmailExist(self.session, request.json['email'], self.entity)
 		return Success(result)
+
+	@POST("/user/displayname/by/id/list/get", role=['guest'])
+	async def getUserDisplayNameByIDList(self, request: Request):
+		if len(request.json['idList']) == 0: return Success()
+		clause = f"WHERE id IN ({', '.join(['?' for i in request.json['idList']])})"
+		users:List[User] = await self.userHandler.getUserByCluase(self.session, clause, request.json['idList'], self.entity)
+		if users is None : return Error('User cannot be found.')
+		else : return Success({user.id: user.displayName for user in users})
