@@ -12,14 +12,15 @@ const MonitorPage = function(main, parent) {
 	}
 
 	this.render = async function() {
-		/// https://github.com/janl/mustache.js
+		///https://github.com/janl/mustache.js
 		console.log("Monitor");
 		let template = await TEMPLATE.get('MonitorPage', false);
 		let container = new DOMObject(template, {'label': 'Hello'});
-		let data = await GET('country/get/all');
+		let data = await GET('country/get/all'); //how to get data from monitor
 		console.log(data);
 		container.dom.button.onclick = function(){
-			container.dom.header.style.color = 'red';
+			container.dom.header.style.color = 'white';
+			container.dom.header.style.backgroundColor = '#162936';
 		}
 		this.main.home.dom.container.append(container);
 	}
