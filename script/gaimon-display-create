@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 from gaimon.util.creator.DisplayCreator import DisplayCreator
 if __name__ == '__main__': DisplayCreator().start()

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 __HELP__ = "Generate PDF document, which contains QR code for registration."
 

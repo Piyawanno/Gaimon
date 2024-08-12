@@ -1,0 +1,114 @@
+.svg-template-editor { 
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: calc(100vh - 44px);
+}
+
+.svg-template-editor .component-bar { 
+    width: 20%;
+    display: grid;
+    padding: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 10px;
+}
+
+.svg-template-editor .component-bar .component-item { 
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    width: 92px;
+    height: 92px;
+    box-shadow: 0 1px 5px 0px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    cursor: pointer;
+    background-color: #fff;
+    border-radius: 15px;
+}
+
+.svg-template-editor .component-bar .component-item .label { 
+    user-select: none;
+}
+
+.svg-template-editor .component-bar .component-item svg { 
+    width: 64px;
+}
+
+.svg-template-editor .template-container { 
+    width: 60%;
+    background: #CFD8DC;
+    box-shadow: inset 0 0 10px #1a29350d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.svg-template-editor .template-container .svg-template-container {
+    height: 100%;
+    aspect-ratio: 2480 / 3508;
+    background: #fff;
+}
+
+.svg-template-editor .template-container .svg-template-container svg {
+    width: 100%;
+}
+
+.svg-template-editor .property-bar { 
+    width: 20%;
+}
+
+.svg-template-editor .property-bar .property-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 20px;
+}
+
+.svg-template-editor .property-bar .property-bar-container .property-bar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+}
+
+.svg-template-editor .property-bar .property-bar-container .property-bar-item .property-bar-item-input {
+    width: 100%;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+.svg-template-editor .property-bar .open_template_container {
+    padding: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.svg-template-editor .property-bar .open_template_container .open_template_button {
+    padding: 10px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--main-sidebar-menu-button-selected-background-color);
+    color: white;
+    user-select: none;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.svg-template-editor .property-bar .open_template_container .export_template_button {
+    padding: 10px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--main-topbar-background-color);
+    color: white;
+    user-select: none;
+    cursor: pointer;
+    border-radius: 10px;
+}
+

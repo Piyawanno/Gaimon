@@ -11,6 +11,7 @@
 		else LANGUAGE = language;
 		LOCALE = await getLocale(LANGUAGE, LANGUAGE);
 		main = new BackendMain();
+		
 		await main.init();
 		let elapsed = Date.now() - start;
 		console.log(`>>> Page initialize : loaded in ${elapsed}ms`);

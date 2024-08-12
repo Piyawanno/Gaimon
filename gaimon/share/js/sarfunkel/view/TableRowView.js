@@ -26,7 +26,6 @@ class TableRowView{
 		if(this.hasIndex){
 			row.dom.index.innerHTML = i;
 		}
-		console.log(this.table.tableColumn);
 		for(let column of this.table.tableColumn){
 			let cell = await column.renderCell(record, reference);
 			row.dom[column.columnName] = cell.dom[column.columnName];

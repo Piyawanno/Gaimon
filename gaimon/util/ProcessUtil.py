@@ -1,3 +1,4 @@
+from gaimon.util.PathUtil import getConfigPath, getResourcePath
 from typing import Dict, List
 from subprocess import check_output
 from psutil import Process
@@ -13,10 +14,11 @@ def readConfig(
 ) -> dict:
 	from gaimon.util.PathUtil import conform
 	if basePath is None:
+		configPath = getConfigPath()
 		if namespace is None or len(namespace) == 0:
-			basePath = '/etc/gaimon/'
+			basePath = f'{configPath}/gaimon/'
 		else:
-			basePath = f'/etc/gaimon/namespace/{namespace}/'
+			basePath = f'{configPath}/gaimon/namespace/{namespace}/'
 
 	config = {}
 	for configPath in mainConfig:
@@ -62,10 +64,11 @@ def daemonize(name, action, callee, namespace: str = '', pidFilePath: str = None
 	from daemon import pidfile
 	import daemon
 	if pidFilePath is None:
+		resourcePath = getResourcePath()
 		if namespace is None or len(namespace) == 0:
-			pidFilePath = f'/var/gaimon/{name}.pid'
+			pidFilePath = f'{resourcePath}/gaimon/{name}.pid'
 		else:
-			pidFilePath = f'/var/gaimon/namespace/{namespace}/{name}.pid'
+			pidFilePath = f'{resourcePath}/gaimon/namespace/{namespace}/{name}.pid'
 
 	def start():
 		if os.path.isfile(pidFilePath):
@@ -102,7 +105,8 @@ def daemonize(name, action, callee, namespace: str = '', pidFilePath: str = None
 			os.remove(pidFilePath)
 
 def setSystemPath(namespace):
-	path = f'/var/gaimon/package/{namespace}'
+	resourcePath = getResourcePath()
+	path = f'{resourcePath}/gaimon/package/{namespace}'
 	if not os.path.isdir(path) : return
 	import gaimon, site, pip
 	sitePackages = set(site.getsitepackages())

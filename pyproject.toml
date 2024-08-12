@@ -1,0 +1,86 @@
+[project]
+name = "gaimon"
+description = "Gaimin: MVC Web-Application Framework for rapid development of Full-Stack and Cross-Platform application"
+version = "0.9.1"
+dependencies = [
+	"websockets==10.4",
+	"sanic",
+	"aiofiles",
+	"pystache",
+	"pyjwt",
+	"requests",
+	"aiohttp",
+	"packaging",
+	"asyncpg",
+	"dataclasses",
+	"testresources",
+	"pip",
+	"python-daemon",
+	"tabulate",
+	"qrcode",
+	"weasyprint",
+	"markdown",
+	"flask",
+	"psutil",
+	"fpdf",
+	"numpy",
+	"wkhtmltopdf",
+	"xlsxwriter",
+	"redis",
+	"css_html_js_minify",
+	"rjsmin",
+	"pyprince",
+	"yapf",
+	"pyuca",
+]
+authors = [
+	{name="Kittipong Piyawanno", email="k.piyawanno@gmailc.com"},
+]
+readme="README.md"
+keywords = ["web", "mvc"]
+
+classifiers = [
+	# How mature is this project? Common values are
+	#   3 - Alpha
+	#   4 - Beta
+	#   5 - Production/Stable
+	"Development Status :: 4 - Beta",
+
+	# Indicate who your project is intended for
+	"Intended Audience :: Developers",
+	"Topic :: Internet :: WWW/HTTP",
+	"Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+	"Topic :: Software Development :: Libraries :: Python Modules",
+
+	# Pick your license as you wish (see also "license" above)
+	"License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+
+	# Specify the Python versions you support here.
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3.6",
+	"Programming Language :: Python :: 3.7",
+	"Programming Language :: Python :: 3.8",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+]
+
+[project.urls]
+Homepage = "https://github.com/Piyawanno/Gaimon"
+Documentation = "https://github.com/Piyawanno/Gaimon/tree/main/document"
+Repository = "https://github.com/Piyawanno/Gaimon"
+Issues = "https://github.com/Piyawanno/Gaimon/issues"
+Changelog = "https://github.com/Piyawanno/Gaimon/blob/main/CHANGELOG.md"
+
+[project.scripts]
+gaimon = "gaimon.cli.GaimonCLI:run"
+gaimon-notification = "gaimon.cli.GaimonNotificationCLI:run"
+gaimon-namespace-init = "gaimon.cli.GaimonNameSpaceInitializerCLI:run"
+gaimon-user-create = "gaimon.cli.GaimonUserCreatorCLI:run"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["gaimon"]
+exclude = []
+namespaces = true

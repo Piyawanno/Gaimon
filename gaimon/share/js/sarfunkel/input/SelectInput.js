@@ -155,9 +155,10 @@ class SelectInput extends InputMetaData{
 		return cell;
 	}
 
-	async renderFormCell(record, reference) {
+	async renderFormCell(record, reference, row) {
 		let parameter = {...this};
 		let cell = new InputDOMObject(this.getTableFormInputTemplate(), parameter);
+		cell.row = row;
 		this.checkTableFormEditable(cell);
 		this.setOption(cell.dom[this.columnName], this.option);
 		if(record) this.setTableFormValue(cell, record);

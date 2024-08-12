@@ -1,6 +1,26 @@
 import importlib.util
 import sys, os
 
+IS_WINDOWS = sys.platform in ['win32', 'win64']
+IS_VENV = sys.prefix != sys.base_prefix
+
+def getConfigPath() -> str:
+	if IS_VENV:
+		return conform(f'{sys.prefix}/etc')
+	else:
+		return conform('/etc')
+
+def getResourcePath() -> str:
+	if IS_VENV:
+		return conform(f'{sys.prefix}/var')
+	else:
+		return conform('/var')
+
+def getGaimonResourcePath(namespace: str=None) -> str:
+	if namespace is not None and len(namespace):
+		return f"{getResourcePath()}/gaimon/namespace/{namespace}/"
+	else:
+		return f"{getResourcePath()}/gaimon/"
 
 def conform(path):
 	isRootPath = False
@@ -8,7 +28,7 @@ def conform(path):
 	if len(splitted) <= 1: return path
 	rootPrefix = ('etc', 'var', 'usr', 'home')
 	if splitted[1] in rootPrefix or path[0] == "/": isRootPath = True
-	if sys.platform == 'win32':
+	if IS_WINDOWS:
 		from pathlib import Path
 		result = os.sep.join([i for i in splitted if len(i)])
 		if isRootPath: result = str(Path.home()) + os.sep + result
@@ -24,22 +44,34 @@ def link(source, destination):
 	source = conform(source)
 	destination = conform(destination)
 	command = f"ln -s {source} {destination}"
-	if sys.platform == 'win32': command = f"mklink /D {destination} {source}"
-	print(command)
-	return os.system(command)
+	if IS_WINDOWS:
+		command = f"mklink /D {destination} {source}"
+	if not os.path.islink(destination):
+		print(command)
+		return os.system(command)
 
+def linkEach(source, destination):
+	for i in os.listdir(source):
+		link(f'{source}/{i}', f'{destination}{i}')
 
 def copy(source, destination, isFolder=False):
 	source = conform(source)
 	destination = conform(destination)
-	command = f"cp {source} {destination}"
-	if isFolder: command = f"cp -rfv {source} {destination}"
-	if sys.platform == 'win32':
+	if isFolder:
+		command = f"cp -rfv {source} {destination}"
+	else:
+		command = f"cp {source} {destination}"
+	if IS_WINDOWS:
 		command = f"copy {source} {destination}"
 		if isFolder: command = f"xcopy /e {source} {destination}"
 	print(command)
 	return os.system(command)
 
+def copyEach(source, destination):
+	for i in os.listdir(source):
+		sourcePath = f'{source}/{i}'
+		isFolder = os.path.isdir(sourcePath)
+		copy(sourcePath, f'{destination}{i}', isFolder)
 
 def getModel(name: str, path: str) -> type:
 	# Append the directory to sys.path

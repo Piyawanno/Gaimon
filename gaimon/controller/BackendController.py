@@ -39,6 +39,8 @@ __BACKEND_JS__: List[str] = [
 	'lib/InputDOMObject.js',
 	'lib/InputGetterState.js',
 	'lib/InputSetterState.js',
+	'lib/SVGTemplateFormatter.js',
+	'lib/SVGTemplateEditor.js',
 	'BackendMain.js',
 	'Authentication.js',
 	'AbstractPage.js',
@@ -82,6 +84,7 @@ __BACKEND_JS__: List[str] = [
 	'page/NotificationPage.js',
 	'page/TemplatePage.js',
 	'page/MyJobPage.js',
+	'page/SVGTemplateEditorPage.js',
 	'protocol/UserProtocol.js',
 	'protocol/UnitProtocol.js',
 	'protocol/UtilityProtocol.js',
@@ -92,6 +95,7 @@ __BACKEND_JS__: List[str] = [
 ]
 
 __BACKEND_CSS__: List[str] = [
+    'lib/SVGTemplateEditor.css',
 	'backend/BackendMain.css',
 	'backend/BackendForm.css',
 	'backend/BackendInfo.css',
@@ -552,5 +556,4 @@ class BackendController:
 	async def getENUM(self, request):
 		result = {}
 		result['TABLE_DISPLAY_TYPE'] = {i:TableDisplayType.__members__[i].value for i in TableDisplayType.__members__}
-		# result['TABLE_DISPLAY_TYPE'] = TableDisplayType.label
 		return Success(result)

@@ -74,9 +74,10 @@ class CheckBoxInput extends SelectInput{
 		}
 	}
 
-	async renderFormCell(record){
+	async renderFormCell(record, reference, row){
 		let parameter = {...this};
 		let cell = new InputDOMObject(TEMPLATE.input.TableFormCheckBoxInput, parameter);
+		cell.row = row;
 		this.checkTableFormEditable(cell);
 		if(record) this.setTableFormValue(cell, record);
 		return cell;

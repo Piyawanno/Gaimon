@@ -86,7 +86,7 @@ class FileMatrixInput extends FileInput {
 		}
 	}
 
-	async createFileRecord(item) {
+	async createFileRecord(item, reference, row) {
 		let record = new DOMObject(TEMPLATE.input.TableFormFileMatrixViewInputRecord, {});
 		let fileInput = new FileInput(this.config, this.config);
 		let dom = await fileInput.renderFormCell();
@@ -127,6 +127,37 @@ class FileMatrixInput extends FileInput {
 					}
 					inputForm.dom.tbody.appendChild(record.html);
 					inputForm.recordList.push(dom);
+					
+					for(let i in inputForm.recordList){
+						let input = inputForm.recordList[i];
+						input.dom.preview.onclick = () => {
+							// if (input.dom.fileInput.files[0]) {
+							// 	let file = input.dom.fileInput.files[0];
+							// 	let name = input.dom.fileInput.files[0].name;
+							// 	let reader = new FileReader();
+							// 	reader.onload = function(e){
+							// 		fetch(e.target.result).then(res => res.blob()).then(blob => {
+							// 			const fileURL = URL.createObjectURL(blob);
+							// 			const link = document.createElement('a');
+							// 			link.href = fileURL;
+							// 			link.download = name;
+							// 			link.click();
+							// 		})
+							// 	}
+							// 	if(file != undefined) reader.readAsDataURL(file);
+							// } else {
+							// 	let record = JSON.parse(object.currentRecord);
+							// 	let tag = document.createElement("a");
+							// 	tag.href = `${rootURL}share/${record[1]}`;
+							// 	tag.download = record[0];
+							// 	tag.target = "_blank";
+							// 	tag.classList.add("hidden");
+							// 	document.body.appendChild(tag);
+							// 	tag.click();
+							// 	document.body.removeChild(tag);
+							// }
+						}
+					}
 				});
 			}
 		}

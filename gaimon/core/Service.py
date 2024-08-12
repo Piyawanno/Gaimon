@@ -1,10 +1,12 @@
+from xerial.Record import Record
 from gaimon.core.ServicePermissionChecker import ServicePermissionChecker
 from gaimon.core.Application import Application
 from gaimon.core.Route import Route
+from gaimon.util.PathUtil import getConfigPath, getResourcePath
 
 import os, logging
 
-
+Record.enableDefaultBackup()
 class Service:
 	def __init__(self, config: dict, namespace: str = ''):
 		Application.BASE_CONFIG = config
@@ -24,11 +26,11 @@ class Service:
 	def setNamespace(self, namespace: str):
 		self.namespace = namespace
 		if namespace is not None and len(namespace):
-			self.configPath = f'/etc/gaimon/namespace/{self.namespace}/'
-			self.resourcePath = f"{self.config['resourcePath']}/namespace/{self.namespace}/"
+			self.configPath = f'{getConfigPath()}/gaimon/namespace/{self.namespace}/'
+			self.resourcePath = f"{getResourcePath()}/gaimon/namespace/{self.namespace}/"
 		else:
-			self.configPath = '/etc/gaimon/'
-			self.resourcePath = self.config['resourcePath']
+			self.configPath = f'{getConfigPath()}/gaimon/'
+			self.resourcePath:str = f'{getResourcePath()}/gaimon'
 		if not os.path.isdir(self.configPath):
 			os.makedirs(self.configPath)
 		if not os.path.isdir(self.resourcePath):

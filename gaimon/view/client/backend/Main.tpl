@@ -53,7 +53,7 @@
 		<div class="alertDialog" rel="alertDialog"></div>
 		<div class="abstract_notification_container" rel="notificationList"></div>
 		<div class="abstract_myAccount_container" rel="myAccount"></div>
-		<div class="abstract_dialog hidden" rel="loading">
+		<div class="abstract_dialog" rel="loading">
 			<div class="abstract_dialog_container abstract_loading">
 				<div class="flex-column gap-20px">
 					<div><img src="{{{rootURL}}}share/icon/loading.gif"></div>

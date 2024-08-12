@@ -1,4 +1,3 @@
-from gaimon.core.RESTResponse import RESTResponse
 from gaimon.core.ServiceClient import ServiceClient
 
 import time

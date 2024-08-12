@@ -108,7 +108,7 @@ class InputMetaData{
 		return cell;
 	}
 
-	async renderFormCell(record, reference){
+	async renderFormCell(record, reference, row){
 		let cell = new DOMObject('', {});
 		return cell;
 	}
@@ -289,16 +289,26 @@ class InputMetaData{
 	callPrerequisite(input, dom) {
 		if (this.prerequisite == null) return;
 		for (let item of this.prerequisite) {
-			if (item.input.handlePrerequisite) item.input.handlePrerequisite.bind(item.input)(input, dom, item.dom);
+			if (item.input.handlePrerequisite) {
+				if (dom.row != undefined) {
+					if (dom.row == item.dom.row) {
+						item.input.handlePrerequisite.bind(item.input)(input, dom, item.dom);
+					}
+				} else {
+					item.input.handlePrerequisite.bind(item.input)(input, dom, item.dom);
+				}
+				
+			}
 		}
 	}
 
-	setPrerequisite(input, dom) {
+	setPrerequisite(input, dom, row) {
 		let prerequisite = input.config.prerequisite;
 		if (prerequisite == null) return;
 		let splitted = prerequisite.split('.');
 		input.prerequisiteColumn = splitted[1];
 		let parent = this.meta.inputMap[splitted[1]];
+		if (row == undefined)
 		if (parent == undefined) return;
 		if (parent.prerequisite == null) parent.prerequisite = [];
 		parent.prerequisite.push({input: input, dom: dom});

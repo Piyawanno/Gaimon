@@ -9,7 +9,7 @@ from gaimon.core.PostProcessor import PostProcessDecorator
 from gaimon.core.ValidationDecorator import ValidationDecorator
 from gaimon.core.ReplaceDecorator import ReplaceRule
 from gaimon.core.Route import Route
-from gaimon.util.PathUtil import conform
+from gaimon.util.PathUtil import conform, getConfigPath, getResourcePath
 from gaimon.util.ProcessUtil import getMemory
 from xerial.DBSessionPool import DBSessionPool
 from xerial.Record import Record
@@ -129,13 +129,13 @@ class Application:
 		from gaimon.util.GaimonInitializer import conform
 		self.namespace = namespace
 		if len(self.namespace):
-			self.configPath = conform(f'/etc/gaimon/namespace/{self.namespace}/')
+			self.configPath = conform(f'{getConfigPath()}/gaimon/namespace/{self.namespace}/')
 			self.resourcePath = conform(
-				f"{self.config['resourcePath']}/namespace/{self.namespace}/"
+				f"{getResourcePath()}/gaimon/namespace/{self.namespace}/"
 			)
 		else:
-			self.configPath:str = conform('/etc/gaimon/')
-			self.resourcePath:str = self.config['resourcePath']
+			self.configPath:str = conform(f'{getConfigPath()}/gaimon/')
+			self.resourcePath:str = f'{getResourcePath()}/gaimon'
 		if not os.path.isdir(self.configPath):
 			os.makedirs(self.configPath)
 		if not os.path.isdir(self.resourcePath):

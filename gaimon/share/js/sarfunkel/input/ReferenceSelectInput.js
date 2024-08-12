@@ -42,6 +42,7 @@ class ReferenceSelectInput extends SelectInput{
 			let parameter = {...this};
 			this.detail = new DOMObject(TEMPLATE.DetailInputView, parameter);
 			this.setInputPerLine(this.detail, 2);
+			this.initLinkEvent(this.detail, parameter, record);
 		}
 		if(record) this.setDetailValue(this.detail, record, reference);
 		return this.detail;
@@ -62,16 +63,6 @@ class ReferenceSelectInput extends SelectInput{
 	}
 
 	async renderDialogForm(record){
-		// let parameter = {...this};
-		// let input = new InputDOMObject(TEMPLATE.input.SelectInput, parameter);
-		// this.setDialogSideIcon(input, record);
-		// this.setFormEvent(input);
-		// if (this.config.prerequisite) this.setPrerequisite(this, input);
-		// this.checkEditable(input);
-		// await this.getOption();
-		// this.setOption(input.dom[this.columnName], this.option);
-		// if(record) this.setFormValue(input, record);
-		// return input;
 		if(this.input == null){
 			let parameter = {...this};
 			this.input = new InputDOMObject(TEMPLATE.input.SelectInput, parameter);
@@ -100,12 +91,14 @@ class ReferenceSelectInput extends SelectInput{
 		return cell;
 	}
 
-	async renderFormCell(record, reference) {
+	async renderFormCell(record, reference, row) {
 		let parameter = {...this};
 		let cell = new InputDOMObject(TEMPLATE.input.TableFormSelectInput, parameter);
+		cell.row = row;
 		this.checkTableFormEditable(cell);
 		await this.getOption();
 		this.setOption(cell.dom[this.columnName], this.option);
+		this.setFormEvent(cell);
 		if(record) this.setTableFormValue(cell, record);
 		return cell;
 	}

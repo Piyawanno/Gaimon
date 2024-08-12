@@ -17,46 +17,28 @@ class CurrencyInput extends NumberInput{
 	static create(config) {
 		let data = super.create(config);
 		data.typeName = "Currency";
-		return data
-		;
+		return data;
 	}
 
-	async renderForm(record){
-		if(this.input == null){
-			let parameter = {...this};
-			this.input = new DOMObject(TEMPLATE.input.CurrencyViewInput, parameter);
-		}
-		this.checkEditable(this.input);
-		if(record) this.setFormValue(this.input, record);
-		return this.input;
+
+	getInputTemplate(){
+		return TEMPLATE.input.CurrencyViewInput;
 	}
 
-	async renderDetail(record, reference){
-		if(this.detail == null){
-			let parameter = {...this};
-			this.detail = new DOMObject(TEMPLATE.DetailInputView, parameter);
-			this.setInputPerLine(this.detail, 2);
-		}
-		if(record) this.setDetailValue(this.detail, record, reference);
-		return this.detail;
+	getDetailTemplate(){
+		return TEMPLATE.DetailInputView;
 	}
 
-	async renderFormCell(record){
-		let parameter = {...this};
-		let cell = new InputDOMObject(TEMPLATE.input.TableFormCurrencyInput, parameter);
-		this.checkTableFormEditable(cell);
-		if(record) this.setTableFormValue(cell, record);
-		return cell;
+	getTableFilterTemplate(){
+		return TEMPLATE.input.CurrencyViewInput;
 	}
 
-	async renderDialogForm(record){
-		if(this.input == null){
-			let parameter = {...this};
-			this.input = new DOMObject(TEMPLATE.input.CurrencyViewInput, parameter);
-		}
-		this.checkEditable(this.input);
-		if(record) this.setFormValue(this.input, record);
-		return this.input;
+	getCardRowTemplate(){
+		return TEMPLATE.CardRow;
+	}
+
+	getTableFormInputTemplate(){
+		return TEMPLATE.input.TableFormCurrencyInput;
 	}
 
 	setFormValue(inputForm, record){

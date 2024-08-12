@@ -32,7 +32,6 @@ from multiprocessing import shared_memory
 from threading import Thread
 from typing import List, Dict, Callable
 from sanic import Sanic
-from sanic_session import Session, RedisSessionInterface
 from packaging.version import Version
 
 import os, sys, logging, logging.config, json, asyncio, importlib, traceback, time, sanic, pyuca
@@ -110,6 +109,7 @@ class AsyncApplication(Application):
 	def initialHandler(self):
 		from gaimon.core.Extension import TabExtension
 		if self.isSanicSession:
+			from sanic_session import Session
 			self.httpSession = Session(self.application)
 		else:
 			self.httpSession: HTTPSession = HTTPSession(self)
@@ -150,6 +150,7 @@ class AsyncApplication(Application):
 		return AsyncPushServiceClient(self.config['notification'])
 
 	def loadController(self):
+		self.mappedController = {}
 		start = time.time()
 		self.controllerPool = {}
 		self.controllerClass = {}
@@ -313,6 +314,7 @@ class AsyncApplication(Application):
 	# NOTE Legacy using sanic_session
 	def createHTTPSession(self):
 		if self.isRedisPool:
+			from sanic_session import RedisSessionInterface
 			async def getConnection():
 				return redis.Redis(connection_pool=self.redisPool)
 			self.httpSession.init_app(
@@ -397,17 +399,17 @@ class AsyncApplication(Application):
 		return client
 
 	def map(self, controllerList, processRoute:Callable=processRouteEmpty):
-		self.mappedController = {}
 		for controller in controllerList:
 			routeNumber = 0
 			if self.isDevelop:
 				start = time.time()
 				startMemory = getMemory()
-			isMapped = self.mappedController.get(controller.__class__, False)
+			isMapped = self.mappedController.get(controller.__class__.__name__, False)
 			if isMapped :
 				if self.applicationID < 0:
 					self.logger.warning(f"*** Warning {controller.__class__.__name__} is already mapped.")
 				continue
+			self.mappedController[controller.__class__.__name__] = True
 			if not hasattr(controller.__class__, 'extensionPath'):
 				controller.__class__.extensionPath = 'gaimon'
 			for attributeName in dir(controller):
@@ -442,7 +444,6 @@ class AsyncApplication(Application):
 				if memory > 0.5 or elapsed > 0.2:
 					signature = f'{controller.__class__.extensionPath}.{controller.__class__.__name__}'
 					self.logger.warning(f'*** Heavy Controller {signature} detected: load in {elapsed}s {memory}MB/{currentMemory}MB {routeNumber} route')
-			self.mappedController[controller.__class__] = True
 		self.replaceRoute()
 
 	def replaceRoute(self) :

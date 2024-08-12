@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 import math, time
 
@@ -15,6 +15,10 @@ def getCurrentWeekID():
 def dateTimeToDateID(moment: datetime):
 	stamp = moment.timestamp()
 	return int(math.floor((stamp - time.timezone) / DAY_SECONDS))
+
+def dateToDateID(moment: date):
+	dt = datetime.combine(moment, datetime.min.time())
+	return dateTimeToDateID(dt)
 
 def dateIDToDateTime(dateID: int):
 	return datetime.fromtimestamp(dateID * DAY_SECONDS + 1.0)

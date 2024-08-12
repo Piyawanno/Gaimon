@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 from gaimon.GaimonApplication import readConfig
 from gaimon.util.ProcessUtil import setSystemPath

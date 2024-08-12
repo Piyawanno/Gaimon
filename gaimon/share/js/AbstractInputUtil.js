@@ -979,7 +979,6 @@ AbstractInputUtil.prototype.triggerLinkEvent = async function(page, columnLinkMa
 }
 
 AbstractInputUtil.prototype.getRenderedTemplate = function(value, template) {
-	console.log(value);
 	if (value == undefined) return;
 	if (value.__avatar__) {
 		let preRendered = Mustache.render(template, value);
@@ -1007,7 +1006,9 @@ AbstractInputUtil.prototype.getRenderedTemplate = function(value, template) {
 			isDefault = true;
 		}
 		return rendered;
-	} else {
+	} else if(value.label == undefined) {
+		return Mustache.render(template, value);
+	}else {
 		return Mustache.render('{{{label}}}', value);
 	}
 }

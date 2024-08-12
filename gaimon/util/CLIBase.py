@@ -1,6 +1,8 @@
+from argparse import ArgumentParser
 from typing import List
 class CLIBase:
 	def __init__(self):
+		self.parser: ArgumentParser
 		self.initParser()
 	
 	def initParser(self):

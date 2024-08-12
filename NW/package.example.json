@@ -1,0 +1,9 @@
+{
+  "name": "gaimon",
+  "version": "1.0.0",
+  "main": "index.html",
+  "window": {
+    "title": "gaimon",
+    "fullscreen": true
+  }
+}

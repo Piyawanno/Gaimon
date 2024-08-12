@@ -13,7 +13,7 @@ class ModelTabPage extends ModelPage{
 			navigation.append(new NavigationViewItem(ID, label, pageID, mode));
 		};
 		createNavigation('extension', this.extension, this.pageID);
-		createNavigation('parent', this.tabPage.title, this.tabPage.pageID);
+		if(this.tabPage) createNavigation('parent', this.tabPage.title, this.tabPage.pageID);
 		createNavigation('model', this.title, this.pageID);
 		createNavigation('table', 'Table', this.pageID, ViewType.TABLE);
 		createNavigation('insert', 'Insert', this.pageID, ViewType.INSERT);
@@ -29,7 +29,7 @@ class ModelTabPage extends ModelPage{
 			if (this.renderMap[viewType] == undefined) continue;
 			let renderFunction = this.renderMap[viewType].bind(this);
 			let item = this.tabItemMap[viewType];
-			this.tabPage.appendTab(item);
+			if(this.tabPage) this.tabPage.appendTab(item);
 			item.renderFunction = async function(tabView, data) {
 				SHOW_LOADING_DIALOG(async function() {
 					await object.onPrepareState();

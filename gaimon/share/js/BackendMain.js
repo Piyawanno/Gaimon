@@ -35,6 +35,7 @@ const BackendMain = function() {
 	object.page.general = new GeneralPage(this, this);
 	object.page.user = new UserManagementPage(this, this);
 	object.page.permission = new PermissionRoleManagementPage(this, this);
+	object.page.svgTemplate = new SVGTemplateEditorPage(this, this);
 	// object.page.unitPage = new UnitPage(this, this);
 	// object.page.unit = new UnitManagementPage(this, object.page.unitPage);
 	// object.page.unitCategory = new UnitCategoryManagementPage(this, object.page.unitPage);
@@ -100,12 +101,10 @@ const BackendMain = function() {
 
 	this.getENUM = async function(){
 		let ENUM = await GET('enum/get');
-		console.log(ENUM);
 		if(ENUM){
 			for(let i in ENUM.result){
 				if(window[i]) continue;
 				window[i] = ENUM.result[i];
-				console.log(i);
 			}
 		}
 	}
@@ -328,6 +327,21 @@ const BackendMain = function() {
 			object.menus.push(dashboardMenu);
 			object.home.dom.menuBar.append(dashboardMenu);
 			object.menuDict[object.page.dashboard.pageID] = {menu: dashboardMenu}
+		}
+
+		object.page.svgTemplate.loadPermission('gaimon');
+		if (object.subMenu['GeneralPage'] == undefined) {
+			object.subMenu['GeneralPage'] = [];
+		}
+
+		if (object.checkPermission(object.page.svgTemplate) && window.DISABLE_MENU['svgTemplate'] == undefined) {
+			let templateMenu = await object.page.svgTemplate.getMenu(true);
+			object.page.svgTemplate.module = 'template';
+			object.subMenu['GeneralPage'].push(templateMenu);
+			object.menuDict[object.page.svgTemplate.pageID] = {
+				menu: templateMenu,
+				parent: 'GeneralPage'
+			}
 		}
 
 		// object.page.template.loadPermission('gaimon');

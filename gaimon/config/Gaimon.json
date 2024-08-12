@@ -4,7 +4,6 @@
 	"rootURL" : "http://localhost:8080/",
 	"websocketURL" : "ws://localhost:8080/",
 	"isWebSocket" : 1,
-	"resourcePath" : "/var/gaimon/",
 	"home": "/backend",
 	"theme" : null,
 	"isDomainCheck" : 0,

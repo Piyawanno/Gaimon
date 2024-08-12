@@ -9,21 +9,21 @@ from gaimon.util.PathUtil import getModel
 
 
 class CheckoutContext:
-    def __init__(self, extension: str) -> None:
-        self.extension = extension
-        self.freeze = Freeze(self.extension)
-        self.modificationsDict: dict[str, List[Modification]] = {}  # {model: [modifications]}
+	def __init__(self, extension: str) -> None:
+		self.extension = extension
+		self.freeze = Freeze(self.extension)
+		self.modificationsDict: dict[str, List[Modification]] = {}  # {model: [modifications]}
 
-        self.setScopeModifications()
+		self.setScopeModifications()
 
-    def setScopeModifications(self) -> None:
-        for modelName, value in self.freeze.get().items():
-            path = os.path.join(*self.extension.split('.'), 'model', Freeze.getActualModelPath(value['path'], modelName))
-            model: Record = getModel(modelName, path)()
-            model.modify()
-            self.modificationsDict[modelName] = model.getScopedModification(value['version'])
+	def setScopeModifications(self) -> None:
+		for modelName, value in self.freeze.get().items():
+			path = os.path.join(*self.extension.split('.'), 'model', Freeze.getActualModelPath(value['path'], modelName))
+			model: Record = getModel(modelName, path)()
+			model.modify()
+			self.modificationsDict[modelName] = model.getScopedModification(value['version'])
 
 
 if __name__ == "__main__":
-    checkoutContext = CheckoutContext("gaimonqa.shopping")
-    print(checkoutContext.modificationsDict)
+	checkoutContext = CheckoutContext("gaimonqa.shopping")
+	print(checkoutContext.modificationsDict)

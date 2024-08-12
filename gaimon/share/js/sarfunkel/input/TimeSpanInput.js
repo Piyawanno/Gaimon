@@ -78,9 +78,10 @@ class TimeSpanInput extends NumberInput{
 		return cell;
 	}
 
-	async renderFormCell(record){
+	async renderFormCell(record, reference, row){
 		let parameter = {...this};
 		let cell = new InputDOMObject(TEMPLATE.input.TableFormTimeSpanInput, parameter);
+		cell.row = row;
 		this.checkTableFormEditable(cell);
 		this.setInputEvent(cell);
 		if(record) this.setTableFormValue(cell, record);

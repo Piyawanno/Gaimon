@@ -1,0 +1,1 @@
+<div {{#isClickable}}class="item"{{/isClickable}} localize>{{{label}}}</div>

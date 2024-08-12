@@ -234,6 +234,7 @@ async function RENDER_SARFUNKEL_STATE(event) {
 	// if (page == undefined) window.location.pathname = window.location.pathname;
 	if (page == undefined) return;
 	await page.renderByURL(query);
+	main.home.dom.loading.hide();
 }
 
 async function RENDER_STATE(event) {
@@ -657,6 +658,23 @@ async function SHOW_LOADING_DIALOG(callback){
 	main.home.dom.loading.show();
 	if(callback != undefined) await callback();
 	main.home.dom.loading.hide();
+}
+
+async function SHOW_PRE_LOADING_DIALOG(callback){
+	let body = document.querySelector('body');
+	let content = `<div class="abstract_dialog hidden" rel="loading">
+			<div class="abstract_dialog_container abstract_loading">
+				<div class="flex-column gap-20px">
+					<div><img src="{{{rootURL}}}share/icon/loading.gif"></div>
+					<div localize>Loading</div>
+				</div>
+			</div>
+		</div>`;
+	let dialog = new DOMObject(content, rootURL);
+	body.appendChild(dialog.html);
+	dialog.dom.loading.show();
+	if(callback != undefined) await callback();
+	dialog.dom.loading.hide();
 }
 
 async function CREATE_IMAGE_ICON(path) {

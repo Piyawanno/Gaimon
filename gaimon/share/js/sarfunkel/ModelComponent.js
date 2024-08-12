@@ -18,7 +18,6 @@ class ModelComponent {
 		} else {
 			rendered = await this.component.renderMap[this.viewType].bind(this.component)(data);
 		}
-		console.log(this.component);
 		if (rendered == undefined || rendered == null) return;
 		if (this.viewType == ViewType.TABLE || this.viewType == ViewType.TABLE_FORM) {
 			tag.appendChild(rendered.dom.dataContainer);

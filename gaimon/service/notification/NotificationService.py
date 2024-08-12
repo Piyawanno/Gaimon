@@ -3,6 +3,7 @@ from gaimon.core.WebSocketManagement import WebSocketManagement
 from gaimon.service.notification.NotificationHandler import NotificationHandler
 from gaimon.service.notification.NotificationManagement import NotificationManagement
 from gaimon.service.notification.NotificationWebSocketHandler import NotificationWebSocketHandler
+from gaimon.util.PathUtil import getGaimonResourcePath
 
 from xerial.Vendor import Vendor
 from xerial.AsyncDBSessionPool import AsyncDBSessionPool
@@ -22,9 +23,7 @@ class NotificationService(AsyncService):
 
 	def setHandler(self):
 		self.appendHandler(NotificationHandler)
-		self.resourcePath = self.config['resourcePath']
-		if self.namespace is not None and len(self.namespace):
-			self.resourcePath = f"{self.resourcePath}/namespace/{self.namespace}"
+		self.resourcePath = getGaimonResourcePath(self.namespace)
 		self.managementMap: Dict[str, NotificationManagement] = {}
 		self.sendTask: List[Task] = []
 		self.loadManagement()

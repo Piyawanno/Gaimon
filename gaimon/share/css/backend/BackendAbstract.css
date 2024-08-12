@@ -1821,6 +1821,7 @@ td.table_view{
 	transition: width .5s ease-in-out;
 	width: 0;
 	padding: 0;
+	min-height: 100%;
 }
 
 .table-search-operation option {

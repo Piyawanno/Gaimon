@@ -4,6 +4,6 @@ from gaimon.core.checkout.models.AnalyzedModification import AnalyzedModificatio
 
 
 class ModificationReport:
-    def __init__(self, version: str, analyzed: List[AnalyzedModification]) -> None:
-        self.version = version
-        self.analyzed = analyzed
+	def __init__(self, version: str, analyzed: List[AnalyzedModification]) -> None:
+		self.version = version
+		self.analyzed = analyzed

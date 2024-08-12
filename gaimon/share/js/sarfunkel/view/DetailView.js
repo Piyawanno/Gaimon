@@ -10,6 +10,10 @@ class DetailView{
 		this.hasEdit = true;
 		this.hasCancel = true;
 		this.operation = [];
+		this.button = [];
+
+		this.setEditButton();
+		this.setCancelButton();
 	}
 
 	async render(title, record){
@@ -41,30 +45,65 @@ class DetailView{
 
 	async getOperation(){}
 	
-	async setButton(){
-		let object = this;
+	// async setButton(){
+	// 	let object = this;
+	// 	this.editButton = new Button(
+	// 		"Edit",
+	// 		'1.0',
+	// 		async () => {await object.callEditPage();},
+	// 		["edit_form_button"],
+	// 	);
+	// 	this.cancelButton = new Button(
+	// 		"Cancel",
+	// 		'2.0',
+	// 		async () => {await object.close();},
+	// 		["cancel_button"],
+	// 	);
+	// 	this.button = [];
+	// 	if (this.hasEdit) {
+	// 		this.button.push(this.editButton);
+	// 	}
+	// 	if (this.hasCancel) {
+	// 		this.button.push(this.cancelButton);
+	// 	}
+	// 	for(let i of this.button){
+	// 		let rendered = await i.render();
+	// 		this.detail.dom.operation.appendChild(rendered.html);
+	// 	}
+	// }
+
+	setEditButton(){
 		this.editButton = new Button(
 			"Edit",
 			'1.0',
-			async () => {await object.callEditPage();},
+			async () => {await this.callEditPage();},
 			["edit_form_button"],
 		);
+	}
+
+	setCancelButton(){
 		this.cancelButton = new Button(
 			"Cancel",
 			'2.0',
-			async () => {await object.close();},
+			async () => {await this.close();},
 			["cancel_button"],
 		);
-		this.button = [];
-		if (this.hasEdit) {
+	}
+
+	async setButton(){
+		if (this.hasEdit && !this.editButton.isRendered) {
+			this.editButton.isRendered = true;
 			this.button.push(this.editButton);
 		}
-		if (this.hasCancel) {
+		if (this.hasCancel && !this.cancelButton.isRendered) {
+			this.cancelButton.isRendered = true;
 			this.button.push(this.cancelButton);
 		}
+		this.detail?.dom.operation.html('');
 		for(let i of this.button){
+			if(i == undefined) continue;
 			let rendered = await i.render();
-			this.detail.dom.operation.appendChild(rendered.html);
+			this.detail?.dom.operation.appendChild(rendered.html);
 		}
 	}
 
@@ -109,9 +148,19 @@ class DetailView{
 				let rendered = await input.renderDetail(record, this.currentReferencedData);
 				if (rendered.html == null) continue;
 				container.appendChild(rendered.html);
+				if(!input.isGrouped){
+					let isRendered = input.input != undefined;
+					let rendered = await input.renderDetail(record, this.currentReferencedData);
+					if(this.currentInputMap != undefined && this.currentInputMap[input.columnName] != undefined){
+						this.currentInputMap[input.columnName] = {input: input, dom: rendered};
+					}
+					if (rendered.html == null) continue;
+					if (!isRendered) container.appendChild(rendered.html);
+				}
 			}
 		}
 		for(let group of this.meta.groupList){
+			if(Object.keys(group.currentInputMap).length == 0) continue;
 			let rendered = await group.renderDetail(record, this.currentReferencedData);
 			container.appendChild(rendered.html);
 		}

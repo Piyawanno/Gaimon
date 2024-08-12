@@ -123,14 +123,15 @@ class TextInput extends InputMetaData{
 		return cell;
 	}
 
-	async renderFormCell(record){
+	async renderFormCell(record, reference, row){
 		let parameter = {...this};
-		let formCell = new InputDOMObject(this.getTableFormInputTemplate(), parameter);
-		this.checkTableFormEditable(formCell);
-		this.setTableFormEvent(formCell);
+		let cell = new InputDOMObject(this.getTableFormInputTemplate(), parameter);
+		cell.row = row;
+		this.checkTableFormEditable(cell);
+		this.setTableFormEvent(cell);
 		if(record){
-			this.setTableFormValue(formCell, record);
+			this.setTableFormValue(cell, record);
 		}
-		return formCell;
+		return cell;
 	}
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 import os, sys, site, setuptools
 from gaimon.util.PathUtil import conform, link, copy

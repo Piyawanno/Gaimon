@@ -82,26 +82,26 @@ def BASE(modelClass, baseRoute, role):
 			decorator(callable.getOptionByIDList)
 
 
-		if not hasattr(callable, 'getAutocomplete'):
-			async def getAutocomplete(self, request):
-				return await callable._getAutocomplete(self, request)
-			callable.getAutocomplete = getAutocomplete
+		if not hasattr(callable, 'getAutoComplete'):
+			async def getAutoComplete(self, request):
+				return await callable._getAutoComplete(self, request)
+			callable.getAutoComplete = getAutoComplete
 
-		if not hasattr(callable.getAutocomplete, '__ROUTE__'):
+		if not hasattr(callable.getAutoComplete, '__ROUTE__'):
 			route = f"{baseRoute}/autocomplete/get"
 			decorator = POST(route, permission=[PT.READ])
-			decorator(callable.getAutocomplete)
+			decorator(callable.getAutoComplete)
 
 		
-		if not hasattr(callable, 'getAutocompleteByReference'):
-			async def getAutocompleteByReference(self, request):
-				return await callable._getAutocompleteByReference(self, request)
-			callable.getAutocompleteByReference = getAutocompleteByReference
+		if not hasattr(callable, 'getAutoCompleteByReference'):
+			async def getAutoCompleteByReference(self, request):
+				return await callable._getAutoCompleteByReference(self, request)
+			callable.getAutoCompleteByReference = getAutoCompleteByReference
 
-		if not hasattr(callable.getAutocompleteByReference, '__ROUTE__'):
+		if not hasattr(callable.getAutoCompleteByReference, '__ROUTE__'):
 			route = f"{baseRoute}/autocomplete/get/by/reference"
 			decorator = POST(route, permission=[PT.READ])
-			decorator(callable.getAutocompleteByReference)
+			decorator(callable.getAutoCompleteByReference)
 
 		if not hasattr(callable, 'insert'):
 			async def insert(self, request, hasFeedback=False):
@@ -211,11 +211,11 @@ class BaseController:
 		result = await self.handleGetOptionByID(self.session, request.json['IDList'])
 		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 	
-	async def _getAutocomplete(self, request):
+	async def _getAutoComplete(self, request):
 		result = await self.handleGetAutocomplete(self.session, request.json)
 		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 
-	async def _getAutocompleteByReference(self, request):
+	async def _getAutoCompleteByReference(self, request):
 		result = await self.handleGetAutocompleteByReference(self.session, request.json)
 		return REST({'isSuccess': True, 'result': result}, ensure_ascii=False)
 

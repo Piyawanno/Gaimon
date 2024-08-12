@@ -1,7 +1,5 @@
 websockets==10.4
 sanic
-sanic_session
-sanic_session[redis]
 aiofiles
 pystache
 pyjwt
@@ -29,3 +27,5 @@ rjsmin
 pyprince
 yapf
 pyuca
+PyMuPDF
+Spire.Pdf

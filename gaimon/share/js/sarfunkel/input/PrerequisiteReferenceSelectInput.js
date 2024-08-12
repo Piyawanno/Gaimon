@@ -31,10 +31,11 @@ class PrerequisiteReferenceSelectInput extends ReferenceSelectInput{
 		return this.input;
 	}
 
-	async renderFormCell(record, reference) {
+	async renderFormCell(record, reference, row) {
 		this.currentRecord = record;
 		let parameter = {...this};
 		let cell = new InputDOMObject(TEMPLATE.input.TableFormSelectInput, parameter);
+		cell.row = row;
 		if (this.config.prerequisite) this.setPrerequisite(this, cell);
 		this.checkTableFormEditable(cell);
 		// await this.getOption();

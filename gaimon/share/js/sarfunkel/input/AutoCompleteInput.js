@@ -38,11 +38,28 @@ class AutoCompleteInput extends ReferenceSelectInput{
 			if (this.config.prerequisite) this.setPrerequisite(this, this.input);
 		}
 		this.checkEditable(this.input);
-		if(record) this.setFormValue(this.input, record);
-		else if (this.config.prerequisite) {
-			this.disableEdit(this.input);
+		if (record == undefined || record == null || Object.keys(record).length == 0) this.clearFormValue(this.input);
+		else if(record){
+			if(record[this.columnName] == this.default) this.clearFormValue(this.input);
+			else this.setFormValue(this.input, record);
 		}
+		else if (this.config.prerequisite) this.disableEdit(this.input);
 		return this.input;
+	}
+
+	async renderDetail(record, reference){
+		if(this.detail == null){
+			let parameter = {...this};
+			this.detail = new DOMObject(TEMPLATE.DetailInputView, parameter);
+			this.setInputPerLine(this.detail, 2);
+			this.initLinkEvent(this.detail, parameter, record);
+		}
+		if (record == undefined || record == null || Object.keys(record).length == 0) this.clearFormValue(this.input);
+		else if(record){
+			if(record[this.columnName] == this.default) this.clearFormValue(this.input);
+			else this.setDetailValue(this.detail, record, reference);
+		}
+		return this.detail;
 	}
 
 	async renderTableFilter(record){
@@ -72,9 +89,10 @@ class AutoCompleteInput extends ReferenceSelectInput{
 		return this.input;
 	}
 
-	async renderFormCell(record, reference) {
+	async renderFormCell(record, reference, row) {
 		let parameter = {...this};
 		let cell = new InputDOMObject(TEMPLATE.input.TableFormAutoCompleteInput, parameter);
+		cell.row = row;
 		this.setFormCellSideIcon(cell, record);
 		this.checkTableFormEditable(cell);
 		this.setFormEvent(cell);
@@ -188,6 +206,9 @@ class AutoCompleteInput extends ReferenceSelectInput{
 		if(record != undefined){
 			let attribute = record[this.columnName];
 			let item = detail.dom[this.columnName];
+			if(attribute == this.default){
+				item.innerHTML = '-';
+			}
 			let template = this.config.template;
 			if(attribute != undefined && item != undefined){
 				let url = `${this.url}/by/reference`;
@@ -197,11 +218,11 @@ class AutoCompleteInput extends ReferenceSelectInput{
 				} else {
 					POST(url, {'reference': attribute, 'template': template}, undefined, 'json', true).then(response => {
 						if (response.isSuccess) {
-							item.innerHTML = Mustache.render('{{{label}}}', response.result);
+							if(response.label) item.innerHTML = Mustache.render('{{{label}}}', response);
+							else item.innerHTML = Mustache.render('{{{label}}}', response.result);
 						}
 					});
 				}
-				
 			}
 		}
 	}

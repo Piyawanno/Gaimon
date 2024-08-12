@@ -52,6 +52,7 @@ const CommonDashboard = function(main, parent) {
 			hasDelete: false,
 			hasEdit: false,
 		}
+		console.log(config);
 		if (config.inputs != undefined) data.inputs = config.inputs;
 		if (config.excludeInput != undefined) data.excludeInput = config.excludeInput;
 		let table = await object.parent.getTableView(config.modelName, data, 'Table');

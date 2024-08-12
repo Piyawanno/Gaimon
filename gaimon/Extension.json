@@ -27,7 +27,7 @@
 						"icon": "More",
 						"order": "1.0",
 						"hasAdd": false,
-						"isHidden" : false
+						"isHidden" : true
 					}
 				]
 			}

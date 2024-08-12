@@ -1,5 +1,4 @@
 from gaimon.model.User import User
-# from sanic.gaimon.core.RESTResponse import RESTResponse
 import requests, time, struct
 
 

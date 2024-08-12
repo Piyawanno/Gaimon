@@ -1,5 +1,6 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
+from gaimon.util.PathUtil import getResourcePath
 import os, sys, logging, json
 
 
@@ -75,7 +76,8 @@ class DockerPreparation:
 			os.system(command)
 
 	def createVolume(self):
-		path = '/var/gaimon-docker-volume'
+		resourcePath = getResourcePath()
+		path = f'{resourcePath}/gaimon-docker-volume'
 		if not os.path.isdir(path):
 			command = f"sudo mkdir {path}"
 			logging.info(command)
